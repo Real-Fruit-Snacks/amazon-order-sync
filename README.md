@@ -10,22 +10,22 @@ By [Real-Fruit-Snacks](https://github.com/Real-Fruit-Snacks)
 
 ---
 
-## 🌟 Features
+## Features
 
 *   **Autonomous Time Machine Sync:** Seamlessly scrape and extract your complete Amazon order history. The Chrome extension automatically handles pagination and navigates backwards through your historical years on autopilot.
 *   **Dynamic Folder Routing:** Say goodbye to cluttered vaults. New orders are automatically sorted into clean, date-based directories (e.g., `Orders/2026/06-June/`).
 *   **Local Image Caching:** Product thumbnails are downloaded directly to your vault so your notes never suffer from dead web links.
 *   **AI Review Generation:** Need to write a review? The system uses Gemini (configured with strict Amazon Vine guidelines) to automatically generate high-quality, insightful, and authentic product reviews in the background.
-*   **Review Auto-Filler:** Click the "✍️ Leave a Review on Amazon" link inside Obsidian, and the Chrome extension will instantly auto-fill the Amazon review form with your AI-generated text.
+*   **Review Auto-Filler:** Click the "Leave a Review on Amazon" link inside Obsidian, and the Chrome extension will instantly auto-fill the Amazon review form with your AI-generated text.
 *   **Advanced Spending Analytics:** Includes a native, pure HTML/CSS dashboard powered by DataviewJS. Visualize your monthly spending directly inside Obsidian without requiring heavy charting plugins.
 
-## 📦 Architecture
+## Architecture
 
 This project consists of two interlocking components:
 1.  **Obsidian Plugin:** Runs a secure, lightweight local server (`127.0.0.1:27483`) inside your vault to receive incoming data, save Markdown files, and provide the AI-review API endpoint.
 2.  **Chrome Extension:** Runs strictly on Amazon domains. It extracts order data, detects when you open a review page, and communicates natively with your local Obsidian server.
 
-## 🚀 Installation
+## Installation
 
 ### 1. Obsidian Plugin
 1. Download the latest `obsidian-plugin.zip` from the **[Releases](#)** page.
@@ -40,17 +40,17 @@ This project consists of two interlocking components:
 4. Enable **Developer mode** in the top right corner.
 5. Click **Load unpacked** and select the extracted `browser-extension` folder.
 
-## 🛠️ Usage
+## Usage
 
 1. Open your Amazon **Your Orders** page.
 2. Click the **Amazon Order Sync** icon in your browser toolbar.
 3. Click **Auto-Sync All Pages** and watch as your entire purchase history populates your Obsidian vault in real-time.
 4. Open the `Amazon Dashboard.md` note in Obsidian to view your Analytics Chart and your "Needs Review" inbox!
 
-## 🔐 Privacy & Security
+## Privacy & Security
 
 Your data is yours. This integration extracts your order history directly from your local browser session and sends it securely to your local Obsidian vault via `localhost`. No purchase history, tracking cookies, or personal data is ever sent to an external server (other than the product descriptions sent to Gemini for AI review generation).
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
