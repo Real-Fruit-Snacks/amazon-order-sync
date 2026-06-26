@@ -83,8 +83,14 @@ var AmazonOrderSyncPlugin = class extends import_obsidian.Plugin {
           }
           const content = await this.app.vault.read(file);
           const needsReview = content.includes("> *Write your review for this item below...*");
-          const isUndelivered = /status: "(Arriving|Shipped|Expected|Out for delivery|Now expected)/i.test(content);
-          if (needsReview || isUndelivered) {
+          const statusMatch = content.match(/status: "(.*?)"/);
+          let isUndelivered = false;
+          if (statusMatch) {
+            const status = statusMatch[1].toLowerCase();
+            isUndelivered = !status.includes("delivered") && !status.includes("return") && !status.includes("cancel");
+          }
+          const notPosted = content.includes("- [ ] Posted to Amazon?");
+          if (needsReview || isUndelivered || notPosted) {
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ complete: false, reason: "Needs update or undelivered" }));
             return;
@@ -377,6 +383,11 @@ CRITICAL: You MUST return a valid JSON object in this exact format:
     }
     await this.ensureFolderExists(folderPath);
     const filePath = (0, import_obsidian.normalizePath)(`${folderPath}/Order-${payload.order_id}.md`);
+    let existingContent = "";
+    const existingFile = this.app.vault.getFiles().find((f) => f.name === `Order-${payload.order_id}.md`);
+    if (existingFile) {
+      existingContent = await this.app.vault.read(existingFile);
+    }
     let brands = [];
     let prices = [];
     let asins = [];
@@ -390,18 +401,50 @@ CRITICAL: You MUST return a valid JSON object in this exact format:
       prices.push(`"${item.current_price}"`);
       asins.push(`"${item.asin}"`);
       urls.push(`"${item.link}"`);
-      revieweds.push(item.is_reviewed);
-      ratings.push(`"${item.review_rating}"`);
       const localImagePath = await this.downloadImage(item.image, item.asin);
       let aiReviewContent = "";
+      let alreadyPosted = false;
+      if (existingContent) {
+        const asinLink = `[\u270D\uFE0F Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=${item.asin})`;
+        const linkIndex = existingContent.indexOf(asinLink);
+        if (linkIndex !== -1) {
+          const nextLineStart = existingContent.indexOf("\n", linkIndex) + 1;
+          const endOfReview = existingContent.indexOf("\n- [", nextLineStart);
+          if (endOfReview !== -1) {
+            const existingReviewBlock = existingContent.substring(nextLineStart, endOfReview).trim();
+            if (existingReviewBlock && !existingReviewBlock.includes("> *Write your review for this item below...*")) {
+              aiReviewContent = existingReviewBlock;
+            }
+          }
+          const tickIndex = existingContent.indexOf(`- [x] Posted to Amazon?`, linkIndex);
+          const nextSectionIndex = existingContent.indexOf("---", linkIndex);
+          if (tickIndex !== -1 && (nextSectionIndex === -1 || tickIndex < nextSectionIndex)) {
+            alreadyPosted = true;
+          }
+        }
+      }
+      const isPosted = item.is_reviewed || alreadyPosted;
+      revieweds.push(isPosted);
+      ratings.push(`"${item.review_rating}"`);
       const apiKey = this.app.secretStorage.getSecret("gemini");
-      if (!item.is_reviewed && apiKey) {
+      if (!isPosted && !aiReviewContent && apiKey) {
         const draft = await this.generateReview(item);
         if (draft.text) {
           aiReviewContent = `**Rating:** 5
 **Title:** ${draft.title}
 **Review:** ${draft.text}`;
         }
+      }
+      let finalReviewText = "";
+      if (item.is_reviewed && item.review_title && item.review_text) {
+        finalReviewText = `**Title:** ${item.review_title}
+**Review:** ${item.review_text}`;
+      } else if (aiReviewContent) {
+        finalReviewText = aiReviewContent;
+      } else {
+        finalReviewText = `> *Write your review for this item below...*
+**Rating:** 
+**Review:** `;
       }
       itemsContent += `
 ### ${item.name}
@@ -414,11 +457,8 @@ ${item.features}
 #### \u{1F4DD} My Review
 [\u270D\uFE0F Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=${item.asin})
 
-${item.is_reviewed ? `**Title:** ${item.review_title}
-**Review:** ${item.review_text}` : aiReviewContent || `> *Write your review for this item below...*
-**Rating:** 
-**Review:** `}
-- [${item.is_reviewed ? "x" : " "}] Posted to Amazon?
+${finalReviewText}
+- [${isPosted ? "x" : " "}] Posted to Amazon?
 
 ---
 `;
@@ -449,7 +489,6 @@ rating: [${ratings.join(", ")}]
 ## \u{1F4E6} Items
 ${itemsContent}
 `;
-    const existingFile = this.app.vault.getFiles().find((f) => f.name === `Order-${payload.order_id}.md`);
     if (existingFile) {
       if (existingFile.path !== filePath) {
         try {
