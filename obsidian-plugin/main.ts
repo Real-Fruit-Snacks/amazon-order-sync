@@ -22,9 +22,45 @@ interface SyncPayload {
 }
 
 function parseArrayField(content: string, fieldName: string): string[] {
-    const match = content.match(new RegExp(`${fieldName}:\\s*\\[(.*?)\\]`));
-    if (!match) return [];
-    return match[1].split(',').map(s => s.replace(/"/g, '').trim());
+    // 1. Try inline format: fieldName: [ "A", "B" ]
+    const inlineMatch = content.match(new RegExp(`${fieldName}:\\s*\\[([\\s\\S]*?)\\]`));
+    if (inlineMatch) {
+        return inlineMatch[1]
+            .split(',')
+            .map(s => s.replace(/['"]/g, '').trim())
+            .filter(Boolean);
+    }
+    
+    // 2. Try multiline list format:
+    // fieldName:
+    //   - A
+    //   - "B"
+    const multilineRegex = new RegExp(`^${fieldName}:\\s*\\r?\\n((?:\\s+-\\s+.*\\r?\\n?)*)`, 'm');
+    const multilineMatch = content.match(multilineRegex);
+    if (multilineMatch) {
+        const linesStr = multilineMatch[1];
+        const lines = linesStr.split(/\r?\n/);
+        const result: string[] = [];
+        for (const line of lines) {
+            if (line.trim().startsWith('---')) continue;
+            const itemMatch = line.match(/^\s+-\s+(.*)$/);
+            if (itemMatch) {
+                const val = itemMatch[1].replace(/['"]/g, '').trim();
+                if (val) {
+                    result.push(val);
+                }
+            }
+        }
+        return result;
+    }
+    
+    // 3. Fallback: single value format (e.g. if Obsidian rewrote it to a single value if there's only 1 item)
+    const singleMatch = content.match(new RegExp(`^${fieldName}:\\s*['"]?(.*?)['"]?\\s*\\r?$`, 'm'));
+    if (singleMatch && !singleMatch[1].startsWith('[')) {
+        return [singleMatch[1].trim()];
+    }
+
+    return [];
 }
 
 export default class AmazonOrderSyncPlugin extends Plugin {
