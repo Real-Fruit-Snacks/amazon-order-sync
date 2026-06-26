@@ -405,28 +405,41 @@ CRITICAL: You MUST return a valid JSON object in this exact format:
       let aiReviewContent = "";
       let alreadyPosted = false;
       if (existingContent) {
-        const imageLink = `Orders/assets/${item.asin}`;
-        const itemIndex = existingContent.indexOf(imageLink);
-        if (itemIndex !== -1) {
+        const blocks = existingContent.split(/\r?\n---\r?\n/);
+        const itemBlock = blocks.find((block) => block.includes(item.asin) && block.includes("#### \u{1F4DD} My Review"));
+        if (itemBlock) {
           const reviewHeader = `#### \u{1F4DD} My Review`;
-          const reviewHeaderIndex = existingContent.indexOf(reviewHeader, itemIndex);
+          const reviewHeaderIndex = itemBlock.indexOf(reviewHeader);
           if (reviewHeaderIndex !== -1) {
-            let nextLineStart = existingContent.indexOf("\n", reviewHeaderIndex) + 1;
+            let searchStartIndex = reviewHeaderIndex + reviewHeader.length;
             const asinLink = `[\u270D\uFE0F Leave a Review on Amazon]`;
-            const linkIndex = existingContent.indexOf(asinLink, reviewHeaderIndex);
-            if (linkIndex !== -1 && linkIndex < reviewHeaderIndex + 100) {
-              nextLineStart = existingContent.indexOf("\n", linkIndex) + 1;
+            const linkIndex = itemBlock.indexOf(asinLink, reviewHeaderIndex);
+            if (linkIndex !== -1) {
+              const endOfLinkLine = itemBlock.indexOf("\n", linkIndex);
+              if (endOfLinkLine !== -1) {
+                searchStartIndex = endOfLinkLine + 1;
+              } else {
+                searchStartIndex = linkIndex + asinLink.length;
+              }
             }
-            const endOfReview = existingContent.indexOf("\n- [", nextLineStart);
+            const postedIndex = itemBlock.indexOf("Posted to Amazon?", searchStartIndex);
+            let endOfReview = -1;
+            if (postedIndex !== -1) {
+              const checkboxStart = itemBlock.lastIndexOf("- [", postedIndex);
+              if (checkboxStart !== -1 && checkboxStart >= searchStartIndex) {
+                endOfReview = checkboxStart;
+              } else {
+                endOfReview = postedIndex;
+              }
+            }
             if (endOfReview !== -1) {
-              const existingReviewBlock = existingContent.substring(nextLineStart, endOfReview).trim();
+              const existingReviewBlock = itemBlock.substring(searchStartIndex, endOfReview).trim();
               if (existingReviewBlock && !existingReviewBlock.includes("> *Write your review for this item below...*")) {
                 aiReviewContent = existingReviewBlock;
               }
             }
-            const tickIndex = existingContent.indexOf(`- [x] Posted to Amazon?`, reviewHeaderIndex);
-            const nextSectionIndex = existingContent.indexOf("---", reviewHeaderIndex);
-            if (tickIndex !== -1 && (nextSectionIndex === -1 || tickIndex < nextSectionIndex)) {
+            const checkboxMatch = itemBlock.match(/- \[\s*([xX])\s*\]\s*Posted to Amazon\?/);
+            if (checkboxMatch) {
               alreadyPosted = true;
             }
           }
