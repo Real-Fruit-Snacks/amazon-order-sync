@@ -307,14 +307,39 @@ async function extractAndSyncOrders(isAuto) {
                             is_reviewed = true;
                         }
                         
-                        // Fetch Deep Details
-                        const cleanUrl = link.href.split('?')[0];
-                        const deepDetails = await fetchProductDetails(cleanUrl);
-                        logStatus(`Waiting 2s (bot protection)...`);
-                        await sleep(2000); 
+                        // Retrieve existing item details to skip redundant scrapes and API queries
+                        let brand = "Unknown";
+                        let current_price = "Unknown";
+                        let features = "";
+                        let hasDeepDetails = false;
+                        
+                        const existing = checkResult?.existingItems?.[asin];
+                        if (existing && existing.brand && existing.brand !== "Unknown") {
+                            brand = existing.brand;
+                            current_price = existing.current_price;
+                            features = existing.features;
+                            hasDeepDetails = true;
+                            logStatus(`[Skip] Product page scrape skipped for ASIN ${asin} (already in Obsidian).`);
+                        }
+
+                        if (!hasDeepDetails) {
+                            // Fetch Deep Details
+                            const cleanUrl = link.href.split('?')[0];
+                            logStatus(`[Scrape] Fetching product page details for ASIN ${asin}...`);
+                            const deepDetails = await fetchProductDetails(cleanUrl);
+                            if (deepDetails) {
+                                brand = deepDetails.brand || "Unknown";
+                                current_price = deepDetails.current_price || "Unknown";
+                                features = deepDetails.features || "";
+                            }
+                            logStatus(`Waiting 2s (bot protection)...`);
+                            await sleep(2000); 
+                        }
                         
                         let reviewDetails = null;
-                        if (is_reviewed) {
+                        // Fetch review details only if marked reviewed on card AND it's not marked posted in Obsidian yet
+                        if (is_reviewed && (!existing || !existing.alreadyPosted)) {
+                            logStatus(`[Scrape] Fetching existing Amazon review status/details for ASIN ${asin}...`);
                             reviewDetails = await fetchReviewDetails(asin);
                             
                             // Check if it was a false positive (no actual review found)
@@ -325,17 +350,20 @@ async function extractAndSyncOrders(isAuto) {
                                 logStatus(`Waiting 2s (bot protection)...`);
                                 await sleep(2000);
                             }
+                        } else if (existing && existing.alreadyPosted) {
+                            logStatus(`[Skip] Review status check skipped for ASIN ${asin} (already marked as Posted).`);
+                            is_reviewed = true;
                         }
                         
                         items.push({
                             asin,
                             name,
-                            link: cleanUrl,
+                            link: link.href.split('?')[0],
                             image,
                             is_reviewed,
-                            brand: deepDetails?.brand || "Unknown",
-                            current_price: deepDetails?.current_price || "Unknown",
-                            features: deepDetails?.features || "",
+                            brand,
+                            current_price,
+                            features,
                             review_rating: reviewDetails?.rating || "",
                             review_title: reviewDetails?.title || "",
                             review_text: reviewDetails?.text || ""

@@ -39,6 +39,12 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 var http = __toESM(require("http"));
+function parseArrayField(content, fieldName) {
+  const match = content.match(new RegExp(`${fieldName}:\\s*\\[(.*?)\\]`));
+  if (!match)
+    return [];
+  return match[1].split(",").map((s) => s.replace(/"/g, "").trim());
+}
 var AmazonOrderSyncPlugin = class extends import_obsidian.Plugin {
   constructor() {
     super(...arguments);
@@ -82,6 +88,42 @@ var AmazonOrderSyncPlugin = class extends import_obsidian.Plugin {
             return;
           }
           const content = await this.app.vault.read(file);
+          const existingItems = {};
+          try {
+            const parsedAsins = parseArrayField(content, "asin");
+            const parsedBrands = parseArrayField(content, "brand");
+            const parsedPrices = parseArrayField(content, "price");
+            const blocks = content.split(/\r?\n---\r?\n/);
+            for (let i = 0; i < parsedAsins.length; i++) {
+              const asin = parsedAsins[i];
+              const brand = parsedBrands[i] || "Unknown";
+              const price = parsedPrices[i] || "Unknown";
+              const itemBlock = blocks.find((block) => block.includes(asin) && block.includes("#### \u{1F4DD} My Review"));
+              let features = "";
+              let alreadyPosted = false;
+              if (itemBlock) {
+                const featuresHeader = `#### Features`;
+                const featuresIndex = itemBlock.indexOf(featuresHeader);
+                const reviewHeader = `#### \u{1F4DD} My Review`;
+                const reviewHeaderIndex = itemBlock.indexOf(reviewHeader);
+                if (featuresIndex !== -1 && reviewHeaderIndex !== -1 && reviewHeaderIndex > featuresIndex) {
+                  features = itemBlock.substring(featuresIndex + featuresHeader.length, reviewHeaderIndex).trim();
+                }
+                const checkboxMatch = itemBlock.match(/- \[\s*([xX])\s*\]\s*Posted to Amazon\?/);
+                if (checkboxMatch) {
+                  alreadyPosted = true;
+                }
+              }
+              existingItems[asin] = {
+                brand,
+                current_price: price,
+                features,
+                alreadyPosted
+              };
+            }
+          } catch (err) {
+            console.error("Error parsing existing items metadata inside /api/check:", err);
+          }
           const needsReview = content.includes("> *Write your review for this item below...*");
           const statusMatch = content.match(/status: "(.*?)"/);
           let isUndelivered = false;
@@ -92,11 +134,11 @@ var AmazonOrderSyncPlugin = class extends import_obsidian.Plugin {
           const notPosted = content.includes("- [ ] Posted to Amazon?");
           if (needsReview || isUndelivered || notPosted) {
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ complete: false, reason: "Needs update or undelivered" }));
+            res.end(JSON.stringify({ complete: false, reason: "Needs update or undelivered", existingItems }));
             return;
           }
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ complete: true }));
+          res.end(JSON.stringify({ complete: true, existingItems }));
         } catch (e) {
           console.error("Error checking order:", e);
           res.writeHead(500, { "Content-Type": "application/json" });
@@ -447,7 +489,20 @@ CRITICAL: You MUST return a valid JSON object in this exact format:
       }
       const isPosted = item.is_reviewed || alreadyPosted;
       revieweds.push(isPosted);
-      ratings.push(`"${item.review_rating}"`);
+      let finalRating = item.review_rating;
+      if (!finalRating && existingContent) {
+        try {
+          const parsedAsins = parseArrayField(existingContent, "asin");
+          const parsedRatings = parseArrayField(existingContent, "rating");
+          const asinIndex = parsedAsins.indexOf(item.asin);
+          if (asinIndex !== -1 && parsedRatings[asinIndex]) {
+            finalRating = parsedRatings[asinIndex];
+          }
+        } catch (e) {
+          console.error("Error preserving rating:", e);
+        }
+      }
+      ratings.push(`"${finalRating}"`);
       const apiKey = this.app.secretStorage.getSecret("gemini");
       if (!isPosted && !aiReviewContent && apiKey) {
         const draft = await this.generateReview(item);
