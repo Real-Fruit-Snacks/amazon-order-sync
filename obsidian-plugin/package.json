@@ -1,6 +1,6 @@
 {
   "name": "amazon-order-sync-plugin",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Sync Amazon orders to Obsidian markdown files.",
   "main": "main.js",
   "scripts": {

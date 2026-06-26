@@ -196,13 +196,23 @@ async function fetchReviewDetails(asin) {
 }
 
 async function checkOrderComplete(orderId) {
+    logStatus(`[Obsidian] Checking status for Order ${orderId}...`);
     try {
         const response = await fetch(`http://127.0.0.1:27483/api/check?order_id=${orderId}`);
-        if (!response.ok) return false;
+        if (!response.ok) {
+            logStatus(`[Obsidian] Failed to check status for Order ${orderId} (HTTP status ${response.status}).`);
+            return { complete: false, reason: `HTTP error ${response.status}` };
+        }
         const data = await response.json();
-        return data.complete === true;
+        if (data.complete) {
+            logStatus(`[Obsidian] Order ${orderId} status: Complete.`);
+        } else {
+            logStatus(`[Obsidian] Order ${orderId} status: Incomplete. Reason: ${data.reason || 'Needs update'}`);
+        }
+        return data;
     } catch (e) {
-        return false;
+        logStatus(`[Obsidian] Could not connect to local server for Order ${orderId}: ${e.message}`);
+        return { complete: false, reason: `Connection error: ${e.message}` };
     }
 }
 
@@ -250,13 +260,13 @@ async function extractAndSyncOrders(isAuto) {
             let date = dateMatch ? dateMatch[1].trim() : new Date().toISOString().split('T')[0];
 
             // SMART PRE-CHECK
-            const isComplete = await checkOrderComplete(orderId);
-            if (isComplete) {
-                logStatus(`[Skip] Order ${orderId} already fully complete in Obsidian.`);
+            const checkResult = await checkOrderComplete(orderId);
+            if (checkResult && checkResult.complete === true) {
+                logStatus(`[Action] Skipping Order ${orderId} (already up-to-date in Obsidian).`);
                 continue;
             }
 
-            logStatus(`[${processedCount}/${orderCards.length}] Processing Order ${orderId}...`);
+            logStatus(`[Action] Syncing Order ${orderId} (extracting details)...`);
             
             let totalMatch = cardText.match(/(?:TOTAL|ORDER TOTAL)\s*(\$[0-9,.]+)/i);
             let total = totalMatch ? totalMatch[1].trim() : "$0.00";
@@ -343,14 +353,19 @@ async function extractAndSyncOrders(isAuto) {
                 items
             };
 
-            logStatus(`Sending Order ${orderId} to Obsidian...`);
-            await fetch('http://127.0.0.1:27483/api/sync', {
+            logStatus(`[Obsidian] Sending payload for Order ${orderId} to local server...`);
+            const syncResponse = await fetch('http://127.0.0.1:27483/api/sync', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)
             });
+            if (syncResponse.ok) {
+                logStatus(`[Obsidian] Successfully synced Order ${orderId}!`);
+            } else {
+                logStatus(`[Obsidian] Failed to sync Order ${orderId} (HTTP status ${syncResponse.status}).`);
+            }
             
         } catch (e) {
             logStatus(`Error extracting order: ${e.message}`);
