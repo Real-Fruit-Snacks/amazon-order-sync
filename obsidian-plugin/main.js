@@ -405,21 +405,30 @@ CRITICAL: You MUST return a valid JSON object in this exact format:
       let aiReviewContent = "";
       let alreadyPosted = false;
       if (existingContent) {
-        const asinLink = `[\u270D\uFE0F Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=${item.asin})`;
-        const linkIndex = existingContent.indexOf(asinLink);
-        if (linkIndex !== -1) {
-          const nextLineStart = existingContent.indexOf("\n", linkIndex) + 1;
-          const endOfReview = existingContent.indexOf("\n- [", nextLineStart);
-          if (endOfReview !== -1) {
-            const existingReviewBlock = existingContent.substring(nextLineStart, endOfReview).trim();
-            if (existingReviewBlock && !existingReviewBlock.includes("> *Write your review for this item below...*")) {
-              aiReviewContent = existingReviewBlock;
+        const imageLink = `Orders/assets/${item.asin}`;
+        const itemIndex = existingContent.indexOf(imageLink);
+        if (itemIndex !== -1) {
+          const reviewHeader = `#### \u{1F4DD} My Review`;
+          const reviewHeaderIndex = existingContent.indexOf(reviewHeader, itemIndex);
+          if (reviewHeaderIndex !== -1) {
+            let nextLineStart = existingContent.indexOf("\n", reviewHeaderIndex) + 1;
+            const asinLink = `[\u270D\uFE0F Leave a Review on Amazon]`;
+            const linkIndex = existingContent.indexOf(asinLink, reviewHeaderIndex);
+            if (linkIndex !== -1 && linkIndex < reviewHeaderIndex + 100) {
+              nextLineStart = existingContent.indexOf("\n", linkIndex) + 1;
             }
-          }
-          const tickIndex = existingContent.indexOf(`- [x] Posted to Amazon?`, linkIndex);
-          const nextSectionIndex = existingContent.indexOf("---", linkIndex);
-          if (tickIndex !== -1 && (nextSectionIndex === -1 || tickIndex < nextSectionIndex)) {
-            alreadyPosted = true;
+            const endOfReview = existingContent.indexOf("\n- [", nextLineStart);
+            if (endOfReview !== -1) {
+              const existingReviewBlock = existingContent.substring(nextLineStart, endOfReview).trim();
+              if (existingReviewBlock && !existingReviewBlock.includes("> *Write your review for this item below...*")) {
+                aiReviewContent = existingReviewBlock;
+              }
+            }
+            const tickIndex = existingContent.indexOf(`- [x] Posted to Amazon?`, reviewHeaderIndex);
+            const nextSectionIndex = existingContent.indexOf("---", reviewHeaderIndex);
+            if (tickIndex !== -1 && (nextSectionIndex === -1 || tickIndex < nextSectionIndex)) {
+              alreadyPosted = true;
+            }
           }
         }
       }
