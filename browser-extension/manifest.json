@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Amazon Order Sync",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Sync Amazon orders to local Obsidian vault.",
   "permissions": [
     "activeTab",
@@ -28,7 +28,9 @@
         "*://*.amazon.com/review/create-review*",
         "*://*.amazon.com/review/review-your-purchases*"
       ],
-      "js": ["content.js"]
+      "js": [
+        "content.js"
+      ]
     }
   ]
 }
