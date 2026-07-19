@@ -1,7 +1,7 @@
 # Amazon Order Sync for Obsidian
 
 ![Amazon Order Sync](https://img.shields.io/badge/Obsidian-Amazon%20Order%20Sync-7C3AED?style=for-the-badge&logo=obsidian)
-![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.7-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 A powerful, fully-autonomous integration bridging your Amazon purchase history directly into your local Obsidian vault. Designed for heavy Amazon shoppers and Amazon Vine reviewers, this tool securely extracts your entire order history, downloads product images locally, generates AI-powered reviews, and creates beautiful dashboards—all without relying on third-party cloud services.
@@ -22,19 +22,19 @@ By [Real-Fruit-Snacks](https://github.com/Real-Fruit-Snacks)
 ## Architecture
 
 This project consists of two interlocking components:
-1.  **Obsidian Plugin:** Runs a secure, lightweight local server (`127.0.0.1:27483`) inside your vault to receive incoming data, save Markdown files, and provide the AI-review API endpoint.
+1.  **Obsidian Plugin:** Runs a lightweight local server (`127.0.0.1:27483`) inside your vault to receive incoming data, save Markdown files, and provide the AI-review API endpoint. The server only answers requests that originate from an `amazon.com` page — the companion extension — and rejects every other origin, so no other website open in your browser can read from or write to your vault through it.
 2.  **Chrome Extension:** Runs strictly on Amazon domains. It extracts order data, detects when you open a review page, and communicates natively with your local Obsidian server.
 
 ## Installation
 
 ### 1. Obsidian Plugin
-1. Download the latest `obsidian-plugin.zip` from the **[Releases](#)** page.
+1. Download the latest `obsidian-plugin.zip` from the **[Releases](https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases)** page.
 2. Unzip the contents into your `.obsidian/plugins/` directory.
 3. Open Obsidian **Settings > Community Plugins** and enable **Amazon Order Sync**.
 4. In the plugin settings, add your Gemini API key to enable AI review generation.
 
 ### 2. Chrome Extension
-1. Download the latest `browser-extension.zip` from the **[Releases](#)** page.
+1. Download the latest `browser-extension.zip` from the **[Releases](https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases)** page.
 2. Extract the folder to a safe location on your computer.
 3. Open Google Chrome and navigate to `chrome://extensions/`.
 4. Enable **Developer mode** in the top right corner.
@@ -49,7 +49,9 @@ This project consists of two interlocking components:
 
 ## Privacy & Security
 
-Your data is yours. This integration extracts your order history directly from your local browser session and sends it securely to your local Obsidian vault via `localhost`. No purchase history, tracking cookies, or personal data is ever sent to an external server (other than the product descriptions sent to Gemini for AI review generation).
+Your data is yours. This integration extracts your order history directly from your local browser session and sends it to your local Obsidian vault via `localhost`. No purchase history, tracking cookies, or personal data is ever sent to an external server (other than the product descriptions sent to Gemini for AI review generation).
+
+The local server is origin-locked: it only accepts requests from `amazon.com` pages (the companion extension) and refuses every other origin outright, so no other website you have open can reach your synced orders or reviews or write files into your vault. Your Gemini API key is held in Obsidian's secret storage, not in the plugin's plaintext data file.
 
 ## License
 
