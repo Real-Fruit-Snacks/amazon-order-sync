@@ -34,11 +34,22 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => AmazonOrderSyncPlugin
+  default: () => AmazonOrderSyncPlugin,
+  isAllowedOrigin: () => isAllowedOrigin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
 var http = __toESM(require("http"));
+function isAllowedOrigin(origin) {
+  if (!origin)
+    return true;
+  try {
+    const host = new URL(origin).hostname.toLowerCase();
+    return host === "amazon.com" || host.endsWith(".amazon.com");
+  } catch (e) {
+    return false;
+  }
+}
 function parseArrayField(content, fieldName) {
   const inlineMatch = content.match(new RegExp(`${fieldName}:\\s*\\[([\\s\\S]*?)\\]`));
   if (inlineMatch) {
@@ -87,12 +98,22 @@ var AmazonOrderSyncPlugin = class extends import_obsidian.Plugin {
   startServer() {
     this.server = http.createServer(async (req, res) => {
       var _a, _b;
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+      const origin = req.headers.origin;
+      const originAllowed = isAllowedOrigin(origin);
+      if (originAllowed && origin) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Vary", "Origin");
+      }
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       if (req.method === "OPTIONS") {
-        res.writeHead(204);
+        res.writeHead(originAllowed ? 204 : 403);
         res.end();
+        return;
+      }
+      if (!originAllowed) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Forbidden origin" }));
         return;
       }
       if (req.method === "GET" && ((_a = req.url) == null ? void 0 : _a.startsWith("/api/check"))) {
@@ -223,27 +244,6 @@ var AmazonOrderSyncPlugin = class extends import_obsidian.Plugin {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: e.message }));
         }
-      } else if (req.method === "POST" && req.url === "/api/debug") {
-        let body = "";
-        req.on("data", (chunk) => {
-          body += chunk.toString();
-        });
-        req.on("end", async () => {
-          try {
-            const filePath = (0, import_obsidian.normalizePath)("debug-review.html");
-            const file = this.app.vault.getAbstractFileByPath(filePath);
-            if (file) {
-              await this.app.vault.modify(file, body);
-            } else {
-              await this.app.vault.create(filePath, body);
-            }
-            res.writeHead(200);
-            res.end();
-          } catch (e) {
-            res.writeHead(500);
-            res.end();
-          }
-        });
       } else if (req.method === "POST" && req.url === "/api/sync") {
         let body = "";
         req.on("data", (chunk) => {

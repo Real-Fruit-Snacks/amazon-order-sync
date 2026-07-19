@@ -21,6 +21,24 @@ interface SyncPayload {
     }>;
 }
 
+// Only the companion browser extension is a legitimate client, and its content
+// script runs on amazon.com order/review pages — so every real request carries
+// an amazon.com Origin. A request with no Origin comes from non-browser local
+// tooling (curl and the like) and is outside the threat this guards against; a
+// request carrying any other Origin is a drive-by from a website open in the
+// user's browser trying to read purchase history or write to the vault, and is
+// rejected. (CORS headers alone don't stop the request from being processed —
+// the server must refuse it.)
+export function isAllowedOrigin(origin: string | undefined): boolean {
+    if (!origin) return true;
+    try {
+        const host = new URL(origin).hostname.toLowerCase();
+        return host === 'amazon.com' || host.endsWith('.amazon.com');
+    } catch {
+        return false;
+    }
+}
+
 function parseArrayField(content: string, fieldName: string): string[] {
     // 1. Try inline format: fieldName: [ "A", "B" ]
     const inlineMatch = content.match(new RegExp(`${fieldName}:\\s*\\[([\\s\\S]*?)\\]`));
@@ -80,13 +98,29 @@ export default class AmazonOrderSyncPlugin extends Plugin {
 
     startServer() {
         this.server = http.createServer(async (req, res) => {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+            const origin = req.headers.origin;
+            const originAllowed = isAllowedOrigin(origin);
+
+            // Reflect the caller's exact Origin (never "*") and only when it is
+            // an allowed one, so a hostile page can't read a response.
+            if (originAllowed && origin) {
+                res.setHeader('Access-Control-Allow-Origin', origin);
+                res.setHeader('Vary', 'Origin');
+            }
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
             if (req.method === 'OPTIONS') {
-                res.writeHead(204);
+                res.writeHead(originAllowed ? 204 : 403);
                 res.end();
+                return;
+            }
+
+            // Refuse to read or write the vault for any cross-site browser
+            // request. The only legitimate caller sends an amazon.com Origin.
+            if (!originAllowed) {
+                res.writeHead(403, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Forbidden origin' }));
                 return;
             }
 
@@ -241,25 +275,6 @@ export default class AmazonOrderSyncPlugin extends Plugin {
                     res.writeHead(500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: e.message }));
                 }
-            } else if (req.method === 'POST' && req.url === '/api/debug') {
-                let body = '';
-                req.on('data', chunk => { body += chunk.toString(); });
-                req.on('end', async () => {
-                    try {
-                        const filePath = normalizePath('debug-review.html');
-                        const file = this.app.vault.getAbstractFileByPath(filePath);
-                        if (file) {
-                            await this.app.vault.modify(file as any, body);
-                        } else {
-                            await this.app.vault.create(filePath, body);
-                        }
-                        res.writeHead(200);
-                        res.end();
-                    } catch (e) {
-                        res.writeHead(500);
-                        res.end();
-                    }
-                });
             } else if (req.method === 'POST' && req.url === '/api/sync') {
                 let body = '';
                 req.on('data', chunk => {
