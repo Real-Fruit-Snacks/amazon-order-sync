@@ -3,6 +3,43 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.0] — RFS refactor
+
+The standalone app replaces the Obsidian plugin in this repository (the plugin's last release was 1.0.7; its code stays in the history). Installs now come from release assets instead of a copied project folder.
+
+**Security**
+
+- The server refuses requests whose `Host` isn't `127.0.0.1:<port>` or `localhost:<port>`. A website could otherwise use DNS rebinding to read `/api/orders` and `/api/export.json` as a same-origin page.
+- Amazon page origins are no longer accepted. The extension now makes every server call from a service worker (`browser-extension/background.js`), and the server accepts only that extension's origin. Its ID is fixed by a `key` in the manifest. Before, any script on any Amazon subdomain could read your order history or drive the API.
+
+**Fixes**
+
+- A review typed under the `Write your review for this item below...` placeholder was replaced by a new draft (or the empty placeholder) on the next sync. It is now kept, and the placeholder line is dropped.
+- A saved review containing a `---` line lost everything after that line on the next sync. Such lines are now written as `- - -`.
+- The backfill import could write the same ASIN twice in one note. The duplicate check now covers every write path, not just `/api/sync`.
+- The star rating you picked in Review Studio was dropped by **SAVE DRAFT** (only Regenerate kept one), and review auto-fill always clicked 5 stars. Save now stores your rating, `/api/get-review` returns it, and auto-fill clicks it. Auto-fill also sets the form fields with the native value setter, which Amazon's React form doesn't ignore.
+- On Windows, quitting left the headless browser's helper processes running. Shutdown now ends the whole process tree.
+- Google Chrome ignores `--load-extension` since version 137. It is now tried last, a warning is logged when it is picked, and the guidance for stalled runs says so.
+- Note writes retry briefly when Windows reports the file busy (indexer, antivirus, an editor), and clean up their temp file if they still fail.
+- Tray app: a server that kept crashing was restarted every few seconds forever. It is now restarted at most twice in five minutes. A restart could also start two servers; it no longer can. **Quit** now stops a server the tray attached to. A slow server no longer shows each notification twice.
+- `install.ps1`: no longer recreates the `HKCU\...\Run` key, which could delete other programs' startup entries. Its Node.js fallback lookup works. It reads `config.json` as UTF-8 on Windows PowerShell 5.1, and stops any running server before an upgrade, even without the tray app. New configs keep notes in `%USERPROFILE%\AmazonOrders`.
+- `import-old-notes.ps1` reads its JSON as UTF-8 on Windows PowerShell 5.1.
+- `install.sh` checks health on the configured port, not always 27483.
+- `npm test` works on Node.js 22.
+- The extension popup could not load the last-sync time: the server refused its origin.
+
+**Look**
+
+- Dashboard, popup and icons use the RFS colours (Nightshift and Dayshift; Ember accent, Mint for success only) and IBM Plex Sans and Mono, bundled. The theme button reads NIGHTSHIFT / DAYSHIFT / AUTO.
+- New icon: "aos" on a dark tile with an Ember rule, from `tools/make-icons.py`.
+
+**Repository**
+
+- README rewritten. The detail moved to `docs/guide.md` and `docs/api.md`, the design spec to `docs/spec.md`, and `README-WINDOWS.md` was folded into the guide.
+- CI on Ubuntu and Windows with Node.js 18 and 22, a tray build, and installer checks. A release workflow builds `amazon-order-sync-windows.zip` (with `AmazonOrderSync.exe`) and `amazon-order-sync-linux.tar.gz`.
+- SECURITY, CONTRIBUTING, issue forms, PR template, LICENSE.
+- Tests: 91, up from 85. On Windows the 25 headless-run tests skip themselves (their fake browser is a shell script); the other 66 run there too.
+
 ## [2.1.0] — Windows port
 
 - **Native Windows tray app** (`tray/`, C#/.NET 8 WinForms, self-contained

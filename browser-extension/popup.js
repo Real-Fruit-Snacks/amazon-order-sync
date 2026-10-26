@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             verSpan.textContent = 'v' + chrome.runtime.getManifest().version;
         } catch (e) {
-            verSpan.textContent = 'v1.8.3'; // pre-JS paint fallback text
+            verSpan.textContent = '';
         }
     }
 

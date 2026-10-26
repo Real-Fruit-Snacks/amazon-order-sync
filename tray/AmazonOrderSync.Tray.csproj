@@ -11,10 +11,10 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
     <Product>Amazon Order Sync</Product>
     <Company>RFS</Company>
-    <Copyright>MIT</Copyright>
+    <Copyright>Copyright (c) 2026 Real-Fruit-Snacks. MIT License.</Copyright>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>

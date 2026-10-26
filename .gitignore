@@ -32,3 +32,6 @@ Thumbs.db
 desktop.ini
 .DS_Store
 node_modules/
+
+# --- signing key for the extension ID (never commit) ---------------------
+*.pem

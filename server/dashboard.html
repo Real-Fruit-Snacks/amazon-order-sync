@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Theme: Terminal Workbench (https://github.com/Real-Fruit-Snacks/terminal-workbench-suite, MIT). Typeface: Terminal Workbench Mono (OFL 1.1, see server/fonts/OFL.txt). -->
+<!-- Theme: RFS Nightshift / Dayshift (https://github.com/Real-Fruit-Snacks/rfs-brand). Type: IBM Plex Sans and Mono (OFL 1.1, see server/fonts/OFL.txt). -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -11,163 +11,136 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="theme-color" content="#090c0d">
 <style>
-  /* Bundled typeface, served by this server from /fonts/ (see server.js). */
-  @font-face {
-    font-family: "Terminal Workbench Mono";
-    src: url("/fonts/TerminalWorkbenchMono-Regular.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "Terminal Workbench Mono";
-    src: url("/fonts/TerminalWorkbenchMono-Medium.woff2") format("woff2");
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "Terminal Workbench Mono";
-    src: url("/fonts/TerminalWorkbenchMono-Bold.woff2") format("woff2");
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "Terminal Workbench Mono";
-    src: url("/fonts/TerminalWorkbenchMono-Italic.woff2") format("woff2");
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "Terminal Workbench Mono";
-    src: url("/fonts/TerminalWorkbenchMono-MediumItalic.woff2") format("woff2");
-    font-weight: 500;
-    font-style: italic;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "Terminal Workbench Mono";
-    src: url("/fonts/TerminalWorkbenchMono-BoldItalic.woff2") format("woff2");
-    font-weight: 700;
-    font-style: italic;
-    font-display: swap;
-  }
+  /* IBM Plex, served by this server from /fonts/ (OFL 1.1, server/fonts/OFL.txt). */
+  @font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-display: swap; src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-display: swap; src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Sans"; font-weight: 700; font-display: swap; src: url("/fonts/IBMPlexSans-Bold.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-display: swap; src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-display: swap; src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2"); }
+  @font-face { font-family: "IBM Plex Mono"; font-weight: 600; font-display: swap; src: url("/fonts/IBMPlexMono-SemiBold.woff2") format("woff2"); }
 
-  /* Terminal Workbench tokens. Dark is the default; light applies via an
-     explicit data-theme="light" on <html>, or via prefers-color-scheme when
-     no explicit theme is set (auto mode). Flat: no gradients, no shadows. */
+  /* RFS colours (Real-Fruit-Snacks/rfs-brand, BRAND.md). Nightshift is the
+     default; Dayshift applies via data-theme="light" on <html>, or via
+     prefers-color-scheme when no theme is set (auto). The --twb- names are
+     kept so the rest of the stylesheet is unchanged. Ember is the accent,
+     Amber the second accent and warnings, Mint (--twb-ok) success only. */
   :root {
     color-scheme: dark;
-    --twb-accent: #63f2ab;
-    --twb-accent-hover: #63f2abd9;
-    --twb-accent-alt: #6bdcff;
-    --twb-warm: #f0c674;
+    --twb-accent: #ff6a3d;
+    --twb-accent-hover: #ff6a3dd9;
+    --twb-accent-alt: #ffc247;
+    --twb-warm: #ffc247;
     --twb-red: #ff6e7a;
-    --twb-orange: #f7a35c;
+    --twb-orange: #ffc247;
     --twb-violet: #b78cff;
-    --twb-bg-0: #090c0d;
-    --twb-bg-1: #0e1214;
-    --twb-bg-2: #13191c;
-    --twb-bg-3: #182024;
-    --twb-bg-4: #202a2f;
-    --twb-border: #2a363d;
-    --twb-border-strong: #39484f;
-    --twb-text: #dce4df;
-    --twb-text-soft: #b4c3bd;
-    --twb-text-muted: #879994;
-    --twb-text-faint: #63736f;
-    --twb-on-accent: #07100d;
-    --twb-tag-bg: #63f2ab21;
-    --twb-tag-border: #63f2ab47;
-    --twb-alt-bg: #6bdcff21;
-    --twb-alt-border: #6bdcff47;
-    --twb-warm-bg: #f0c67421;
-    --twb-warm-border: #f0c67447;
+    --twb-ok: #3ddc97;
+    --twb-bg-0: #0c0d10;
+    --twb-bg-1: #13151a;
+    --twb-bg-2: #1a1d24;
+    --twb-bg-3: #21252d;
+    --twb-bg-4: #2a2f38;
+    --twb-border: #262a33;
+    --twb-border-strong: #353a45;
+    --twb-text: #e8e6e1;
+    --twb-text-soft: #c2c0ba;
+    --twb-text-muted: #8a8f99;
+    --twb-text-faint: #5e636c;
+    --twb-on-accent: #0c0d10;
+    --twb-tag-bg: #ff6a3d21;
+    --twb-tag-border: #ff6a3d47;
+    --twb-alt-bg: #ffc24721;
+    --twb-alt-border: #ffc24747;
+    --twb-warm-bg: #ffc24721;
+    --twb-warm-border: #ffc24747;
     --twb-red-bg: #ff6e7a21;
     --twb-red-border: #ff6e7a47;
-    --twb-nav-active: #63f2ab1b;
-    --twb-hover-line: #6bdcff13;
-    --twb-focus: #63f2ab2e;
-    --twb-selection: #63f2ab33;
+    --twb-ok-bg: #3ddc9721;
+    --twb-ok-border: #3ddc9747;
+    --twb-nav-active: #ff6a3d1b;
+    --twb-hover-line: #ffc24713;
+    --twb-focus: #ff6a3d2e;
+    --twb-selection: #ff6a3d33;
   }
   :root[data-theme="light"] {
     color-scheme: light;
-    --twb-accent: #007a4d;
-    --twb-accent-hover: #007a4dd9;
-    --twb-accent-alt: #006f9e;
-    --twb-warm: #a46600;
+    --twb-accent: #c43f11;
+    --twb-accent-hover: #c43f11d9;
+    --twb-accent-alt: #9a6700;
+    --twb-warm: #9a6700;
     --twb-red: #c8324c;
-    --twb-orange: #b65800;
+    --twb-orange: #9a6700;
     --twb-violet: #7357b8;
-    --twb-bg-0: #f5f7f4;
-    --twb-bg-1: #edf2ee;
-    --twb-bg-2: #e2eae5;
-    --twb-bg-3: #d6e1db;
-    --twb-bg-4: #c8d5cf;
-    --twb-border: #bfcbc5;
-    --twb-border-strong: #9daea7;
-    --twb-text: #17201d;
-    --twb-text-soft: #34443f;
-    --twb-text-muted: #60706a;
-    --twb-text-faint: #81918a;
-    --twb-on-accent: #f9fbf8;
-    --twb-tag-bg: #007a4d21;
-    --twb-tag-border: #007a4d47;
-    --twb-alt-bg: #006f9e21;
-    --twb-alt-border: #006f9e47;
-    --twb-warm-bg: #a4660021;
-    --twb-warm-border: #a4660047;
+    --twb-ok: #167a4e;
+    --twb-bg-0: #f6f5f2;
+    --twb-bg-1: #ffffff;
+    --twb-bg-2: #eceae4;
+    --twb-bg-3: #e6e3dc;
+    --twb-bg-4: #ddd9d1;
+    --twb-border: #d6d3cb;
+    --twb-border-strong: #bdb9b0;
+    --twb-text: #1a1b1e;
+    --twb-text-soft: #3a3c42;
+    --twb-text-muted: #6b6f78;
+    --twb-text-faint: #9a9ea6;
+    --twb-on-accent: #ffffff;
+    --twb-tag-bg: #c43f1121;
+    --twb-tag-border: #c43f1147;
+    --twb-alt-bg: #9a670021;
+    --twb-alt-border: #9a670047;
+    --twb-warm-bg: #9a670021;
+    --twb-warm-border: #9a670047;
     --twb-red-bg: #c8324c21;
     --twb-red-border: #c8324c47;
-    --twb-nav-active: #007a4d1b;
-    --twb-hover-line: #006f9e13;
-    --twb-focus: #007a4d2e;
-    --twb-selection: #007a4d33;
+    --twb-ok-bg: #167a4e21;
+    --twb-ok-border: #167a4e47;
+    --twb-nav-active: #c43f111b;
+    --twb-hover-line: #9a670013;
+    --twb-focus: #c43f112e;
+    --twb-selection: #c43f112b;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
       color-scheme: light;
-      --twb-accent: #007a4d;
-      --twb-accent-hover: #007a4dd9;
-      --twb-accent-alt: #006f9e;
-      --twb-warm: #a46600;
+      --twb-accent: #c43f11;
+      --twb-accent-hover: #c43f11d9;
+      --twb-accent-alt: #9a6700;
+      --twb-warm: #9a6700;
       --twb-red: #c8324c;
-      --twb-orange: #b65800;
+      --twb-orange: #9a6700;
       --twb-violet: #7357b8;
-      --twb-bg-0: #f5f7f4;
-      --twb-bg-1: #edf2ee;
-      --twb-bg-2: #e2eae5;
-      --twb-bg-3: #d6e1db;
-      --twb-bg-4: #c8d5cf;
-      --twb-border: #bfcbc5;
-      --twb-border-strong: #9daea7;
-      --twb-text: #17201d;
-      --twb-text-soft: #34443f;
-      --twb-text-muted: #60706a;
-      --twb-text-faint: #81918a;
-      --twb-on-accent: #f9fbf8;
-      --twb-tag-bg: #007a4d21;
-      --twb-tag-border: #007a4d47;
-      --twb-alt-bg: #006f9e21;
-      --twb-alt-border: #006f9e47;
-      --twb-warm-bg: #a4660021;
-      --twb-warm-border: #a4660047;
+      --twb-ok: #167a4e;
+      --twb-bg-0: #f6f5f2;
+      --twb-bg-1: #ffffff;
+      --twb-bg-2: #eceae4;
+      --twb-bg-3: #e6e3dc;
+      --twb-bg-4: #ddd9d1;
+      --twb-border: #d6d3cb;
+      --twb-border-strong: #bdb9b0;
+      --twb-text: #1a1b1e;
+      --twb-text-soft: #3a3c42;
+      --twb-text-muted: #6b6f78;
+      --twb-text-faint: #9a9ea6;
+      --twb-on-accent: #ffffff;
+      --twb-tag-bg: #c43f1121;
+      --twb-tag-border: #c43f1147;
+      --twb-alt-bg: #9a670021;
+      --twb-alt-border: #9a670047;
+      --twb-warm-bg: #9a670021;
+      --twb-warm-border: #9a670047;
       --twb-red-bg: #c8324c21;
       --twb-red-border: #c8324c47;
-      --twb-nav-active: #007a4d1b;
-      --twb-hover-line: #006f9e13;
-      --twb-focus: #007a4d2e;
-      --twb-selection: #007a4d33;
+      --twb-ok-bg: #167a4e21;
+      --twb-ok-border: #167a4e47;
+      --twb-nav-active: #c43f111b;
+      --twb-hover-line: #9a670013;
+      --twb-focus: #c43f112e;
+      --twb-selection: #c43f112b;
     }
   }
 
   :root {
-    --twb-mono: "Terminal Workbench Mono", "JetBrains Mono", "Cascadia Code",
-      "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
-    --twb-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-      Arial, sans-serif;
+    --twb-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+    --twb-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
 
   * { box-sizing: border-box; }
@@ -208,7 +181,7 @@
     border-bottom: 1px solid var(--twb-border);
   }
   .topbar-inner {
-    max-width: 1080px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 12px 24px;
     display: flex;
@@ -273,7 +246,8 @@
     font-family: var(--twb-mono);
     font-size: 12.5px;
     color: var(--twb-text);
-    min-width: 240px;
+    min-width: 0;
+    width: 200px;
   }
   #search::placeholder { color: var(--twb-text-faint); }
   #search:focus {
@@ -281,7 +255,7 @@
     border-color: var(--twb-border-strong);
     box-shadow: 0 0 0 2px var(--twb-focus);
   }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 96px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 96px; }
   .error {
     background: var(--twb-red-bg);
     border: 1px solid var(--twb-red-border);
@@ -413,7 +387,7 @@
     white-space: nowrap;
     border: 1px solid transparent;
   }
-  .pill.green { background: var(--twb-tag-bg); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+  .pill.green { background: var(--twb-ok-bg); border-color: var(--twb-ok-border); color: var(--twb-ok); }
   .pill.amber { background: var(--twb-warm-bg); border-color: var(--twb-warm-border); color: var(--twb-warm); }
   .pill.red   { background: var(--twb-red-bg);  border-color: var(--twb-red-border);  color: var(--twb-red); }
   .pill.grey  { background: transparent; border-color: var(--twb-border); color: var(--twb-text-muted); }
@@ -460,7 +434,7 @@
     white-space: nowrap;
     border: 1px solid transparent;
   }
-  .badge.posted { background: var(--twb-tag-bg); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+  .badge.posted { background: var(--twb-ok-bg); border-color: var(--twb-ok-border); color: var(--twb-ok); }
   .badge.draft  { background: var(--twb-alt-bg); border-color: var(--twb-alt-border); color: var(--twb-accent-alt); }
   .badge.todo   { background: var(--twb-warm-bg); border-color: var(--twb-warm-border); color: var(--twb-warm); }
   .linkbtn {
@@ -582,7 +556,7 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
-  .studio-status.ok { color: var(--twb-accent); }
+  .studio-status.ok { color: var(--twb-ok); }
   .studio-status.warn { color: var(--twb-warm); }
   .studio-status.err { color: var(--twb-red); }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
@@ -726,7 +700,7 @@
   .pw-row:hover { background: var(--twb-hover-line); }
   .pw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--twb-sans); }
   .pw-prices { color: var(--twb-text-muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .badge.savings { background: var(--twb-tag-bg); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+  .badge.savings { background: var(--twb-ok-bg); border-color: var(--twb-ok-border); color: var(--twb-ok); }
 
   /* v1.6.0: SYNC HEALTH rows; muted OK lines, red errors. */
   .sh-row {
@@ -839,7 +813,7 @@
     color: var(--twb-text-soft);
   }
   .sync-hist tr:last-child td { border-bottom: none; }
-  .hist-ok { color: var(--twb-accent); }
+  .hist-ok { color: var(--twb-ok); }
   .hist-cancelled { color: var(--twb-warm); }
   .hist-error { color: var(--twb-red); }
   .gem-num { font-size: 25px; font-weight: 500; font-variant-numeric: tabular-nums; }
@@ -945,7 +919,7 @@
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">Amazon Order Sync<span class="ver" id="ver">v2.1.0</span></div>
+    <div class="brand">Amazon Order Sync<span class="ver" id="ver">v2.2.0</span></div>
     <nav class="tabs" id="tabs">
       <button type="button" class="tab active" data-tab="overview">Overview</button>
       <button type="button" class="tab" data-tab="orders">Orders</button>
@@ -1401,11 +1375,11 @@ function missingBadge(item) {
 }
 
 // Review Studio: persist an edited draft. Throws on non-2xx.
-async function saveReview(asin, title, text) {
+async function saveReview(asin, title, text, rating) {
   const res = await fetch('/api/save-review', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ asin, title, text })
+    body: JSON.stringify({ asin, title, text, rating })
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
@@ -2316,7 +2290,7 @@ function renderReviewCard(order, item, bulkSlot) {
 
   // Star-rating picker (1–5); defaults to the draft's rating, else 5.
   // v1.7.2 (§20.6): an unsaved rating edit wins over the server value.
-  let rating = (edit && clampRating(edit.rating)) || clampRating(item.rating) || 5;
+  let rating = (edit && clampRating(edit.rating)) || clampRating(item.draftRating) || clampRating(item.rating) || 5;
   const ratingRow = el('div', 'field-row');
   ratingRow.appendChild(el('span', 'field-label', 'Rating'));
   const stars = el('div', 'stars');
@@ -2366,8 +2340,9 @@ function renderReviewCard(order, item, bulkSlot) {
     saveBtn.disabled = true;
     setStatus('', '');
     try {
-      const data = await saveReview(item.asin, titleInput.value, textInput.value);
+      const data = await saveReview(item.asin, titleInput.value, textInput.value, rating);
       item.reviewTitle = titleInput.value;
+      item.draftRating = String(rating);
       item.reviewText = textInput.value;
       item.hasDraft = textInput.value.trim().length > 0;
       delete state.edits[item.asin]; // v1.7.2 (§20.6): saved — drop the edit
@@ -3057,7 +3032,7 @@ function applyTheme(mode) {
   } else {
     document.documentElement.setAttribute('data-theme', mode);
   }
-  themeBtn.textContent = 'THEME: ' + mode.toUpperCase();
+  themeBtn.textContent = 'THEME: ' + ({ dark: 'NIGHTSHIFT', light: 'DAYSHIFT', auto: 'AUTO' })[mode];
 }
 
 themeBtn.addEventListener('click', () => {

@@ -23,7 +23,12 @@ internal sealed class TrayContext : ApplicationContext
     private ServerProcess _server;
     private bool _quitting;
     private bool _busy;
+    private bool _ticking;
     private int _downTicks;
+    private Task? _startTask;
+    // Crash restarts in the last few minutes; after two, stop retrying and
+    // leave it to the user (bad config, port taken, another daemon running).
+    private readonly List<DateTime> _crashes = new();
 
     public TrayContext()
     {
@@ -103,7 +108,15 @@ internal sealed class TrayContext : ApplicationContext
 
     // ----- server lifecycle ----------------------------------------------
 
-    private async Task StartServerAsync(bool initial)
+    // One start at a time: a crash restart and a menu restart arriving
+    // together share the same Task instead of spawning two servers.
+    private Task StartServerAsync(bool initial)
+    {
+        if (_startTask is { IsCompleted: false }) return _startTask;
+        return _startTask = StartServerCoreAsync(initial);
+    }
+
+    private async Task StartServerCoreAsync(bool initial)
     {
         _poll.Stop();
         SetStatus("Starting server…", "Amazon Order Sync — starting");
@@ -147,17 +160,25 @@ internal sealed class TrayContext : ApplicationContext
     private void OnServerExited(object? sender, int code)
     {
         if (_quitting) return;
-        // Marshal to the UI thread; auto-restart once after a crash.
+        // Marshal to the UI thread; restart after a crash, at most twice in
+        // five minutes.
         if (!_menu.IsHandleCreated) { Log.Write($"Server exited (code {code}) before UI was ready"); return; }
         _menu.BeginInvoke(new Action(async () =>
         {
+            if (sender != _server) return; // an old instance replaced by a restart
             SetStatus($"Server exited (code {code})", "Amazon Order Sync — server stopped");
-            if (code != 0)
+            if (code == 0) return;
+            var now = DateTime.UtcNow;
+            _crashes.RemoveAll(t => now - t > TimeSpan.FromMinutes(5));
+            _crashes.Add(now);
+            if (_crashes.Count > 2)
             {
-                Toast("Amazon Order Sync server stopped", $"Exit code {code}. Restarting…", ToolTipIcon.Warning);
-                await Task.Delay(2000);
-                if (!_quitting) await StartServerAsync(initial: false);
+                Toast("Amazon Order Sync server keeps stopping", $"Exit code {code}. Not restarting; see View server log, then use Restart server.", ToolTipIcon.Error);
+                return;
             }
+            Toast("Amazon Order Sync server stopped", $"Exit code {code}. Restarting…", ToolTipIcon.Warning);
+            await Task.Delay(2000);
+            if (!_quitting && !_busy) await StartServerAsync(initial: false);
         }));
     }
 
@@ -169,8 +190,11 @@ internal sealed class TrayContext : ApplicationContext
         {
             _poll.Stop();
             SetStatus("Restarting…", "Amazon Order Sync — restarting");
+            if (_startTask is { IsCompleted: false }) await _startTask;
+            _server.Exited -= OnServerExited;
             await _server.StopAsync(force: true);
             _server.Dispose();
+            _crashes.Clear();
             _server = new ServerProcess(Settings.Load().Port);
             await StartServerAsync(initial: false);
         }
@@ -183,7 +207,10 @@ internal sealed class TrayContext : ApplicationContext
         _quitting = true;
         _poll.Stop();
         _icon.Text = "Amazon Order Sync — stopping";
-        try { await _server.StopAsync(force: false); } catch (Exception e) { Log.Write($"Quit: {e.Message}"); }
+        // "Quit (stops the server)": an adopted server is stopped too, or an
+        // orphan from an older install would keep running after an upgrade.
+        _server.Exited -= OnServerExited;
+        try { await _server.StopAsync(force: true); } catch (Exception e) { Log.Write($"Quit: {e.Message}"); }
         _icon.Visible = false;
         _icon.Dispose();
         _server.Dispose();
@@ -231,14 +258,25 @@ internal sealed class TrayContext : ApplicationContext
 
     private async Task TickAsync()
     {
-        if (_quitting || _busy) return;
+        if (_quitting || _busy || _ticking) return;
+        _ticking = true;
+        try { await TickCoreAsync(); }
+        finally { _ticking = false; }
+    }
+
+    private async Task TickCoreAsync()
+    {
         var h = await _server.HealthAsync();
         if (h is null)
         {
             _downTicks++;
             SetStatus("Server not responding", "Amazon Order Sync — not responding");
             // Adopted server vanished (someone closed it): take over.
-            if (_server.Adopted && _downTicks >= 3 && !_busy) await RestartAsync();
+            if (_server.Adopted && _downTicks >= 3 && !_busy)
+            {
+                _ticking = false; // RestartAsync stops and restarts the poll
+                await RestartAsync();
+            }
             return;
         }
         _downTicks = 0;

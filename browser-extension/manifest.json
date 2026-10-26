@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Amazon Order Sync",
-  "version": "2.1.0",
-  "description": "Sync Amazon orders to a local folder via a tiny local server.",
+  "version": "2.2.0",
+  "description": "Sync your Amazon orders to local Markdown notes through the Amazon Order Sync server on this computer.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA97cbr5FEzv13iqk08OyFrM8TFjFFsF32HQZMSTGI5aE3N+nQyitDnlyTWQLRTx0G+TlAl3cQNxJ9biuheSZWOo9ij+1sK8Et9sfuyl7wKGLTMbCpe3t68m5Mr3ti21oYpoeqw4FkI2//AkJWciLrVE9sWCthKctT8yhfKTyFpsrYDbRgJPo3oKg5QasIC3Oj72zVgiOrqSDTaj8SDNB/MPJbB5lnGcAk27zC+B8+SFsMWAZ5BIWwW5T2BYaL2v6yk3li2/sv8zvGg+0r/mMw7DF/1iShfY50wRYelhyaWC6Pt6rV53HxNsXBEKCJZfVfr9gUvGiW7HaA4ilnhXlJMwIDAQAB",
   "permissions": [
     "activeTab",
     "scripting"
@@ -19,14 +20,21 @@
     "*://*.amazon.com.au/*",
     "http://127.0.0.1:27483/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icon.png"
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
   },
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
   },
   "content_scripts": [
     {

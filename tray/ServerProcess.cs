@@ -23,6 +23,12 @@ internal sealed class ServerProcess : IDisposable
     public int Port { get; }
     public string BaseUrl => $"http://127.0.0.1:{Port}";
     public bool Adopted { get; private set; }
+
+    // Exits the tray caused or is already handling: a StopAsync, or a crash
+    // inside StartAsync (which reports it through LastStartError). Exited only
+    // fires for unexpected exits of a server that started successfully.
+    private volatile bool _stopping;
+    private volatile bool _starting;
     public string? LastStartError { get; private set; }
 
     public ServerProcess(int port) { Port = port; }
@@ -37,6 +43,13 @@ internal sealed class ServerProcess : IDisposable
     public async Task<bool> StartAsync()
     {
         LastStartError = null;
+        _starting = true;
+        try { return await StartCoreAsync(); }
+        finally { _starting = false; }
+    }
+
+    private async Task<bool> StartCoreAsync()
+    {
         if (await HealthAsync() is { Ok: true })
         {
             Adopted = true;
@@ -94,7 +107,7 @@ internal sealed class ServerProcess : IDisposable
                 try { code = proc.ExitCode; } catch { }
                 Log.Write($"Server process exited with code {code}");
                 AppendServerLog($"==== exited with code {code}");
-                Exited?.Invoke(this, code);
+                if (!_stopping && !_starting) Exited?.Invoke(this, code);
             };
             proc.Start();
             proc.BeginOutputReadLine();
@@ -132,6 +145,7 @@ internal sealed class ServerProcess : IDisposable
     public async Task StopAsync(bool force = false)
     {
         if (Adopted && !force) return;
+        _stopping = true;
         try
         {
             using var cts = new CancellationTokenSource(3000);

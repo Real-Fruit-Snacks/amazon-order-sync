@@ -99,6 +99,16 @@ NOTES_PATH="$(node -e '
     } catch { console.log(os.homedir() + "/AmazonOrders"); }
 ' "$CONFIG_FILE")"
 
+# The port from the config (the health check below must use the same one).
+PORT="$(node -e '
+    try {
+        const p = Number(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).port);
+        console.log(Number.isInteger(p) && p > 0 ? p : 27483);
+    } catch { console.log(27483); }
+' "$CONFIG_FILE")"
+HEALTH_URL="http://127.0.0.1:$PORT/api/health"
+DASHBOARD_URL="http://127.0.0.1:$PORT/"
+
 # --- Enable and start -------------------------------------------------------
 # v1.8.3: guarded — without systemd there is no service to enable; the
 # health check below then simply reports the manual-start state.
@@ -124,6 +134,7 @@ echo "Server status: $STATUS"
 echo "Dashboard:     $DASHBOARD_URL"
 echo "Notes path:    $NOTES_PATH"
 echo "Config:        $CONFIG_FILE"
+echo "Extension:     load $INSTALL_DIR/browser-extension unpacked (chrome://extensions, Developer mode)"
 
 if [[ "$STATUS" != "running" ]]; then
     echo "Warning: the server did not answer at $HEALTH_URL within 5 seconds." >&2

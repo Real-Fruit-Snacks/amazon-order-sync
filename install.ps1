@@ -3,15 +3,15 @@
   Amazon Order Sync - Windows installer / upgrader.
 
 .DESCRIPTION
-  Run from the project folder (the one containing server\, browser-extension\
-  and AmazonOrderSync.exe). It:
+  Run from the folder the release zip was expanded into (the one containing
+  server\, browser-extension\ and AmazonOrderSync.exe). It:
     1. Makes sure Node.js >= 18 is installed (offers winget if not).
     2. Creates %APPDATA%\amazon-order-sync\config.json on first run
        (never overwrites an existing config).
     3. Registers the tray app to start with Windows (HKCU Run key).
     4. Starts the tray app and waits for the server to answer.
 
-  Idempotent - rerun after pulling a new version. Use -Uninstall to remove
+  Idempotent - rerun after expanding a newer release over the same folder. Use -Uninstall to remove
   the Run entry and stop the tray (notes, config and browser profile are kept).
 
 .PARAMETER NotesPath
@@ -22,7 +22,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$NotesPath = (Join-Path $PSScriptRoot 'AmazonOrders'),
+    [string]$NotesPath = (Join-Path $env:USERPROFILE 'AmazonOrders'),
     [switch]$NoAutostart,
     [switch]$Uninstall
 )
@@ -36,17 +36,25 @@ $Config    = Join-Path $ConfigDir 'config.json'
 $RunKey    = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $RunValue  = 'AmazonOrderSync'
 
+function Get-ConfiguredPort {
+    if (Test-Path $Config) {
+        $c = Get-Content $Config -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($c.port) { return [int]$c.port }
+    }
+    return 27483
+}
+
 function Stop-Tray {
+    # Always ask a running server to shut down, tray or not: an orphan left by
+    # a crashed tray would otherwise be adopted and keep serving old code.
+    try {
+        Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$(Get-ConfiguredPort)/api/shutdown" -TimeoutSec 3 | Out-Null
+        Write-Host "Asked the running server to stop."
+        Start-Sleep -Seconds 1
+    } catch { }
     $procs = Get-Process -Name 'AmazonOrderSync' -ErrorAction SilentlyContinue
     if ($procs) {
         Write-Host "Stopping running tray app..."
-        # Ask the server to shut down cleanly first, then close the tray.
-        try {
-            $port = 27483
-            if (Test-Path $Config) { $c = Get-Content $Config -Raw | ConvertFrom-Json; if ($c.port) { $port = [int]$c.port } }
-            Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$port/api/shutdown" -TimeoutSec 3 | Out-Null
-        } catch { }
-        Start-Sleep -Seconds 1
         $procs | Stop-Process -Force -ErrorAction SilentlyContinue
         # Wait until the processes are really gone (file handles released).
         foreach ($p in $procs) { try { $p.WaitForExit(10000) | Out-Null } catch { } }
@@ -73,32 +81,8 @@ if ($Uninstall) {
 }
 
 # --- 0. sanity ---------------------------------------------------------------
-# The exe may have been delivered as AmazonOrderSync.exe.NN.part chunks (file
-# transfer size limit). Join them once, verify the checksum, drop the parts.
-$parts = Get-ChildItem -Path $Root -Filter 'AmazonOrderSync.exe.*.part' | Sort-Object Name
-if ($parts) {
-    Write-Host "Assembling AmazonOrderSync.exe from $($parts.Count) parts..."
-    Stop-Tray
-    $out = Open-ForWrite $Exe
-    try {
-        foreach ($part in $parts) {
-            $in = [System.IO.File]::OpenRead($part.FullName)
-            try { $in.CopyTo($out) } finally { $in.Dispose() }
-        }
-    } finally { $out.Dispose() }
-    $shaFile = "$Exe.sha256"
-    if (Test-Path $shaFile) {
-        $expected = (Get-Content $shaFile -Raw).Trim().ToLower()
-        $actual = (Get-FileHash -Algorithm SHA256 $Exe).Hash.ToLower()
-        if ($expected -ne $actual) { Remove-Item $Exe; throw "Checksum mismatch after joining parts - re-copy the .part files." }
-        Write-Host "Checksum OK."
-    }
-    $parts | Remove-Item
-    Remove-Item $shaFile -ErrorAction SilentlyContinue
-}
-
 foreach ($p in @($Exe, (Join-Path $Root 'server\server.js'), (Join-Path $Root 'browser-extension\manifest.json'))) {
-    if (-not (Test-Path $p)) { throw "Missing $p - run install.ps1 from the amazon-order-sync project folder." }
+    if (-not (Test-Path $p)) { throw "Missing $p - run install.ps1 from the folder the release zip was expanded into." }
 }
 
 # --- 1. Node.js ----------------------------------------------------------------
@@ -106,7 +90,7 @@ function Get-NodeMajor {
     $node = Get-Command node.exe -ErrorAction SilentlyContinue
     if (-not $node) {
         foreach ($c in @("$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe", "$env:LOCALAPPDATA\Programs\nodejs\node.exe")) {
-            if (Test-Path $c) { $node = Get-Item $c; break }
+            if (Test-Path $c) { $node = Get-Command $c; break }
         }
     }
     if (-not $node) { return $null }
@@ -152,7 +136,9 @@ if (-not (Test-Path $Config)) {
 
 # --- 3. autostart --------------------------------------------------------------
 if (-not $NoAutostart) {
-    New-Item -Path $RunKey -Force | Out-Null
+    # Never New-Item -Force here: on an existing registry key that recreates
+    # it and deletes every other startup entry. The Run key always exists.
+    if (-not (Test-Path $RunKey)) { New-Item -Path $RunKey | Out-Null }
     Set-ItemProperty -Path $RunKey -Name $RunValue -Value "`"$Exe`" --autostart"
     Write-Host "Registered to start with Windows."
 }
@@ -176,8 +162,7 @@ Stop-Tray
 Write-Host "Starting tray app..."
 Start-Process -FilePath $Exe -WorkingDirectory $Root
 
-$cfg  = Get-Content $Config -Raw | ConvertFrom-Json
-$port = if ($cfg.port) { [int]$cfg.port } else { 27483 }
+$port = Get-ConfiguredPort
 $ok = $false
 for ($i = 0; $i -lt 30; $i++) {
     try {

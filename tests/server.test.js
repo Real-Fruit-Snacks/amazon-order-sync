@@ -16,6 +16,8 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import net from 'node:net';
+import http from 'node:http';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -58,8 +60,23 @@ import {
     defaultDataDir,
     windowsBrowserCandidates,
     pushNotification,
-    readNotificationBuffer
+    readNotificationBuffer,
+    EXTENSION_ID,
+    isAllowedHost,
+    withoutPlaceholder,
+    hasReviewContent,
+    safeReviewText,
+    updateReviewBlock,
+    dedupeItemsByAsin,
+    renameWithRetry
 } from '../server/server.js';
+
+// The headless-run tests drive a fake browser written as a shell script and
+// use ps, sleep and notify-send stubs; on Windows they are skipped (CI runs
+// them on Ubuntu). Everything else runs on both.
+const POSIX_ONLY = process.platform === 'win32'
+    ? 'needs POSIX test fixtures (shell-script fake browser, ps, sleep, notify-send)'
+    : false;
 
 const SERVER_PATH = fileURLToPath(new URL('../server/server.js', import.meta.url));
 
@@ -235,11 +252,11 @@ test('2. buildNote derives the assets image path from a query URL and hyphen ASI
 test('3. sync -> orders -> get-review -> mark-posted roundtrip', async () => {
     const health = await api('/api/health');
     assert.equal(health.body.ok, true);
-    assert.equal(health.body.version, '2.1.0');
+    assert.equal(health.body.version, '2.2.0');
 
     const ordersRes = await api('/api/orders');
     assert.equal(ordersRes.status, 200);
-    assert.equal(ordersRes.body.version, '2.1.0');
+    assert.equal(ordersRes.body.version, '2.2.0');
     assert.equal(ordersRes.body.orders.length, 1);
     const order = ordersRes.body.orders[0];
     assert.equal(order.orderId, ORDER_ID);
@@ -256,7 +273,7 @@ test('3. sync -> orders -> get-review -> mark-posted roundtrip', async () => {
     // get-review finds the imported review for A, 404s for the placeholder B.
     const reviewA = await api(`/api/get-review?asin=${ASIN_A}`);
     assert.equal(reviewA.status, 200);
-    assert.deepEqual(reviewA.body, { title: 'Imported title', text: 'Imported body, with comma' });
+    assert.deepEqual(reviewA.body, { title: 'Imported title', text: 'Imported body, with comma', rating: '' });
     const reviewB = await api(`/api/get-review?asin=${ASIN_B}`);
     assert.equal(reviewB.status, 404);
 
@@ -363,7 +380,7 @@ test('6. export.csv and export.json', async () => {
         json.headers.get('content-disposition'),
         /^attachment; filename="amazon-orders-\d{4}-\d{2}-\d{2}\.json"$/
     );
-    assert.equal(json.body.version, '2.1.0');
+    assert.equal(json.body.version, '2.2.0');
     assert.ok(json.body.exported_at);
     const exported = json.body.orders[0].items.find(i => i.asin === ASIN_A);
     assert.equal(exported.name, 'USB-C Cable 2m');
@@ -383,12 +400,17 @@ test('7. disallowed origin gets 403 before any processing', async () => {
     const syncRes = await api('/api/sync', postJson({ order_id: 'x' }, { Origin: 'https://evil.com' }));
     assert.equal(syncRes.status, 403);
 
-    // The regional amazon domains added in v1.2.0 are allowed.
-    for (const origin of ['https://www.amazon.co.uk', 'https://www.amazon.de', 'https://www.amazon.ca']) {
-        const ok = await api('/api/health', { headers: { Origin: origin } });
-        assert.equal(ok.status, 200, origin);
-        assert.equal(ok.headers.get('access-control-allow-origin'), origin);
+    // v2.2.0: Amazon page origins are refused (any script on any Amazon
+    // subdomain could otherwise drive the API); only the extension's own
+    // origin, the dashboard and origin-less local tools get in.
+    for (const origin of ['https://www.amazon.com', 'https://www.amazon.co.uk', 'https://sellercentral.amazon.com', 'chrome-extension://aaaabbbbccccddddeeeeffffgggghhhh']) {
+        const no = await api('/api/health', { headers: { Origin: origin } });
+        assert.equal(no.status, 403, origin);
     }
+    const ext = `chrome-extension://${EXTENSION_ID}`;
+    const ok = await api('/api/health', { headers: { Origin: ext } });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.headers.get('access-control-allow-origin'), ext);
 });
 
 // Case 8: POST /api/sync with a >5MB body -> 413.
@@ -737,7 +759,7 @@ test('18. lastSyncAt is present, bumps on re-sync, syncReminderDays echoed', asy
 
 // Case 19: binary autodetect — a configured browserPath that is executable is
 // found; a bogus path with an empty PATH probe yields nothing.
-test('19. browser binary autodetect honors browserPath and reports no-browser', () => {
+test('19. browser binary autodetect honors browserPath and reports no-browser', { skip: POSIX_ONLY }, () => {
     assert.equal(findBrowserBinary(fakeBrowser, ''), fakeBrowser);
     assert.equal(findBrowserBinary(path.join(tmpDir, 'no-such-browser'), ''), null);
     assert.equal(findBrowserBinary('', ''), null);
@@ -745,7 +767,7 @@ test('19. browser binary autodetect honors browserPath and reports no-browser', 
 
 // Case 20: end-to-end headless run with the fake browser against a dedicated
 // second server instance (its own port + notesPath + config).
-test('20. headless run: sync-now -> 409 while running -> complete ping resolves', async (t) => {
+test('20. headless run: sync-now -> 409 while running -> complete ping resolves', { skip: POSIX_ONLY }, async (t) => {
     const notes2 = path.join(tmpDir, 'notes-headless');
     const port2 = await getFreePort();
     const base2 = `http://127.0.0.1:${port2}`;
@@ -968,7 +990,7 @@ test('23. price watch: listing_price upserts history and drives priceDrops', asy
 // Case 24: notifications — fake notify-send injected via the test hook;
 // completion with orders>0 fires once, failure fires with the error,
 // zero-order runs stay silent, notificationsEnabled:false stays silent.
-test('24. tryNotify fires on headless completion/failure only when enabled', async () => {
+test('24. tryNotify fires on headless completion/failure only when enabled', { skip: POSIX_ONLY }, async () => {
     fakeNotify = path.join(tmpDir, 'fake-notify-send.sh');
     await fsp.writeFile(fakeNotify, `#!/bin/sh\necho "$@" >> "${notifyLog()}"\n`);
     await fsp.chmod(fakeNotify, 0o755);
@@ -1023,24 +1045,36 @@ test('24. tryNotify fires on headless completion/failure only when enabled', asy
     assert.equal((await notifyLines()).length, before_, 'disabled notifications stay silent');
 });
 
-// Case 25: regions — the five v1.6.0 Amazon origins pass the origin lock.
-test('25. preflight and requests from the new regional origins are allowed', async () => {
-    for (const origin of [
-        'https://www.amazon.fr',
-        'https://www.amazon.it',
-        'https://www.amazon.es',
-        'https://www.amazon.co.jp',
-        'https://www.amazon.com.au'
-    ]) {
-        const preflight = await fetch(`${baseUrl}/api/sync`, {
-            method: 'OPTIONS',
-            headers: { Origin: origin, 'Access-Control-Request-Method': 'POST' }
+// Case 25: the extension origin passes preflight and requests; the
+// manifest's key really produces the ID the server trusts.
+test('25. the extension origin is allowed, and matches manifest.json', async () => {
+    const ext = `chrome-extension://${EXTENSION_ID}`;
+    const preflight = await fetch(`${baseUrl}/api/sync`, {
+        method: 'OPTIONS',
+        headers: { Origin: ext, 'Access-Control-Request-Method': 'POST' }
+    });
+    assert.equal(preflight.status, 204);
+    const manifest = JSON.parse(await fsp.readFile(new URL('../browser-extension/manifest.json', import.meta.url), 'utf8'));
+    const digest = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest('hex').slice(0, 32);
+    const id = [...digest].map(c => String.fromCharCode(97 + parseInt(c, 16))).join('');
+    assert.equal(id, EXTENSION_ID);
+});
+
+// Case 25b: DNS-rebinding guard — a Host other than 127.0.0.1/localhost on
+// the bound port is refused even without an Origin header.
+test('25b. requests naming another Host are refused', async () => {
+    const port = Number(new URL(baseUrl).port);
+    const get = host => new Promise((resolve, reject) => {
+        const req = http.request({ host: '127.0.0.1', port, path: '/api/health', headers: { Host: host } }, res => {
+            res.resume(); res.on('end', () => resolve(res.statusCode));
         });
-        assert.notEqual(preflight.status, 403, origin);
-        const res = await api('/api/health', { headers: { Origin: origin } });
-        assert.equal(res.status, 200, origin);
-        assert.equal(res.headers.get('access-control-allow-origin'), origin);
-    }
+        req.on('error', reject); req.end();
+    });
+    assert.equal(await get(`rebind.example:${port}`), 403);
+    assert.equal(await get(`localhost:${port + 1}`), 403);
+    assert.equal(await get(`localhost:${port}`), 200);
+    assert.equal(await get(`127.0.0.1:${port}`), 200);
+    assert.equal(isAllowedHost(undefined, port), false);
 });
 
 // Case 26: repeatCount — the same ASIN in two orders flags both items.
@@ -1078,7 +1112,7 @@ test('26. repeatCount counts distinct orders per ASIN', async () => {
 
 // Case 27: run history — two runs land newest-first with durationMs; the
 // persisted history is capped at 20 (seed 21 -> 20 on load).
-test('27. headless run history: newest first, durationMs, cap 20', async () => {
+test('27. headless run history: newest first, durationMs, cap 20', { skip: POSIX_ONLY }, async () => {
     const historyDir = path.join(tmpDir, 'notes-history');
     await fsp.mkdir(historyDir, { recursive: true });
     const runner = new HeadlessRunner({
@@ -1237,7 +1271,7 @@ test('28. review-check queue + result posts update notes and vote timestamps', a
 
 // Case 30: review-check-now with an empty queue resolves immediately without
 // spawning a browser; 409 while any headless run is active.
-test('30. review-check-now: empty queue is instant, 409 while running', async (t) => {
+test('30. review-check-now: empty queue is instant, 409 while running', { skip: POSIX_ONLY }, async (t) => {
     const notes3 = path.join(tmpDir, 'notes-reviewcheck');
     const port3 = await getFreePort();
     const base3 = `http://127.0.0.1:${port3}`;
@@ -1335,7 +1369,7 @@ order_id: "111-ALIGN-TEST"
 date: "Ordered on July 4, 2026"
 total: "$49.98"
 status: "Delivered"
-ship_to: "Tester"
+ship_to: "Alex Doe"
 brand: ["A", "B"]
 price: ["$24.99", "$24.99"]
 asin: ["B0FIRST0001", "B0SECOND001"]
@@ -1379,7 +1413,7 @@ tone: ["", "concise"]
 // Case 32: a fake-browser run in flight is aborted by POST /api/sync-stop;
 // the sync-now caller resolves cancelled, the browser is reaped, history
 // records the cancellation, and a second stop is 409.
-test('32. sync-stop aborts a running headless sync as cancelled', async (t) => {
+test('32. sync-stop aborts a running headless sync as cancelled', { skip: POSIX_ONLY }, async (t) => {
     const notes4 = path.join(tmpDir, 'notes-stop');
     const port4 = await getFreePort();
     const base4 = `http://127.0.0.1:${port4}`;
@@ -1558,7 +1592,7 @@ const FULL_DEFAULT_OPTIONS = { mode: 'full', maxOrders: 0, timeBudgetSec: 0, ref
 
 // Case 33 (§18.7): run-options roundtrip — echo during the run, invalid
 // values fall back per-field, headless.lastOptions after.
-test('33. run-options: sync-now body echoes during run, invalid fields fall back, lastOptions persists', async (t) => {
+test('33. run-options: sync-now body echoes during run, invalid fields fall back, lastOptions persists', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'runopts');
 
     // Before any run: full defaults.
@@ -1741,7 +1775,7 @@ test('37. guidanceFor: known codes map to message+steps, unknown passes through'
 
 // Case 38 (§18.7): sync-now with a quick-mode body still resolves through
 // the fake browser end to end — options don't break the run lifecycle.
-test('38. sync-now with {mode:quick} resolves end-to-end via the fake browser', async (t) => {
+test('38. sync-now with {mode:quick} resolves end-to-end via the fake browser', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'quick');
 
     const runPromise = srv.api('/api/sync-now', postJson({ mode: 'quick' }));
@@ -1819,7 +1853,7 @@ order_id: "111-S1-TEST"
 date: "Ordered on July 5, 2026"
 total: "$19.98"
 status: "Delivered"
-ship_to: "Tester"
+ship_to: "Alex Doe"
 brand: ["", "Sony"]
 price: ["$9.99", "$9.99"]
 asin: ["B0S1FIRST01", "B0S1SECOND1"]
@@ -2126,7 +2160,7 @@ test('47. log buffer wraparound: >500 lines evict the oldest, next cursor monoto
 // hand-ticked checkbox without review text never flags, dismiss-missing
 // clears, unknown dismiss 404s. Runs against a dedicated server whose
 // AOS_NOTIFY_SEND is a fake logging script.
-test('48. removed-review detection: two-sighting confirm, captcha inconclusive, found clears, dismiss', async (t) => {
+test('48. removed-review detection: two-sighting confirm, captcha inconclusive, found clears, dismiss', { skip: POSIX_ONLY }, async (t) => {
     const notes = path.join(tmpDir, 'notes-missing');
     const port = await getFreePort();
     const base = `http://127.0.0.1:${port}`;
@@ -2461,7 +2495,7 @@ test('51. exact route matching: /api/checkAnything 404, /api/check without order
 // Case 52 (§21.2 H6): stop-window — sync-now then an IMMEDIATE sync-stop (no
 // polling for the run to arm) must not 409 in the spawn window; the run
 // resolves cancelled.
-test('52. stop-window: immediate sync-stop after sync-now resolves cancelled', async (t) => {
+test('52. stop-window: immediate sync-stop after sync-now resolves cancelled', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'stopwindow');
 
     const runPromise = srv.api('/api/sync-now', { method: 'POST' });
@@ -2488,7 +2522,7 @@ test('52. stop-window: immediate sync-stop after sync-now resolves cancelled', a
 // Case 53: stale Chromium Singleton* artifacts in the browser profile (left
 // by a SIGTERM/SIGKILLed headless run) are removed BEFORE the next spawn,
 // with exactly one log line listing them.
-test('53. stale profile locks are removed before spawn (one log line)', async () => {
+test('53. stale profile locks are removed before spawn (one log line)', { skip: POSIX_ONLY }, async () => {
     const notesDir = path.join(tmpDir, 'notes-lockclean');
     const profileDir = path.join(tmpDir, 'profile-lockclean');
     await fsp.mkdir(notesDir, { recursive: true });
@@ -2539,7 +2573,7 @@ test('53. stale profile locks are removed before spawn (one log line)', async ()
 // Case 54: no-activity watchdog — a headless run with ZERO client-log lines
 // and ZERO order POSTs aborts as browser-stalled shortly after the
 // (injected) watchdog delay; any client-log line disarms it for that run.
-test('54. stall watchdog: silent run aborts browser-stalled; client-log disarms', async (t) => {
+test('54. stall watchdog: silent run aborts browser-stalled; client-log disarms', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'stallwd', {}, { AOS_STALL_WATCHDOG_MS: '1500' });
 
     // Run 1: the fake browser produces NO extension activity -> watchdog fires.
@@ -2584,7 +2618,7 @@ test('54. stall watchdog: silent run aborts browser-stalled; client-log disarms'
 // Case 55: the login-block gate — a login-required run result blocks manual
 // AND scheduled sync until SETUP LOGIN clears it; a successful completion
 // keeps the gate clear.
-test('55. login-block gate: 409s with guidance, due predicates false, setup clears', async (t) => {
+test('55. login-block gate: 409s with guidance, due predicates false, setup clears', { skip: POSIX_ONLY }, async (t) => {
     // v1.8.3 (§23.2): while the setup browser lives, sync-now 409s — so
     // this test's fake browser exits immediately on NON-headless (setup)
     // invocations, modelling the user closing the login window; headless
@@ -2873,7 +2907,7 @@ test('59. captcha after sighting 1 preserves the streak; next loaded-empty confi
 
 // Case 60 (gate correctness): a fresh run that fails with a NON-login error
 // replaces the persisted login failure — the login-block gate clears.
-test('60. non-login error result clears the login-block gate', async (t) => {
+test('60. non-login error result clears the login-block gate', { skip: POSIX_ONLY }, async (t) => {
     // Fake browser that exits immediately on NON-headless (setup)
     // invocations — the user "closes the login window" right away (§23.2).
     const setupAwareBrowser2 = path.join(tmpDir, 'fake-browser-setup-aware2.sh');
@@ -2984,7 +3018,7 @@ test('62. malformed JSON -> 400 on /api/sync and /api/mark-posted (S-h)', async 
 // stall watchdog. A malformed (400) sync POST no longer counts as activity
 // (the run still settles browser-stalled on schedule); a client-log line
 // still disarms (liveness proof); a 2xx order write still disarms.
-test('63. watchdog strictness: 400 sync POST does not disarm; client-log and 2xx write do', async (t) => {
+test('63. watchdog strictness: 400 sync POST does not disarm; client-log and 2xx write do', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'stallstrict', {}, { AOS_STALL_WATCHDOG_MS: '1500' });
 
     // Run 1: a malformed sync POST (400) must NOT disarm — the run still
@@ -3041,7 +3075,7 @@ test('63. watchdog strictness: 400 sync POST does not disarm; client-log and 2xx
 // AOS_SKIP_INSTANCE_LOCK=1 bypasses without touching the lock. The exported
 // acquire/release functions are the in-process seam (OrderStore and
 // HeadlessRunner constructors stay lock-free).
-test('64. instance lock: live-pid refuse, stale takeover, clean exit removes, env bypass', async (t) => {
+test('64. instance lock: live-pid refuse, stale takeover, clean exit removes, env bypass', { skip: POSIX_ONLY }, async (t) => {
     const notes = path.join(tmpDir, 'notes-instlock');
     await fsp.mkdir(notes, { recursive: true });
     const lockPath = path.join(notes, '.daemon.lock');
@@ -3137,7 +3171,7 @@ test('64. instance lock: live-pid refuse, stale takeover, clean exit removes, en
 // TTL is re-validated with a cheap accessSync(X_OK), not served blindly:
 // flipping the fake binary's executability between calls flips the result,
 // while within the TTL the cached hit is served as-is (TTL override seam).
-test('65. resolveBrowser TTL: stale cache re-validates executability', async () => {
+test('65. resolveBrowser TTL: stale cache re-validates executability', { skip: POSIX_ONLY }, async () => {
     const ttlBrowser = path.join(tmpDir, 'ttl-browser.sh');
     await fsp.writeFile(ttlBrowser, '#!/bin/sh\nsleep 1\n');
     await fsp.chmod(ttlBrowser, 0o755);
@@ -3177,7 +3211,7 @@ test('65. resolveBrowser TTL: stale cache re-validates executability', async () 
 
 // Case 66 (v1.8.5): both spawn paths pass --disable-extensions-except so a
 // duplicate extension copy persisted in the profile can't double-scrape.
-test('66. headless spawn passes --disable-extensions-except alongside --load-extension', async (t) => {
+test('66. headless spawn passes --disable-extensions-except alongside --load-extension', { skip: POSIX_ONLY }, async (t) => {
     const argvBrowser = path.join(tmpDir, 'argv-browser.sh');
     await fsp.writeFile(argvBrowser, '#!/bin/sh\nprintf "%s\\n" "$@" > "$0.argv"\nsleep 60\n');
     await fsp.chmod(argvBrowser, 0o755);
@@ -3215,7 +3249,7 @@ test('66. headless spawn passes --disable-extensions-except alongside --load-ext
 // immediately (code 3) settles the run as browser-exited within seconds
 // (not on the 45s watchdog or the 6-minute timeout), with the early-exit
 // log line and the mapped guidance.
-test('67. early exit: exit-3 fake browser settles browser-exited with log line + guidance', async (t) => {
+test('67. early exit: exit-3 fake browser settles browser-exited with log line + guidance', { skip: POSIX_ONLY }, async (t) => {
     const exitBrowser = path.join(tmpDir, 'fake-browser-exit3.sh');
     await fsp.writeFile(exitBrowser, '#!/bin/sh\nexit 3\n');
     await fsp.chmod(exitBrowser, 0o755);
@@ -3254,7 +3288,7 @@ test('67. early exit: exit-3 fake browser settles browser-exited with log line +
 // no extension activity, at least one `…waiting for extension` line with
 // the counters appears before the watchdog settles; the first client-log
 // line of a run emits the Extension-alive line and stops further ticks.
-test('68. waiting ticks: counters logged while silent; alive line stops ticks', async (t) => {
+test('68. waiting ticks: counters logged while silent; alive line stops ticks', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'waittick', {},
         { AOS_WAIT_TICK_MS: '300', AOS_STALL_WATCHDOG_MS: '5000' });
 
@@ -3602,7 +3636,7 @@ test('72. stuck-run recovery: sync-stop force-recovers, consistency sweep clears
 
 // Case 73 (v1.8.10): /api/sync-history/clear wipes run history but keeps
 // lastRunAt and never clears an active login block.
-test('73. sync-history clear: history emptied, lastRunAt kept, login block preserved', async (t) => {
+test('73. sync-history clear: history emptied, lastRunAt kept, login block preserved', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'histclear');
     const statePath = path.join(tmpDir, 'notes-histclear', '.headless-sync.json');
 
@@ -3656,7 +3690,7 @@ test('73. sync-history clear: history emptied, lastRunAt kept, login block prese
 
 // Case 74 (v1.9.0): /api/check exposes `exists` for catch-up mode, and
 // sync-now accepts mode:'catchup' (round-trips through run-options).
-test('74. catch-up mode: check exists flag + catchup run option', async (t) => {
+test('74. catch-up mode: check exists flag + catchup run option', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'catchup');
 
     // Unknown order → exists:false; after a sync → exists:true (complete or not).
@@ -3700,7 +3734,7 @@ test('74. catch-up mode: check exists flag + catchup run option', async (t) => {
 // so the extension can tell a NEW run apart from a pagination continuation.
 // Same fake-browser argv capture as test 66. (The extension's cross-page
 // pagination itself is browser-side — verified by the client smoke.)
-test('75. headless launch URL carries the per-run token (#aos-autosync-<epochMs>)', async (t) => {
+test('75. headless launch URL carries the per-run token (#aos-autosync-<epochMs>)', { skip: POSIX_ONLY }, async (t) => {
     const argvBrowser = path.join(tmpDir, 'argv-browser75.sh');
     await fsp.writeFile(argvBrowser, '#!/bin/sh\nprintf "%s\\n" "$@" > "$0.argv"\nsleep 60\n');
     await fsp.chmod(argvBrowser, 0o755);
@@ -3729,7 +3763,7 @@ test('75. headless launch URL carries the per-run token (#aos-autosync-<epochMs>
 
 // Case 76 (v1.9.2): a manual stop mid-run reports the orders that actually
 // landed, not a hardcoded 0.
-test('76. cancelled run reports observed order count', async (t) => {
+test('76. cancelled run reports observed order count', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'cancelcount');
     const syncNowPromise = srv.api('/api/sync-now', { method: 'POST' });
     for (let i = 0; i < 50; i++) {
@@ -3796,7 +3830,7 @@ test('77. legacy vine config keys boot clean; no vine shape anywhere', async (t)
     await waitForServer(base77); // boots clean with the legacy keys present
     const health = await fetch(`${base77}/api/health`).then(r => r.json());
     assert.equal(health.ok, true);
-    assert.equal(health.version, '2.1.0');
+    assert.equal(health.version, '2.2.0');
 
     // Seed one order with a $0.00 item — just a price now, never a flag.
     const sync = await fetch(`${base77}/api/sync`, postJson({
@@ -3919,7 +3953,7 @@ test('81. notification buffer: no cursor returns nothing, cursor returns newer e
 // Case 82: end-to-end — /api/health carries shell-facing fields, a headless
 // run's completion toast is readable via /api/notifications, and
 // POST /api/shutdown exits the daemon cleanly (lock released).
-test('82. health details, notifications endpoint and clean /api/shutdown', async (t) => {
+test('82. health details, notifications endpoint and clean /api/shutdown', { skip: POSIX_ONLY }, async (t) => {
     const srv = await startFakeBrowserServer(t, 'winshell');
     const health = await srv.api('/api/health');
     assert.equal(health.status, 200);
@@ -4164,4 +4198,94 @@ test('87. gemini request timeout aborts and retries', async (t) => {
     const draft = await store.generateReview({ name: 'W', asin: 'B0TIMEOUT1' }, 5);
     assert.deepEqual(draft, { title: 'After hang', text: 'B' });
     assert.equal(calls, 2, 'timed-out request retried once');
+});
+
+// v2.2.0 review fixes, in-process against their own notes folder.
+test('v2.2.0: review typed under the placeholder survives a re-sync', async () => {
+    const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'aos-v220-'));
+    try {
+        const store = new OrderStore(tmp, '', {});
+        const payload = () => ({
+            order_id: '111-2223334-5556667', date: 'Ordered on March 3, 2026', total: '$10', status: 'Delivered', ship_to: 'Alex Doe',
+            items: [{ asin: 'B0V220AAA1', name: 'Widget', brand: 'Acme', current_price: '$5', link: '', features: '- f', image: '' }]
+        });
+        await store.createOrUpdateOrder(payload());
+        const file = path.join(tmp, 'Orders/2026/03-March/Order-111-2223334-5556667.md');
+        let md = await fsp.readFile(file, 'utf8');
+        md = md.replace('**Review:** \n- [ ] Posted to Amazon?', '**Review:** My own words about the widget.\n- [ ] Posted to Amazon?');
+        await fsp.writeFile(file, md);
+        assert.equal(parseNote(md).items[0].hasDraft, true);
+        await store.createOrUpdateOrder(payload());
+        md = await fsp.readFile(file, 'utf8');
+        assert.ok(md.includes('My own words about the widget.'));
+        assert.ok(!md.includes('Write your review for this item below'), 'placeholder dropped once there is text');
+
+        // A saved review with a `---` line keeps its second half.
+        const saved = updateReviewBlock(md, 'B0V220AAA1', 'Good', 'Pros: sturdy\n---\nCons: loud');
+        assert.ok(saved.includes('Pros: sturdy\n- - -\nCons: loud'));
+        await fsp.writeFile(file, saved);
+        await store.createOrUpdateOrder(payload());
+        assert.ok((await fsp.readFile(file, 'utf8')).includes('Cons: loud'));
+    } finally {
+        await fsp.rm(tmp, { recursive: true, force: true });
+    }
+});
+
+test('v2.2.0: review helpers', () => {
+    assert.equal(withoutPlaceholder('> *Write your review for this item below...*\n**Rating:** \n**Review:** hi'), '**Rating:** \n**Review:** hi');
+    assert.equal(hasReviewContent('**Rating:** \n**Review:** '), false);
+    assert.equal(hasReviewContent('**Title:** Fine\n**Review:** '), true);
+    assert.equal(safeReviewText('a\n  ----  \nb'), 'a\n- - -\nb');
+    assert.deepEqual(dedupeItemsByAsin([{ asin: 'A' }, { asin: 'A' }, { asin: '' }, { asin: '' }], 'x').length, 3);
+});
+
+test('v2.2.0: backfill import dedupes repeated ASINs within an order', async () => {
+    const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'aos-v220-'));
+    try {
+        const store = new OrderStore(tmp, '', {});
+        await store.createOrUpdateOrder({
+            order_id: '222-0000000-0000001', date: '2025-01-02', items: [
+                { asin: 'B0DUPDUP01', name: 'Thing' }, { asin: 'B0DUPDUP01', name: 'Thing' }]
+        }, { generateDrafts: false });
+        const md = await fsp.readFile(path.join(tmp, 'Orders/2025/01-January/Order-222-0000000-0000001.md'), 'utf8');
+        assert.match(md, /^asin: \["B0DUPDUP01"\]$/m);
+    } finally {
+        await fsp.rm(tmp, { recursive: true, force: true });
+    }
+});
+
+test('v2.2.0: renameWithRetry retries transient errors and cleans up on failure', async () => {
+    const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'aos-v220-'));
+    try {
+        const from = path.join(tmp, 'a.tmp');
+        await fsp.writeFile(from, 'x');
+        await renameWithRetry(from, path.join(tmp, 'a.md'));
+        assert.equal(await fsp.readFile(path.join(tmp, 'a.md'), 'utf8'), 'x');
+        const orphan = path.join(tmp, 'b.tmp');
+        await fsp.writeFile(orphan, 'y');
+        await assert.rejects(renameWithRetry(orphan, path.join(tmp, 'missing-dir', 'b.md')));
+        await assert.rejects(fsp.access(orphan), 'temp file removed after a failed rename');
+    } finally {
+        await fsp.rm(tmp, { recursive: true, force: true });
+    }
+});
+
+test('v2.2.0: save-review keeps the chosen rating and get-review returns it', async (t) => {
+    const tmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'aos-v220-'));
+    const store = new OrderStore(tmp, '', {});
+    await store.createOrUpdateOrder({
+        order_id: '111-5550000-0000001', date: 'Ordered on May 1, 2026', status: 'Delivered',
+        items: [{ asin: 'B0RATE0001', name: 'Lamp', brand: 'Acme', current_price: '$5', link: '', features: '- f', image: '' }]
+    });
+    const srv = createServer(store, 0, '', new HeadlessRunner({ notesPath: tmp, enabled: false }));
+    await new Promise(resolve => srv.listen(0, '127.0.0.1', resolve));
+    t.after(async () => { await new Promise(resolve => srv.close(resolve)); await fsp.rm(tmp, { recursive: true, force: true }); });
+    const base = `http://127.0.0.1:${srv.address().port}`;
+    const call = async (p, o) => { const r = await fetch(base + p, o); return { status: r.status, body: await r.json() }; };
+    const saved = await call('/api/save-review', postJson({ asin: 'B0RATE0001', title: 'Mine', text: 'My own text.', rating: 3 }));
+    assert.equal(saved.status, 200);
+    const got = await call('/api/get-review?asin=B0RATE0001');
+    assert.deepEqual(got.body, { title: 'Mine', text: 'My own text.', rating: 3 });
+    const bad = await call('/api/save-review', postJson({ asin: 'B0RATE0001', title: 'x', text: 'y', rating: 6 }));
+    assert.equal(bad.status, 400);
 });

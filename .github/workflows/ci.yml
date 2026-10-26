@@ -1,0 +1,66 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  server:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: "18" }
+          - { os: ubuntu-latest, node: "22" }
+          - { os: windows-latest, node: "22" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax
+        run: |
+          node --check server/server.js
+          node --check browser-extension/content.js
+          node --check browser-extension/popup.js
+      - name: Tests
+        # --test-force-exit: on Windows a spawned server can outlive the run
+        # (Node 20+). The headless-run tests skip themselves on Windows.
+        run: node --test ${{ matrix.node != '18' && '--test-force-exit' || '' }} tests/server.test.js
+  tray:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build
+        run: dotnet build tray -c Release -warnaserror
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $bad = 0
+          foreach ($f in 'install.ps1', 'import-old-notes.ps1') {
+            $errs = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$null, [ref]$errs) | Out-Null
+            if ($errs) { $errs | ForEach-Object { Write-Host "${f}: $($_.Message)" }; $bad++ }
+          }
+          if ($bad) { exit 1 }
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -Scope CurrentUser
+          $r = foreach ($f in 'install.ps1', 'import-old-notes.ps1') { Invoke-ScriptAnalyzer -Path $f -Settings ./PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }
+          $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+          if ($r) { exit 1 }
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck install.sh

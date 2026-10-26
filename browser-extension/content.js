@@ -20,10 +20,38 @@ const extLogBuffer = [];
 const EXT_LOG_BUFFER_CAP = 1000;
 let extLogTrimNoted = false;
 
+// v2.2.0: every call to the local server goes through the extension's
+// service worker (background.js). A content-script fetch carries the Amazon
+// page's Origin, so the server could not tell this extension from any script
+// on an Amazon page; the service worker's requests carry this extension's own
+// origin, which is the only extension origin the server accepts.
+function aosFetch(path, init = {}) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ aos: 'fetch', path, method: init.method || 'GET', body: init.body }, reply => {
+            const err = chrome.runtime.lastError;
+            if (err || !reply) return reject(new Error(err ? err.message : 'no reply from the extension'));
+            if (reply.error) return reject(new Error(reply.error));
+            resolve({
+                ok: reply.status >= 200 && reply.status < 300,
+                status: reply.status,
+                text: async () => reply.text,
+                json: async () => JSON.parse(reply.text)
+            });
+        });
+    });
+}
+
+function setNativeValue(el, value) {
+    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 function flushClientLogs() {
     if (extLogBuffer.length === 0) return Promise.resolve(true);
     const lines = extLogBuffer.slice(0, 100); // server accepts at most 100 per post
-    return fetch('http://127.0.0.1:27483/api/client-log', {
+    return aosFetch('/api/client-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lines })
@@ -177,7 +205,7 @@ function activeRunOptions() {
 
 async function fetchRunOptions() {
     try {
-        const res = await fetch('http://127.0.0.1:27483/api/run-options');
+        const res = await aosFetch('/api/run-options');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         aosRunOptions = normalizeRunOptions(data && data.options);
@@ -194,7 +222,7 @@ async function fetchRunOptions() {
 async function postHeadlessComplete(body) {
     // v1.7.1 (§19.2): final log flush right before the completion ping.
     await flushClientLogs();
-    await fetch('http://127.0.0.1:27483/api/headless-complete', {
+    await aosFetch('/api/headless-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -453,7 +481,7 @@ async function runReviewCheckPass() {
             helpful_votes: Number.isInteger(details.helpful_votes) ? details.helpful_votes : null,
             page_state: pageState
         };
-        const resRes = await fetch('http://127.0.0.1:27483/api/review-check-result', {
+        const resRes = await aosFetch('/api/review-check-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(resultBody)
@@ -468,7 +496,7 @@ async function runReviewCheckPass() {
         logStatus('Waiting (bot protection)...');
         await BOT_WAIT();
 
-        const queueRes = await fetch('http://127.0.0.1:27483/api/review-check-queue');
+        const queueRes = await aosFetch('/api/review-check-queue');
         const queue = await queueRes.json();
         const asins = Array.isArray(queue.asins) ? queue.asins : [];
         const next = asins.find(a => !processed.includes(a));
@@ -533,7 +561,7 @@ if (!AOS_HEADLESS_HASH && !AOS_REVIEW_CHECK_HASH &&
     const params = new URLSearchParams(window.location.search);
     const asin = params.get('asin');
     if (asin) {
-        fetch(`http://127.0.0.1:27483/api/get-review?asin=${asin}`)
+        aosFetch(`/api/get-review?asin=${encodeURIComponent(asin)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.title && data.text) {
@@ -542,19 +570,19 @@ if (!AOS_HEADLESS_HASH && !AOS_REVIEW_CHECK_HASH &&
                     const tryInject = setInterval(() => {
                         const titleInput = document.querySelector('input[name="reviewTitle"], input[id*="review-title"], .ryp-review-title-input');
                         const textInput = document.querySelector('textarea[name="reviewText"], textarea[id*="review-text"], .ryp-review-text-input');
-                        const ratingBtn = document.querySelector('button[data-hook="ryp-star-rating-5"], img[alt="5 stars"], .ryp-star-rating-button[data-hook*="rating-5"]');
+                        // The draft's own rating, never a fixed 5.
+                        const stars = /^[1-5]$/.test(String(data.rating)) ? String(data.rating) : '';
+                        const ratingBtn = stars ? document.querySelector(`button[data-hook="ryp-star-rating-${stars}"], img[alt="${stars} stars"], .ryp-star-rating-button[data-hook*="rating-${stars}"]`) : null;
                         
                         if (titleInput && textInput) {
                             clearInterval(tryInject);
                             
-                            titleInput.value = data.title;
-                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
-                            
-                            textInput.value = data.text;
-                            textInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            textInput.dispatchEvent(new Event('change', { bubbles: true }));
-                            
+                            // Amazon's form is React-controlled: assigning .value
+                            // doesn't reach React's state, so use the native
+                            // setter and then fire input/change.
+                            setNativeValue(titleInput, data.title);
+                            setNativeValue(textInput, data.text);
+
                             if (ratingBtn) ratingBtn.click();
                             
                             logStatus("Review successfully auto-filled!");
@@ -770,7 +798,7 @@ async function fetchReviewDetails(asin) {
 async function checkOrderComplete(orderId) {
     logStatus(`[Server] Checking status for Order ${orderId}...`);
     try {
-        const response = await fetch(`http://127.0.0.1:27483/api/check?order_id=${orderId}`);
+        const response = await aosFetch(`/api/check?order_id=${encodeURIComponent(orderId)}`);
         if (!response.ok) {
             logStatus(`[Server] Failed to check status for Order ${orderId} (HTTP status ${response.status}).`);
             return { complete: false, reason: `HTTP error ${response.status}` };
@@ -1062,7 +1090,7 @@ async function extractAndSyncOrdersPass(isAuto, restored) {
             };
 
             logStatus(`[Server] Sending payload for Order ${orderId} to local server...`);
-            const syncResponse = await fetch('http://127.0.0.1:27483/api/sync', {
+            const syncResponse = await aosFetch('/api/sync', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

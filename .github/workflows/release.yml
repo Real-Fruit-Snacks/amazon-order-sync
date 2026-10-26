@@ -1,0 +1,61 @@
+# Push a tag vX.Y.Z (matching the top of CHANGELOG.md) to publish a release.
+name: release
+on:
+  push:
+    tags: ["v*.*.*"]
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test tests/server.test.js
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build the tray app
+        run: dotnet publish tray -c Release -o publish
+      - name: Package
+        shell: pwsh
+        run: |
+          $d = 'dist/amazon-order-sync'
+          New-Item -ItemType Directory -Force $d | Out-Null
+          Copy-Item publish/AmazonOrderSync.exe $d
+          Copy-Item -Recurse server, browser-extension $d
+          Copy-Item install.ps1, import-old-notes.ps1, config.example.json, LICENSE, README.md, CHANGELOG.md $d
+          Compress-Archive -Path "$d/*" -DestinationPath amazon-order-sync-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: amazon-order-sync-windows.zip
+  release:
+    needs: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+      - name: Linux package and notes
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "^## \[${v}\]" CHANGELOG.md || { echo "CHANGELOG.md has no [${v}] section"; exit 1; }
+          awk -v v="$v" 'index($0, "## [" v "]") == 1 {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
+          mkdir -p dist/amazon-order-sync
+          cp -r server browser-extension install.sh amazon-order-sync.service config.example.json LICENSE README.md CHANGELOG.md dist/amazon-order-sync/
+          tar czf amazon-order-sync-linux.tar.gz -C dist amazon-order-sync
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md \
+            amazon-order-sync-windows.zip amazon-order-sync-linux.tar.gz

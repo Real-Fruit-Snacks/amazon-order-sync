@@ -1,0 +1,25 @@
+name: Bug
+description: Something is wrong or broken
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you saw, and what you expected. Paste the relevant lines from the dashboard's SYNC tab log or server.log, with order numbers and names removed.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown next to the title in the dashboard and the extension popup
+      placeholder: "v2.2.0"
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: OS, browser and Amazon site
+      placeholder: "Windows 11, Brave 1.84, amazon.com"
+    validations:
+      required: true

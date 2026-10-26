@@ -1,0 +1,14 @@
+# Cover + social preview. Regenerate with Real-Fruit-Snacks/rfs-brand, from the folder holding both clones:
+#   python3 rfs-brand/tools/make-cover.py amazon-order-sync/docs/assets/cover.toml
+name        = "amazon-order-sync"
+description = "Syncs your Amazon orders into local Markdown notes."
+bullets = [
+  "One note per order, product images saved locally",
+  "Spending dashboard served on 127.0.0.1",
+  "Scheduled headless sync with the real extension",
+  "Windows tray app or Linux systemd service",
+]
+
+[panel]
+kind = "art"
+file = "cover-art.svg"

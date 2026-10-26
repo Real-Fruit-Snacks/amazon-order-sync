@@ -9,11 +9,11 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { execFile, spawn } from 'node:child_process';
+import { execFile, execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import util from 'node:util';
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const DEFAULT_PORT = 27483;
 const DEFAULT_SYNC_REMINDER_DAYS = 7;  // §14.1: sync staleness threshold
 const DEFAULT_AUTOSYNC_INTERVAL_HOURS = 24; // §15.1: headless auto-sync cadence
@@ -366,7 +366,7 @@ export function guidanceFor(errText) {
         return {
             message: 'No Chromium-based browser found.',
             steps: [
-                'Install Brave, Chrome, Edge or Chromium.',
+                'Install Brave, Edge or Chromium (Google Chrome no longer loads the extension in headless runs).',
                 'Or set "browserPath" in config.json to your browser executable.'
             ]
         };
@@ -375,7 +375,8 @@ export function guidanceFor(errText) {
         return {
             message: "The sync browser didn't finish in time.",
             steps: [
-                'This is usually a login or Shields issue — run SETUP LOGIN and check that the page loads.'
+                'This is usually a login or Shields issue — run SETUP LOGIN and check that the page loads.',
+                'Google Chrome ignores the extension in headless runs (since Chrome 137): use Brave, Edge or Chromium, or point "browserPath" at one.'
             ]
         };
     }
@@ -387,7 +388,8 @@ export function guidanceFor(errText) {
             steps: [
                 'Run SETUP LOGIN and confirm the orders page loads while logged in.',
                 'If it persists, delete the browser-profile folder (see the SYNC tab for its path) and run SETUP LOGIN again.',
-                'Make sure Brave Shields are down for amazon.com in the setup window.'
+                'Make sure Brave Shields are down for amazon.com in the setup window.',
+                'Google Chrome ignores the extension in headless runs (since Chrome 137): use Brave, Edge or Chromium, or point "browserPath" at one.'
             ]
         };
     }
@@ -433,22 +435,21 @@ export function guidanceFor(errText) {
 // of http://127.0.0.1:<port> (or http://localhost:<port>). Those are allowed
 // too — but ONLY when the Origin's hostname is 127.0.0.1 or localhost AND its
 // port equals the port this server is actually bound to. A drive-by page on any
-// other host or port is still rejected. The amazon.com lock for the extension
-// endpoints is unchanged.
-// Amazon retail domains the companion extension runs on (v1.2.0 added the
-// co.uk/de/ca regional domains; v1.6.0 §16.4 added fr/it/es/co.jp/com.au;
-// the extension itself is region-agnostic).
-const AMAZON_HOSTS = [
-    'amazon.com', 'amazon.co.uk', 'amazon.de', 'amazon.ca',
-    'amazon.fr', 'amazon.it', 'amazon.es', 'amazon.co.jp', 'amazon.com.au'
-];
+// other host or port is still rejected.
+// v2.2.0: the extension talks to this server only from its service worker
+// (browser-extension/background.js), whose requests carry the extension's own
+// origin. The ID is fixed by the "key" in browser-extension/manifest.json, so
+// it is the same in every browser profile and in headless runs. Amazon page
+// origins are no longer accepted: any script on any Amazon subdomain could
+// otherwise read the order history or drive the API.
+export const EXTENSION_ID = 'cikcnmangaegpkglmcfgbfbmknjmdifh';
 
 export function isAllowedOrigin(origin, serverPort) {
     if (!origin) return true;
+    if (origin === `chrome-extension://${EXTENSION_ID}`) return true;
     try {
         const url = new URL(origin);
         const host = url.hostname.toLowerCase();
-        if (AMAZON_HOSTS.some(domain => host === domain || host.endsWith(`.${domain}`))) return true;
         if (host === '127.0.0.1' || host === 'localhost') {
             const port = url.port || (url.protocol === 'https:' ? '443' : '80');
             return port === String(serverPort);
@@ -457,6 +458,11 @@ export function isAllowedOrigin(origin, serverPort) {
     } catch {
         return false;
     }
+}
+
+export function isAllowedHost(host, serverPort) {
+    const h = String(host ?? '').toLowerCase();
+    return h === `127.0.0.1:${serverPort}` || h === `localhost:${serverPort}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -813,7 +819,7 @@ export class OrderStore {
     async writeMarkdownAtomic(filePath, content) {
         const tmp = `${filePath}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
         await fsp.writeFile(tmp, content, 'utf8');
-        await fsp.rename(tmp, filePath);
+        await renameWithRetry(tmp, filePath);
     }
 
     // Port of downloadImage, hardened in v1.8.0 (§21.2 H1): http(s) URLs
@@ -1099,6 +1105,12 @@ export class OrderStore {
     // Gemini draft call entirely (v1.3.0 backfill import never calls Gemini).
     async createOrUpdateOrder(payload, options = {}) {
         if (!Array.isArray(payload.items)) payload.items = [];
+        // v1.7.2 (audit C1), moved here in v2.2.0 so the backfill import gets
+        // it too: drop later items whose ASIN already appeared in this order
+        // (first occurrence wins). Same-ASIN-twice notes make every ASIN-keyed
+        // writer (findItemBlock, setFrontmatterArrayValue, mark-posted)
+        // ambiguous.
+        payload.items = dedupeItemsByAsin(payload.items, payload.order_id);
 
         const orderId = sanitizeId(payload.order_id);
         if (!isSafeId(orderId)) {
@@ -1177,13 +1189,17 @@ export class OrderStore {
 
                         if (endOfReview !== -1) {
                             const existingReviewBlock = itemBlock.substring(searchStartIndex, endOfReview).trim();
-                            if (existingReviewBlock && !existingReviewBlock.includes('> *Write your review for this item below...*')) {
-                                if (this.geminiApiKey && isTemplateDraft(existingReviewBlock)) {
+                            // v2.2.0: text typed under the placeholder (it
+                            // says "below") is the user's review: drop the
+                            // placeholder line and keep the rest.
+                            const ownReview = withoutPlaceholder(existingReviewBlock);
+                            if (hasReviewContent(ownReview)) {
+                                if (this.geminiApiKey && isTemplateDraft(ownReview)) {
                                     // Canned template: try for a real draft
                                     // below; keep the template if that fails.
-                                    templateReviewContent = existingReviewBlock;
+                                    templateReviewContent = ownReview;
                                 } else {
-                                    aiReviewContent = existingReviewBlock;
+                                    aiReviewContent = ownReview;
                                 }
                             }
                         }
@@ -1283,7 +1299,7 @@ export class OrderStore {
 
             let finalReviewText = "";
             if (hasImportedReview) {
-                 finalReviewText = `**Title:** ${item.review_title}\n**Review:** ${item.review_text}`;
+                 finalReviewText = `**Title:** ${safeReviewText(item.review_title).replace(/\r?\n/g, ' ')}\n**Review:** ${safeReviewText(item.review_text)}`;
             } else if (aiReviewContent) {
                  finalReviewText = aiReviewContent;
             } else {
@@ -1863,6 +1879,7 @@ async function findReview(store, asin) {
     const files = (await store.walkOrders()).filter(f => f.endsWith('.md'));
     let foundTitle = "";
     let foundText = "";
+    let foundRating = "";
 
     for (const file of files) {
         const content = await fsp.readFile(file, 'utf8');
@@ -1889,6 +1906,10 @@ async function findReview(store, asin) {
                             if (t && r && !r.includes("Write your review for this item below")) {
                                 foundTitle = t;
                                 foundText = r;
+                                // v2.2.0: the draft's own star rating, for the
+                                // extension to click (it used to click 5).
+                                const ratingMatch = block.match(/\*\*Rating:\*\*[ \t]*([1-5])(?!\d)/);
+                                foundRating = ratingMatch ? Number(ratingMatch[1]) : "";
                                 break;
                             }
                         }
@@ -1899,7 +1920,7 @@ async function findReview(store, asin) {
     }
 
     if (foundTitle && foundText) {
-        return { status: 200, body: { title: foundTitle, text: foundText } };
+        return { status: 200, body: { title: foundTitle, text: foundText, rating: foundRating } };
     }
     return { status: 404, body: { error: 'Review not found or not generated yet' } };
 }
@@ -1911,7 +1932,7 @@ async function findReview(store, asin) {
 // scraped data happens in the page via textContent.
 // ---------------------------------------------------------------------------
 
-// Bundled Terminal Workbench Mono woff2 files, resolved relative to this
+// Bundled IBM Plex woff2 files, resolved relative to this
 // module (NOT notesPath) so the dashboard can load its typeface via /fonts/.
 const FONTS_DIR = fileURLToPath(new URL('./fonts', import.meta.url));
 const ICONS_DIR = fileURLToPath(new URL('./icons', import.meta.url));
@@ -2001,7 +2022,7 @@ export function parseNote(content, meta = {}) {
             url: urls[i] || '',
             image: asin ? imageFor(asin) : null,
             reviewed: revieweds[i] === 'true',
-            hasDraft: reviewText !== '' && !hasPlaceholder,
+            hasDraft: reviewText !== '',
             posted: /- \[\s*[xX]\s*\]\s*Posted to Amazon\?/.test(block),
             reviewTitle: titleMatch ? titleMatch[1].trim() : '',
             reviewText
@@ -2229,7 +2250,27 @@ function findItemBlock(markdown, asin) {
 // byte-for-byte. The existing `**Rating:**` line is kept unless `rating` is
 // given, in which case it is set to that value. Pure: returns the new
 // Markdown, or null when the ASIN or its review block can't be found.
+const REVIEW_PLACEHOLDER_LINE = /^> \*Write your review for this item below\.\.\.\*[ \t]*\r?\n?/m;
+
+export function withoutPlaceholder(block) {
+    return String(block ?? '').replace(REVIEW_PLACEHOLDER_LINE, '').trim();
+}
+
+// A review block counts as written when its Title or Review line has text.
+export function hasReviewContent(block) {
+    return /\*\*(Title|Review):\*\*[ \t]*\S/.test(String(block ?? ''));
+}
+
+// v2.2.0: notes separate items with a line of `---`, so a review containing
+// one would split its item in two on the next re-sync and lose the rest of
+// the review. Rewrite such lines as `- - -` (the same horizontal rule).
+export function safeReviewText(text) {
+    return String(text ?? '').replace(/^[ \t]*-{3,}[ \t]*$/gm, '- - -');
+}
+
 export function updateReviewBlock(markdown, asin, title, text, rating) {
+    title = safeReviewText(title).replace(/\r?\n/g, ' ');
+    text = safeReviewText(text);
     const loc = findItemBlock(markdown, asin);
     if (!loc) return null;
 
@@ -2581,11 +2622,13 @@ async function importBackfillFiles(store, files) {
 // ---------------------------------------------------------------------------
 
 // §15.2: candidate browser binaries probed on PATH, in order.
+// v2.2.0: Google Chrome last. Branded Chrome ignores --load-extension since
+// version 137, so a headless run there never loads the extension; Chromium,
+// Brave and Edge still honour it.
 const BROWSER_CANDIDATES = [
-    'chromium', 'chromium-browser', 'google-chrome',
-    'google-chrome-stable', 'brave-browser', 'brave', 'brave-origin',
-    'microsoft-edge',
-    'chrome', 'msedge' // v2.1.0: Windows executable names (probed as .exe)
+    'chromium', 'chromium-browser', 'brave-browser', 'brave', 'brave-origin',
+    'microsoft-edge', 'msedge', // msedge: Windows executable name (probed as .exe)
+    'google-chrome', 'google-chrome-stable', 'chrome'
 ];
 
 // The companion extension, module-relative (install.sh copies it next to the
@@ -2614,12 +2657,12 @@ const WINDOWS_BROWSER_LOCATIONS = [
         ['ProgramFiles', 'BraveSoftware', ch, 'Application', 'brave.exe'],
         ['ProgramFiles(x86)', 'BraveSoftware', ch, 'Application', 'brave.exe']
     ]),
-    ['ProgramFiles', 'Google', 'Chrome', 'Application', 'chrome.exe'],
-    ['ProgramFiles(x86)', 'Google', 'Chrome', 'Application', 'chrome.exe'],
-    ['LOCALAPPDATA', 'Google', 'Chrome', 'Application', 'chrome.exe'],
     ['ProgramFiles(x86)', 'Microsoft', 'Edge', 'Application', 'msedge.exe'],
     ['ProgramFiles', 'Microsoft', 'Edge', 'Application', 'msedge.exe'],
-    ['LOCALAPPDATA', 'Chromium', 'Application', 'chrome.exe']
+    ['LOCALAPPDATA', 'Chromium', 'Application', 'chrome.exe'],
+    ['ProgramFiles', 'Google', 'Chrome', 'Application', 'chrome.exe'],
+    ['ProgramFiles(x86)', 'Google', 'Chrome', 'Application', 'chrome.exe'],
+    ['LOCALAPPDATA', 'Google', 'Chrome', 'Application', 'chrome.exe']
 ];
 
 export function windowsBrowserCandidates(env = process.env) {
@@ -2710,6 +2753,36 @@ export function isHeadlessDue({ enabled, browserFound, running, loginBlocked, la
 function isPidAlive(pid) {
     if (!Number.isInteger(pid) || pid <= 0) return false;
     try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
+}
+
+export function dedupeItemsByAsin(items, orderId) {
+    const seen = new Set();
+    return (Array.isArray(items) ? items : []).filter(item => {
+        const asin = String(item?.asin ?? '');
+        if (asin === '') return true; // no ASIN — nothing to dedupe on
+        if (seen.has(asin)) {
+            console.log(`[Dedupe] Dropped duplicate ASIN ${asin} in order ${orderId}`);
+            return false;
+        }
+        seen.add(asin);
+        return true;
+    });
+}
+
+// v2.2.0: on Windows a rename over a file that an indexer, antivirus or
+// editor has open fails with EPERM/EBUSY for a moment. Retry briefly, then
+// remove the temp file so no .tmp-* litter is left behind.
+export async function renameWithRetry(from, to, tries = 8) {
+    for (let i = 0; ; i++) {
+        try { return await fsp.rename(from, to); }
+        catch (e) {
+            if (i + 1 >= tries || !['EPERM', 'EBUSY', 'EACCES'].includes(e.code)) {
+                await fsp.rm(from, { force: true }).catch(() => {});
+                throw e;
+            }
+            await new Promise(r => setTimeout(r, 50 * (i + 1)));
+        }
+    }
 }
 
 // Kill a detached child's whole process group: SIGTERM, SIGKILL after 5 s.
@@ -2934,6 +3007,9 @@ export class HeadlessRunner {
             browserCache.delete(key);
         }
         const resolved = findBrowserBinary(this.browserPath);
+        if (resolved && /google[\\/ -]?chrome|[\\/]chrome(\.exe)?$/i.test(resolved) && !/chromium/i.test(resolved)) {
+            console.log(`Browser for headless runs is Google Chrome (${resolved}); it ignores --load-extension since Chrome 137, so runs will stall. Install Brave, Edge or Chromium, or set browserPath.`);
+        }
         browserCache.set(key, { resolved, at: Date.now() });
         return resolved;
     }
@@ -3453,6 +3529,13 @@ export class HeadlessRunner {
     killActiveRunGroup() {
         const child = this._activeChild;
         if (!child) return;
+        if (IS_WINDOWS) {
+            // v2.2.0: synchronous, because the process exits right after;
+            // child.kill() alone would leave the browser's helpers running.
+            try { execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }); }
+            catch { try { child.kill(); } catch { /* already gone */ } }
+            return;
+        }
         try { process.kill(-child.pid, 'SIGTERM'); } catch { try { child.kill('SIGTERM'); } catch { /* already gone */ } }
     }
 
@@ -3644,8 +3727,17 @@ function setCheckboxInItemBlock(content, asin, posted) {
 // against a directly-controlled HeadlessRunner (stuck-state seam).
 export function createServer(store, port, dashboardHtml, headless, onShutdown = null) {
     const server = http.createServer(async (req, res) => {
+        // v2.2.0: DNS-rebinding guard. A page at http://evil.example:<port>
+        // whose name is re-pointed at 127.0.0.1 makes same-origin GETs that
+        // carry no Origin header; its Host header still names evil.example.
+        // The port actually bound (createServer(…, 0) listens on a random one).
+        const boundPort = server.address()?.port || port;
+        if (!isAllowedHost(req.headers.host, boundPort)) {
+            sendJson(res, 403, { error: 'Forbidden host' });
+            return;
+        }
         const origin = req.headers.origin;
-        const originAllowed = isAllowedOrigin(origin, port);
+        const originAllowed = isAllowedOrigin(origin, boundPort);
 
         // Reflect the caller's exact Origin (never "*") and only when it is
         // an allowed one, so a hostile page can't read a response.
@@ -3754,19 +3846,7 @@ export function createServer(store, port, dashboardHtml, headless, onShutdown = 
                     // Same-ASIN-twice notes made every ASIN-keyed writer
                     // (findItemBlock, setFrontmatterArrayValue, mark-posted)
                     // ambiguous.
-                    if (Array.isArray(payload.items)) {
-                        const seenAsins = new Set();
-                        payload.items = payload.items.filter(item => {
-                            const asin = String(item?.asin ?? '');
-                            if (asin === '') return true; // no ASIN — nothing to dedupe on
-                            if (seenAsins.has(asin)) {
-                                console.log(`[Dedupe] Dropped duplicate ASIN ${asin} in order ${payload.order_id}`);
-                                return false;
-                            }
-                            seenAsins.add(asin);
-                            return true;
-                        });
-                    }
+                    if (Array.isArray(payload.items)) payload.items = dedupeItemsByAsin(payload.items, payload.order_id);
                     await store.processPayload(payload);
                     invalidateScanCache();
                     // v1.6.0 (§16.7): a sync that carries helpful_votes writes
@@ -4038,7 +4118,7 @@ export function createServer(store, port, dashboardHtml, headless, onShutdown = 
                 }
             }
         } else if (req.method === 'GET' && req.url?.startsWith('/fonts/')) {
-            // Serve the bundled Terminal Workbench Mono typeface from the
+            // Serve the bundled IBM Plex typefaces from the
             // fonts/ directory next to this module (not the notes folder).
             // Same strictness as /assets/: basename only, .woff2 only, 404
             // for anything else.
@@ -4180,12 +4260,23 @@ export function createServer(store, port, dashboardHtml, headless, onShutdown = 
                     sendJson(res, 400, { error: 'Invalid payload: title and text must be strings and text must be non-empty' });
                     return;
                 }
+                // v2.2.0: optional star rating (the dashboard's picker), so
+                // the rating you chose is saved with your text.
+                let rating;
+                if (payload.rating !== undefined && payload.rating !== null) {
+                    const r = Number(payload.rating);
+                    if (!Number.isInteger(r) || r < 1 || r > 5) {
+                        sendJson(res, 400, { error: 'Invalid rating: must be an integer between 1 and 5' });
+                        return;
+                    }
+                    rating = r;
+                }
                 const found = await findLatestNoteWithAsin(store, safeAsin);
                 if (!found) {
                     sendJson(res, 404, { error: 'ASIN not found in any order note' });
                     return;
                 }
-                const updated = updateReviewBlock(found.content, safeAsin, payload.title, payload.text);
+                const updated = updateReviewBlock(found.content, safeAsin, payload.title, payload.text, rating);
                 if (updated === null) {
                     sendJson(res, 404, { error: 'Review block not found for ASIN' });
                     return;

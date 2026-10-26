@@ -1,12 +1,12 @@
 {
   "name": "amazon-order-sync-server",
-  "version": "2.1.0",
-  "description": "Standalone local server that syncs Amazon orders to a folder of Markdown notes.",
+  "version": "2.2.0",
+  "description": "Local server for Amazon Order Sync: writes your Amazon orders as Markdown notes and serves the dashboard.",
   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test ../tests/"
+    "test": "node --test ../tests/server.test.js"
   },
   "engines": {
     "node": ">=18"

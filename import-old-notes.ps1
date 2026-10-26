@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $Config = Join-Path $env:APPDATA 'amazon-order-sync\config.json'
 if (-not (Test-Path $Zip)) { throw "Archive not found: $Zip" }
-$cfg = Get-Content $Config -Raw | ConvertFrom-Json
+$cfg = Get-Content $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 $port = if ($cfg.port) { [int]$cfg.port } else { 27483 }
 $notes = $cfg.notesPath -replace '^~', $env:USERPROFILE
 Write-Host "Notes folder: $notes"
@@ -48,8 +48,8 @@ $srcPh = Join-Path $src.FullName '.price-history.json'
 $dstPh = Join-Path $notes '.price-history.json'
 $merged = 0
 if (Test-Path $srcPh) {
-    $old = Get-Content $srcPh -Raw | ConvertFrom-Json
-    $live = if (Test-Path $dstPh) { Get-Content $dstPh -Raw | ConvertFrom-Json } else { [pscustomobject]@{} }
+    $old = Get-Content $srcPh -Raw -Encoding UTF8 | ConvertFrom-Json
+    $live = if (Test-Path $dstPh) { Get-Content $dstPh -Raw -Encoding UTF8 | ConvertFrom-Json } else { [pscustomobject]@{} }
     foreach ($p in $old.PSObject.Properties) {
         if (-not $live.PSObject.Properties[$p.Name]) { $live | Add-Member -NotePropertyName $p.Name -NotePropertyValue $p.Value; $merged++ }
     }
