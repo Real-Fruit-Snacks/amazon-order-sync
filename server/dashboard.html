@@ -1,0 +1,3077 @@
+<!DOCTYPE html>
+<!-- Theme: Terminal Workbench (https://github.com/Real-Fruit-Snacks/terminal-workbench-suite, MIT). Typeface: Terminal Workbench Mono (OFL 1.1, see server/fonts/OFL.txt). -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amazon Order Sync</title>
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#090c0d">
+<style>
+  /* Bundled typeface, served by this server from /fonts/ (see server.js). */
+  @font-face {
+    font-family: "Terminal Workbench Mono";
+    src: url("/fonts/TerminalWorkbenchMono-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Terminal Workbench Mono";
+    src: url("/fonts/TerminalWorkbenchMono-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Terminal Workbench Mono";
+    src: url("/fonts/TerminalWorkbenchMono-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Terminal Workbench Mono";
+    src: url("/fonts/TerminalWorkbenchMono-Italic.woff2") format("woff2");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Terminal Workbench Mono";
+    src: url("/fonts/TerminalWorkbenchMono-MediumItalic.woff2") format("woff2");
+    font-weight: 500;
+    font-style: italic;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Terminal Workbench Mono";
+    src: url("/fonts/TerminalWorkbenchMono-BoldItalic.woff2") format("woff2");
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+  }
+
+  /* Terminal Workbench tokens. Dark is the default; light applies via an
+     explicit data-theme="light" on <html>, or via prefers-color-scheme when
+     no explicit theme is set (auto mode). Flat: no gradients, no shadows. */
+  :root {
+    color-scheme: dark;
+    --twb-accent: #63f2ab;
+    --twb-accent-hover: #63f2abd9;
+    --twb-accent-alt: #6bdcff;
+    --twb-warm: #f0c674;
+    --twb-red: #ff6e7a;
+    --twb-orange: #f7a35c;
+    --twb-violet: #b78cff;
+    --twb-bg-0: #090c0d;
+    --twb-bg-1: #0e1214;
+    --twb-bg-2: #13191c;
+    --twb-bg-3: #182024;
+    --twb-bg-4: #202a2f;
+    --twb-border: #2a363d;
+    --twb-border-strong: #39484f;
+    --twb-text: #dce4df;
+    --twb-text-soft: #b4c3bd;
+    --twb-text-muted: #879994;
+    --twb-text-faint: #63736f;
+    --twb-on-accent: #07100d;
+    --twb-tag-bg: #63f2ab21;
+    --twb-tag-border: #63f2ab47;
+    --twb-alt-bg: #6bdcff21;
+    --twb-alt-border: #6bdcff47;
+    --twb-warm-bg: #f0c67421;
+    --twb-warm-border: #f0c67447;
+    --twb-red-bg: #ff6e7a21;
+    --twb-red-border: #ff6e7a47;
+    --twb-nav-active: #63f2ab1b;
+    --twb-hover-line: #6bdcff13;
+    --twb-focus: #63f2ab2e;
+    --twb-selection: #63f2ab33;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --twb-accent: #007a4d;
+    --twb-accent-hover: #007a4dd9;
+    --twb-accent-alt: #006f9e;
+    --twb-warm: #a46600;
+    --twb-red: #c8324c;
+    --twb-orange: #b65800;
+    --twb-violet: #7357b8;
+    --twb-bg-0: #f5f7f4;
+    --twb-bg-1: #edf2ee;
+    --twb-bg-2: #e2eae5;
+    --twb-bg-3: #d6e1db;
+    --twb-bg-4: #c8d5cf;
+    --twb-border: #bfcbc5;
+    --twb-border-strong: #9daea7;
+    --twb-text: #17201d;
+    --twb-text-soft: #34443f;
+    --twb-text-muted: #60706a;
+    --twb-text-faint: #81918a;
+    --twb-on-accent: #f9fbf8;
+    --twb-tag-bg: #007a4d21;
+    --twb-tag-border: #007a4d47;
+    --twb-alt-bg: #006f9e21;
+    --twb-alt-border: #006f9e47;
+    --twb-warm-bg: #a4660021;
+    --twb-warm-border: #a4660047;
+    --twb-red-bg: #c8324c21;
+    --twb-red-border: #c8324c47;
+    --twb-nav-active: #007a4d1b;
+    --twb-hover-line: #006f9e13;
+    --twb-focus: #007a4d2e;
+    --twb-selection: #007a4d33;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --twb-accent: #007a4d;
+      --twb-accent-hover: #007a4dd9;
+      --twb-accent-alt: #006f9e;
+      --twb-warm: #a46600;
+      --twb-red: #c8324c;
+      --twb-orange: #b65800;
+      --twb-violet: #7357b8;
+      --twb-bg-0: #f5f7f4;
+      --twb-bg-1: #edf2ee;
+      --twb-bg-2: #e2eae5;
+      --twb-bg-3: #d6e1db;
+      --twb-bg-4: #c8d5cf;
+      --twb-border: #bfcbc5;
+      --twb-border-strong: #9daea7;
+      --twb-text: #17201d;
+      --twb-text-soft: #34443f;
+      --twb-text-muted: #60706a;
+      --twb-text-faint: #81918a;
+      --twb-on-accent: #f9fbf8;
+      --twb-tag-bg: #007a4d21;
+      --twb-tag-border: #007a4d47;
+      --twb-alt-bg: #006f9e21;
+      --twb-alt-border: #006f9e47;
+      --twb-warm-bg: #a4660021;
+      --twb-warm-border: #a4660047;
+      --twb-red-bg: #c8324c21;
+      --twb-red-border: #c8324c47;
+      --twb-nav-active: #007a4d1b;
+      --twb-hover-line: #006f9e13;
+      --twb-focus: #007a4d2e;
+      --twb-selection: #007a4d33;
+    }
+  }
+
+  :root {
+    --twb-mono: "Terminal Workbench Mono", "JetBrains Mono", "Cascadia Code",
+      "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
+    --twb-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  ::selection { background: var(--twb-selection); }
+  :focus-visible { outline: 2px solid var(--twb-focus); outline-offset: 1px; }
+
+  body {
+    margin: 0;
+    background: var(--twb-bg-0);
+    color: var(--twb-text);
+    font-family: var(--twb-mono);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  /* Signature "terminal manifest" label idiom for structural labels. */
+  .manifest,
+  .tab,
+  h2,
+  .stat .lbl,
+  .year-h,
+  .theme-toggle,
+  .field-label,
+  .quiet-link {
+    font-family: var(--twb-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--twb-text-muted);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--twb-bg-1);
+    border-bottom: 1px solid var(--twb-border);
+  }
+  .topbar-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .brand .ver {
+    color: var(--twb-text-faint);
+    font-size: 11px;
+    font-weight: 400;
+    margin-left: 8px;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tab:hover { background: var(--twb-bg-3); color: var(--twb-text-soft); }
+  .tab.active { background: var(--twb-nav-active); color: var(--twb-accent); }
+  .tab .count {
+    display: inline-block;
+    background: var(--twb-bg-3);
+    border: 1px solid var(--twb-border);
+    color: var(--twb-text-muted);
+    border-radius: 4px;
+    padding: 0 6px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    margin-left: 7px;
+  }
+  .tab.active .count {
+    background: var(--twb-tag-bg);
+    border-color: var(--twb-tag-border);
+    color: var(--twb-accent);
+  }
+  .theme-toggle {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: var(--twb-text-faint);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .theme-toggle:hover { background: var(--twb-bg-3); color: var(--twb-text-muted); }
+  #search {
+    margin-left: auto;
+    padding: 7px 13px;
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    background: var(--twb-bg-2);
+    font-family: var(--twb-mono);
+    font-size: 12.5px;
+    color: var(--twb-text);
+    min-width: 240px;
+  }
+  #search::placeholder { color: var(--twb-text-faint); }
+  #search:focus {
+    outline: none;
+    border-color: var(--twb-border-strong);
+    box-shadow: 0 0 0 2px var(--twb-focus);
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 96px; }
+  .error {
+    background: var(--twb-red-bg);
+    border: 1px solid var(--twb-red-border);
+    color: var(--twb-red);
+    padding: 13px 17px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    font-size: 12.5px;
+  }
+  .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
+  .stat {
+    flex: 1 1 150px;
+    background: var(--twb-bg-2);
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    padding: 16px 20px;
+  }
+  .stat .num {
+    font-size: 25px;
+    font-weight: 500;
+    color: var(--twb-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .lbl { margin-top: 4px; }
+  .panel {
+    background: var(--twb-bg-2);
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  h2 { margin: 0 0 16px; }
+  .hint { color: var(--twb-text-muted); font-size: 12px; margin: -8px 0 16px; }
+
+  /* Monthly spend chart: accent for the current month, accent at 45% for
+     other months, a 1px hairline tick for zero months. */
+  .chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding-top: 28px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+  .bar-amt { font-size: 10.5px; color: var(--twb-text-muted); margin-bottom: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bar { width: 70%; max-width: 42px; background: var(--twb-accent); opacity: 0.45; border-radius: 2px 2px 0 0; min-height: 1px; }
+  .bar.current { opacity: 1; }
+  .bar.zero { height: 1px !important; min-height: 1px; background: var(--twb-border-strong); opacity: 1; }
+  .bar-lbl {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--twb-text-faint);
+    margin-top: 8px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .act-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--twb-border);
+    font-size: 12.5px;
+  }
+  .act-row:last-child { border-bottom: none; }
+  .act-row:hover { background: var(--twb-hover-line); }
+  .act-row .when { color: var(--twb-text-faint); font-size: 11px; width: 90px; flex-shrink: 0; }
+  .act-row .meta { margin-left: auto; color: var(--twb-text-muted); font-size: 11.5px; white-space: nowrap; }
+  .mono { font-family: var(--twb-mono); font-size: 12px; color: var(--twb-text-soft); }
+  .year-h { color: var(--twb-text-faint); margin: 30px 0 6px; }
+  .month-head {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--twb-border);
+    font: inherit;
+    padding: 10px 4px;
+    cursor: pointer;
+    color: var(--twb-text);
+    font-weight: 600;
+    font-size: 13.5px;
+    text-align: left;
+    border-radius: 4px 4px 0 0;
+  }
+  .month-head:hover { background: var(--twb-bg-3); }
+  .month-head .caret { color: var(--twb-text-muted); font-size: 11px; width: 14px; }
+  .month-head .meta {
+    margin-left: auto;
+    color: var(--twb-text-muted);
+    font-weight: 400;
+    font-size: 11.5px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .month-body.collapsed { display: none; }
+  .order-card {
+    background: var(--twb-bg-2);
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    margin: 14px 0;
+    overflow: hidden;
+  }
+  .order-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--twb-border);
+    background: var(--twb-bg-1);
+    font-size: 12.5px;
+  }
+  .order-head .mono { font-size: 12.5px; color: var(--twb-text); }
+  .order-head .date, .order-head .shipto { color: var(--twb-text-muted); font-size: 11.5px; }
+  .order-head .total {
+    margin-left: auto;
+    font-weight: 600;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Status pills: flat 4px chips on the tag tint pattern. */
+  .pill {
+    border-radius: 4px;
+    padding: 2px 9px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .pill.green { background: var(--twb-tag-bg); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+  .pill.amber { background: var(--twb-warm-bg); border-color: var(--twb-warm-border); color: var(--twb-warm); }
+  .pill.red   { background: var(--twb-red-bg);  border-color: var(--twb-red-border);  color: var(--twb-red); }
+  .pill.grey  { background: transparent; border-color: var(--twb-border); color: var(--twb-text-muted); }
+  .item-row {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 6px 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--twb-border);
+    align-items: center;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: var(--twb-hover-line); }
+  .thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--twb-border);
+    background: var(--twb-bg-3);
+    display: block;
+  }
+  .thumb-blank {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    border: 1px dashed var(--twb-border-strong);
+    background: var(--twb-bg-1);
+  }
+  /* Prose exception: product names and review text use system-ui sans. */
+  .item-name { font-family: var(--twb-sans); font-weight: 600; font-size: 14px; }
+  .item-name a { color: var(--twb-accent-alt); text-decoration: none; }
+  .item-name a:hover { text-decoration: underline; }
+  .item-sub { color: var(--twb-text-muted); font-size: 11.5px; margin-top: 2px; }
+  .item-right { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; text-align: right; }
+  .price { font-size: 12.5px; color: var(--twb-text); font-variant-numeric: tabular-nums; }
+  .badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 9px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .badge.posted { background: var(--twb-tag-bg); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+  .badge.draft  { background: var(--twb-alt-bg); border-color: var(--twb-alt-border); color: var(--twb-accent-alt); }
+  .badge.todo   { background: var(--twb-warm-bg); border-color: var(--twb-warm-border); color: var(--twb-warm); }
+  .linkbtn {
+    background: none;
+    border: none;
+    color: var(--twb-accent-alt);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    padding: 0;
+    text-decoration: none;
+  }
+  .linkbtn:hover { text-decoration: underline; }
+  .review-card {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 18px;
+    background: var(--twb-bg-2);
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .review-card .thumb, .review-card .thumb-blank { width: 72px; height: 72px; }
+  .review-card .where { color: var(--twb-text-muted); font-size: 11.5px; margin-top: 2px; }
+  .draft {
+    background: var(--twb-bg-1);
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 12px 0 4px;
+    font-family: var(--twb-sans);
+    font-size: 13.5px;
+    color: var(--twb-text-soft);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+  .draft .draft-title { font-weight: 650; color: var(--twb-text); display: block; margin-bottom: 4px; }
+  .nodraft { color: var(--twb-text-muted); font-size: 12px; margin: 12px 0 4px; }
+
+  /* Overview export strip: quiet topbar-style actions, right-aligned. */
+  .export-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .quiet-link {
+    color: var(--twb-text-faint);
+    text-decoration: none;
+    border: 1px solid var(--twb-border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    background: transparent;
+  }
+  .quiet-link:hover { background: var(--twb-bg-3); color: var(--twb-text-muted); }
+
+  /* Review Studio: editable draft fields on the Needs Review tab. Prose
+     exception applies — review title/body use the sans stack. */
+  .studio { margin: 12px 0 4px; }
+  .field-label { display: block; margin: 12px 0 6px; }
+  .field-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 12px 0 6px;
+  }
+  .field-row .field-label { margin: 0; }
+  .title-input,
+  .review-input {
+    width: 100%;
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    background: var(--twb-bg-1);
+    color: var(--twb-text);
+    font-family: var(--twb-sans);
+    font-size: 13.5px;
+    padding: 8px 12px;
+  }
+  .title-input { font-weight: 650; }
+  .review-input {
+    line-height: 1.55;
+    resize: none;
+    overflow: hidden; /* auto-grown via JS */
+  }
+  .title-input::placeholder, .review-input::placeholder { color: var(--twb-text-faint); }
+  .title-input:focus, .review-input:focus {
+    outline: none;
+    border-color: var(--twb-border-strong);
+    box-shadow: 0 0 0 2px var(--twb-focus);
+  }
+  .char-counter {
+    color: var(--twb-text-faint);
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* Star picker: filled stars use the warm amber/gold token, legible in
+     both dark and light themes. */
+  .stars { display: inline-flex; gap: 2px; }
+  .star {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 1px 4px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1.3;
+    color: var(--twb-text-faint);
+  }
+  .star:hover { background: var(--twb-bg-3); }
+  .star.on { color: var(--twb-warm); }
+  .studio-status {
+    align-self: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .studio-status.ok { color: var(--twb-accent); }
+  .studio-status.warn { color: var(--twb-warm); }
+  .studio-status.err { color: var(--twb-red); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .btn {
+    border: 1px solid var(--twb-border-strong);
+    background: transparent;
+    border-radius: 4px;
+    padding: 7px 13px;
+    font-family: var(--twb-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    color: var(--twb-text-soft);
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn:hover { background: var(--twb-bg-3); color: var(--twb-text); }
+  .btn.primary {
+    background: var(--twb-accent);
+    border-color: var(--twb-accent);
+    color: var(--twb-on-accent);
+    font-weight: 700;
+  }
+  .btn.primary:hover { background: var(--twb-accent-hover); border-color: var(--twb-accent-hover); color: var(--twb-on-accent); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn:disabled:hover { background: transparent; color: var(--twb-text-soft); }
+  .empty { color: var(--twb-text-muted); padding: 24px 4px; font-size: 12.5px; }
+
+  /* v1.3.0: aging badges (existing warm/red tokens only). */
+  .badge.overdue { background: var(--twb-warm-bg); border-color: var(--twb-warm-border); color: var(--twb-warm); }
+  .badge.overdue.red { background: var(--twb-red-bg); border-color: var(--twb-red-border); color: var(--twb-red); }
+
+  /* v1.3.0: filter chips — quiet hairline toggles, tab-idiom active state. */
+  .chipbar { display: flex; gap: 6px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--twb-border);
+    background: transparent;
+    color: var(--twb-text-muted);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-family: var(--twb-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .chip:hover { background: var(--twb-bg-3); color: var(--twb-text-soft); }
+  .chip.active { background: var(--twb-nav-active); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+
+  /* v1.3.0: selection checkbox column + sticky bulk bar (Needs Review). */
+  .review-card.selectable { grid-template-columns: auto 72px 1fr; }
+  .selbox { align-self: start; margin-top: 6px; accent-color: var(--twb-accent); width: 14px; height: 14px; }
+  .bulk-bar {
+    position: sticky;
+    top: 58px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--twb-bg-1);
+    border: 1px solid var(--twb-border-strong);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 11.5px;
+  }
+  .bulk-bar .bulk-progress { color: var(--twb-text-muted); font-variant-numeric: tabular-nums; }
+  /* v1.8.7 (§25.2): full-width quiet pager at the bottom of Needs Review. */
+  .loadmore {
+    display: block;
+    width: 100%;
+    margin: 2px 0 14px;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px dashed var(--twb-border);
+    border-radius: 6px;
+    color: var(--twb-text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .loadmore:hover { background: var(--twb-bg-3); color: var(--twb-text); border-color: var(--twb-border-strong); }
+  .bulk-bar select, .tone-select {
+    border: 1px solid var(--twb-border);
+    border-radius: 4px;
+    background: var(--twb-bg-2);
+    color: var(--twb-text);
+    font-family: var(--twb-mono);
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
+  /* v1.3.0: dismissible summary notice (bulk actions, import results). */
+  .notice {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    background: var(--twb-warm-bg);
+    border: 1px solid var(--twb-warm-border);
+    color: var(--twb-warm);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  .notice[hidden] { display: none; }
+  .notice .dismiss { margin-left: auto; flex-shrink: 0; }
+
+  /* v1.3.0: most-helpful-reviews leaderboard — pure-CSS horizontal bars. */
+  .helpful-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px auto;
+    gap: 6px 14px;
+    align-items: center;
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--twb-border);
+    font-size: 12px;
+  }
+  .helpful-row:last-child { border-bottom: none; }
+  .helpful-row:hover { background: var(--twb-hover-line); }
+  .helpful-row .h-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--twb-sans); }
+  .helpful-row .h-track { height: 8px; background: var(--twb-bg-3); border-radius: 2px; overflow: hidden; }
+  .helpful-row .h-fill { height: 100%; background: var(--twb-accent); opacity: 0.75; }
+  .helpful-row .h-meta { color: var(--twb-text-muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* v1.6.0: PRICE WATCH rows + mint savings chip (existing tokens only). */
+  .pw-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 6px 14px;
+    align-items: center;
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--twb-border);
+    font-size: 12px;
+  }
+  .pw-row:last-child { border-bottom: none; }
+  .pw-row:hover { background: var(--twb-hover-line); }
+  .pw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--twb-sans); }
+  .pw-prices { color: var(--twb-text-muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .badge.savings { background: var(--twb-tag-bg); border-color: var(--twb-tag-border); color: var(--twb-accent); }
+
+  /* v1.6.0: SYNC HEALTH rows; muted OK lines, red errors. */
+  .sh-row {
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--twb-border);
+    font-size: 12px;
+    color: var(--twb-text-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .sh-row:last-child { border-bottom: none; }
+  .sh-row:hover { background: var(--twb-hover-line); }
+  .sh-row.error { color: var(--twb-red); }
+  .sh-row.cancelled { color: var(--twb-warm); }
+
+  /* v1.6.1 (§17.3): STOP SYNC emphasis while a headless run is active. */
+  .quiet-link.danger { color: var(--twb-red); border-color: var(--twb-red-border); }
+
+  /* v1.8.2 (§22.2): login-block gate — greyed trigger buttons, amber hint,
+     amber SETUP LOGIN emphasis (the required action). Existing tokens. */
+  .quiet-link:disabled { opacity: 0.45; cursor: default; }
+  .quiet-link:disabled:hover { background: transparent; color: var(--twb-text-faint); }
+  .quiet-link.amber { color: var(--twb-warm); border-color: var(--twb-warm-border); }
+  .login-block-hint {
+    color: var(--twb-warm);
+    font-family: var(--twb-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    align-self: center;
+  }
+
+  /* v1.7.0 (§18.6): SYNC tab — controls, live log, guidance, gemini usage,
+     run history. Existing tokens only; flat/hairline idiom. */
+  .ctl-row { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+  .ctl-field { display: flex; align-items: center; gap: 8px; }
+  .ctl-field .field-label { margin: 0; }
+  .radio-opt, .check-opt {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--twb-text-soft);
+    cursor: pointer;
+  }
+  .radio-opt input, .check-opt input { accent-color: var(--twb-accent); margin: 0; }
+  .num-input {
+    width: 110px;
+    border: 1px solid var(--twb-border);
+    border-radius: 4px;
+    background: var(--twb-bg-1);
+    color: var(--twb-text);
+    font-family: var(--twb-mono);
+    font-size: 12px;
+    padding: 5px 9px;
+  }
+  .num-input:focus { outline: none; border-color: var(--twb-border-strong); box-shadow: 0 0 0 2px var(--twb-focus); }
+  .logbox {
+    background: var(--twb-bg-1);
+    border: 1px solid var(--twb-border);
+    border-radius: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 10px 14px;
+    font-family: var(--twb-mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+  .logline { white-space: pre-wrap; overflow-wrap: break-word; color: var(--twb-text-soft); }
+  .logline .lt { color: var(--twb-text-faint); margin-right: 8px; font-variant-numeric: tabular-nums; }
+  .logbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .logbar .spacer { flex: 1; }
+  .guidance-box {
+    border: 1px solid var(--twb-warm-border);
+    background: var(--twb-warm-bg);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+  }
+  .guidance-box .g-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .guidance-box .g-msg { color: var(--twb-warm); font-weight: 600; font-size: 12.5px; flex: 1; }
+  /* v1.8.8 (§26.3): guidance dismiss (×) — quiet inline control, warm token. */
+  .guidance-box .g-dismiss {
+    background: none;
+    border: none;
+    color: var(--twb-warm);
+    cursor: pointer;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .guidance-box .g-dismiss:hover { text-decoration: underline; }
+  .guidance-box ol { margin: 0; padding-left: 20px; color: var(--twb-text-soft); font-size: 12.5px; }
+  .sync-hist { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sync-hist th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--twb-text-muted);
+    padding: 6px 8px 6px 6px;
+    border-bottom: 1px solid var(--twb-border);
+  }
+  .sync-hist td {
+    padding: 6px 8px 6px 6px;
+    border-bottom: 1px solid var(--twb-border);
+    font-variant-numeric: tabular-nums;
+    color: var(--twb-text-soft);
+  }
+  .sync-hist tr:last-child td { border-bottom: none; }
+  .hist-ok { color: var(--twb-accent); }
+  .hist-cancelled { color: var(--twb-warm); }
+  .hist-error { color: var(--twb-red); }
+  .gem-num { font-size: 25px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .gem-track { height: 8px; background: var(--twb-bg-3); border-radius: 2px; overflow: hidden; margin: 10px 0 8px; }
+  .gem-fill { height: 100%; background: var(--twb-accent); }
+  .gem-fill.warn { background: var(--twb-warm); }
+  .gem-sub { color: var(--twb-text-muted); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .run-status { font-size: 12.5px; color: var(--twb-text-soft); margin-bottom: 14px; }
+  .run-status .pill { margin-right: 8px; }
+
+  /* v1.6.0: REPEAT ×N badge — muted/grey on the pill-grey pattern. */
+  .badge.repeat { background: transparent; border-color: var(--twb-border); color: var(--twb-text-muted); }
+  /* v1.8.0 (§21.1): REVIEW MISSING — red badge with an inline dismiss (×). */
+  .badge.missing { background: var(--twb-red-bg); border-color: var(--twb-red-border); color: var(--twb-red); display: inline-flex; align-items: center; gap: 6px; }
+  .badge.missing .dismiss-x {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+  }
+  .badge.missing .dismiss-x:hover { text-decoration: underline; }
+  /* v1.8.0 (§21.1): amber one-liner atop Needs Review while any posted
+     review is confirmed missing on Amazon. */
+  .missing-notice {
+    background: var(--twb-warm-bg);
+    border: 1px solid var(--twb-warm-border);
+    color: var(--twb-warm);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+  }
+
+  /* v1.9.0: generic panel header (title left, quiet action right). */
+  .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .panel-head h2 { margin-bottom: 14px; }
+  .panel-head .quiet-link { margin-bottom: 14px; }
+
+  /* v1.4.0: review performance — pure-CSS vertical bars tinted by tone
+     (existing tokens only: faint/muted, cyan alt, mint accent, warm amber). */
+  .perf-chart { display: flex; align-items: flex-end; gap: 10px; height: 180px; padding-top: 24px; }
+  .perf-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; max-width: 90px; }
+  .perf-votes { font-size: 10.5px; color: var(--twb-text-muted); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+  .perf-bar { width: 60%; max-width: 34px; min-height: 3px; border-radius: 2px 2px 0 0; opacity: 0.75; }
+  .tone-balanced-bg { background: var(--twb-text-faint); }
+  .tone-concise-bg { background: var(--twb-accent-alt); }
+  .tone-enthusiastic-bg { background: var(--twb-accent); }
+  .tone-critical-bg { background: var(--twb-warm); }
+  .perf-lbl {
+    font-family: var(--twb-sans);
+    font-size: 10px;
+    color: var(--twb-text-faint);
+    margin-top: 8px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .perf-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    color: var(--twb-text-muted);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+  }
+  .perf-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; opacity: 0.75; }
+  .perf-insight {
+    margin-top: 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--twb-text-soft);
+  }
+
+  @media (max-width: 700px) {
+    .topbar-inner { gap: 10px; padding: 10px 16px; }
+    .theme-toggle { order: 2; margin-left: auto; }
+    #search { order: 3; flex: 1 1 100%; min-width: 0; margin-left: 0; }
+    .wrap { padding: 24px 16px 80px; }
+    .item-row { grid-template-columns: 48px 1fr; }
+    .item-row .thumb, .item-row .thumb-blank { width: 48px; height: 48px; }
+    .item-right { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; text-align: left; }
+    .review-card, .review-card.selectable { grid-template-columns: 1fr; }
+    .helpful-row { grid-template-columns: minmax(0, 1fr) 90px auto; }
+    .bulk-bar { top: 0; }
+    .chart { gap: 4px; }
+    .bar-amt { font-size: 9.5px; }
+    .bar-lbl { font-size: 8px; letter-spacing: 0.03em; }
+    .act-row .when { width: 70px; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">Amazon Order Sync<span class="ver" id="ver">v2.1.0</span></div>
+    <nav class="tabs" id="tabs">
+      <button type="button" class="tab active" data-tab="overview">Overview</button>
+      <button type="button" class="tab" data-tab="orders">Orders</button>
+      <button type="button" class="tab" data-tab="sync">Sync</button>
+      <button type="button" class="tab" data-tab="review">Needs Review<span class="count" id="reviewCount" hidden></span></button>
+    </nav>
+    <input id="search" type="search" placeholder="Search orders, items, ASINs…  ( / )" aria-label="Search orders">
+    <span id="syncLabel" class="manifest" hidden></span>
+    <button id="themeToggle" type="button" class="theme-toggle" aria-label="Theme (click to cycle dark, light, auto)">THEME: AUTO</button>
+  </div>
+</header>
+<main class="wrap">
+  <div id="error" class="error" hidden></div>
+  <div id="syncBanner" class="notice" hidden></div>
+  <div id="notice" class="notice" hidden></div>
+  <section id="panel-overview" class="tabpanel"></section>
+  <section id="panel-orders" class="tabpanel" hidden></section>
+  <section id="panel-sync" class="tabpanel" hidden></section>
+  <section id="panel-review" class="tabpanel" hidden></section>
+</main>
+<script>
+'use strict';
+// ---------------------------------------------------------------------------
+// State and helpers. All order data is scraped from web pages, so every value
+// is inserted via textContent (never innerHTML) and URLs are validated before
+// being used as href/src.
+// ---------------------------------------------------------------------------
+
+const state = {
+  data: null,
+  query: '',
+  tab: 'overview',
+  collapsed: new Set(),
+  selected: new Set(),   // asins selected in Needs Review; cleared on refresh
+  // v1.8.7 (§25.2): Needs Review pagination — how many matching items are
+  // rendered. Reset to REVIEW_BATCH on every full render (tab open, search,
+  // load); LOAD MORE raises it and appends nodes in place.
+  reviewLimit: 50,
+  bannerDismissed: false, // v1.4.0: stale-sync banner, per-session dismissal
+  guidanceDismissed: false, // v1.8.8 (§26.3): SYNC guidance box, per-session dismissal
+  // v1.8.8 (§26.2): Needs Review — reveal beyond-cutoff ("older") items.
+  // Default OFF; reset by every load(), never persisted.
+  showOlder: false,
+  toneChoice: { bulk: null, cards: {} }, // v1.4.0: explicit tone picks stick for the session
+  // v1.7.2 (§20.6): unsaved Review Studio edits keyed by asin
+  // ({title, text, rating}); override server data on EVERY render, cleared
+  // for an asin only on successful save/regenerate/mark-posted for it.
+  edits: {},
+  syncNowBusy: false, // v1.5.0: a /api/sync-now request is in flight
+  reviewCheckBusy: false, // v1.7.0: a /api/review-check-now request is in flight
+  // v1.7.0 (§18.6): SYNC tab form state — survives re-renders for the
+  // session; initialized from headless.lastOptions when first available.
+  syncForm: null,
+  syncFormInit: false,
+  // v1.7.0 (§18.6): LIVE LOG buffer + poller (runs only on the SYNC tab).
+  logLines: [],      // [{i,t,text}], capped
+  logCursor: null,   // /api/logs ?after= cursor (null → last 100 first)
+  logPaused: false,  // PAUSE toggle (fetching pauses; cursor resumes cleanly)
+  logPinned: true,   // auto-scroll to bottom unless the user scrolled up
+  logTimer: null,
+  // v1.7.2 (§20.6): log-poller generation counter — bumped on every
+  // start/stop; a tick only reschedules while its captured generation still
+  // matches, so exactly one chain is ever alive.
+  logPollGen: 0,
+  logPollBusy: false // a fetch is in flight — a new chain defers instead of overlapping
+};
+
+// v1.5.0: headless auto-sync meta from /api/orders (absent on older servers).
+function headlessMeta() {
+  const h = state.data && state.data.headless;
+  return (h && typeof h === 'object') ? h : null;
+}
+
+// lastRunAt may be an ISO string or epoch ms; returns ms or null.
+function headlessLastRunMs(h) {
+  if (!h || !h.lastRunAt) return null;
+  const t = (typeof h.lastRunAt === 'number') ? h.lastRunAt : Date.parse(h.lastRunAt);
+  return isNaN(t) ? null : t;
+}
+
+// v1.5.0: SYNC NOW — fire-and-wait trigger; the server responds when the
+// headless run FINISHES, so the button stays busy (possibly for minutes).
+// v1.7.0 (§18.1/§18.6): optional run-options body. The Overview button calls
+// this with no argument (no body — server-side defaults), the SYNC tab's
+// START SYNC passes the gathered form.
+async function syncNow(options) {
+  if (state.syncNowBusy) return;
+  state.syncNowBusy = true;
+  renderAll();
+  try {
+    const init = { method: 'POST' };
+    if (options) {
+      init.headers = { 'Content-Type': 'application/json' };
+      init.body = JSON.stringify(options);
+    }
+    const res = await fetch('/api/sync-now', init);
+    if (res.status === 409) {
+      // v1.9.0 (§27.2): show the server's error verbatim — a 409 can be a
+      // login block (§22.2), a setup-browser collision, or a real running
+      // sync; none may masquerade as a generic "already running". Generic
+      // fallback only when the body carries no error string.
+      let err409 = '';
+      try { const b = await res.json(); err409 = (b && typeof b.error === 'string') ? b.error : ''; } catch (e) {}
+      showNotice(err409 || 'Sync already running');
+    } else if (!res.ok) {
+      showNotice('Sync failed (HTTP ' + res.status + ')');
+    } else {
+      const r = await res.json();
+      const result = r && r.result ? r.result : {};
+      if (result.lastResult === 'ok') {
+        showNotice('Synced ' + (Number(result.ordersSynced) || 0) + ' orders');
+      } else if (result.lastResult === 'cancelled') {
+        // v1.6.1 (§17.3): cancelled runs resolve amber, not red.
+        showNotice('Sync cancelled');
+      } else {
+        showNotice('Sync failed: ' + (result.lastError || 'unknown error'));
+      }
+    }
+  } catch (e) {
+    // v1.9.0 (§27.2): reset the busy flag in BOTH catch and finally — an
+    // aborted/failed in-flight request can never wedge the button.
+    state.syncNowBusy = false;
+    showNotice('Sync failed (' + e.message + ')');
+  } finally {
+    state.syncNowBusy = false;
+    await load(); // refresh headless meta + orders after the run
+  }
+}
+
+// v1.5.0: SETUP LOGIN — opens a visible browser window on Amazon so the user
+// can capture a session into the headless profile.
+async function setupLogin() {
+  try {
+    const res = await fetch('/api/headless-setup', { method: 'POST' });
+    if (res.status === 409) {
+      showNotice('No browser found — install chromium first.');
+    } else if (!res.ok) {
+      showNotice('Could not open browser (HTTP ' + res.status + ')');
+    } else {
+      showNotice('Browser opened — log into Amazon, then close the window');
+      // v1.8.2 (§22.2): the server cleared the login-block gate on the 200 —
+      // reload state so the locked buttons unlock.
+      await load();
+    }
+  } catch (e) {
+    showNotice('Could not open browser (' + e.message + ')');
+  }
+}
+
+// v1.7.0 (§18.6): REVIEW CHECK NOW — existing §16.7 endpoint; the response
+// resolves when the run finishes (like sync-now).
+async function reviewCheckNow() {
+  if (state.reviewCheckBusy) return;
+  state.reviewCheckBusy = true;
+  renderAll();
+  try {
+    const res = await fetch('/api/review-check-now', { method: 'POST' });
+    if (res.status === 409) {
+      // v1.9.0 (§27.2): server error verbatim (same honest-409 rule as
+      // sync-now); generic "already running" only when the body has none.
+      let err409 = '';
+      try { const b = await res.json(); err409 = (b && typeof b.error === 'string') ? b.error : ''; } catch (e) {}
+      showNotice(err409 || 'Review check already running'); // v1.7.2 (§20.6): fallback was "Sync already running"
+    } else if (!res.ok) {
+      showNotice('Review check failed (HTTP ' + res.status + ')');
+    } else {
+      const r = await res.json();
+      const result = r && r.result ? r.result : {};
+      if (result.lastResult === 'ok') {
+        showNotice('Review check done (' + (Number(result.ordersSynced) || 0) + ' checked)');
+      } else if (result.lastResult === 'cancelled') {
+        showNotice('Review check cancelled');
+      } else {
+        showNotice('Review check failed: ' + (result.lastError || 'unknown error'));
+      }
+    }
+  } catch (e) {
+    // v1.9.0 (§27.2): busy flag resets in BOTH catch and finally.
+    state.reviewCheckBusy = false;
+    showNotice('Review check failed (' + e.message + ')');
+  } finally {
+    state.reviewCheckBusy = false;
+    await load();
+  }
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+
+function parseCurrency(value) {
+  const n = parseFloat(String(value == null ? '' : value).replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+function formatCurrency(n) {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseOrderDate(str) {
+  const d = new Date(String(str == null ? '' : str).replace(/^Ordered on /, ''));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function relTime(ms) {
+  const s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  if (d < 30) return d + 'd ago';
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return mo + 'mo ago';
+  return Math.floor(mo / 12) + 'y ago';
+}
+
+function safeUrl(u) {
+  try {
+    const x = new URL(String(u));
+    return (x.protocol === 'https:' || x.protocol === 'http:') ? String(u) : null;
+  } catch {
+    return null;
+  }
+}
+
+function statusPillClass(status) {
+  const s = String(status || '').toLowerCase();
+  if (s.includes('delivered')) return 'green';
+  if (s.includes('cancel') || s.includes('return')) return 'red';
+  if (s.includes('ship') || s.includes('arriv') || s.includes('out for')) return 'amber';
+  return 'grey';
+}
+
+function itemBadge(item) {
+  if (item.posted) return { cls: 'posted', label: 'Posted' };
+  if (item.hasDraft) return { cls: 'draft', label: 'Draft ready' };
+  return { cls: 'todo', label: 'Needs review' };
+}
+
+// v1.3.0: aging badge for unposted items — amber >30d, red >60d; null when
+// the order date is missing/unparseable or the item is fresh/posted.
+function overdueBadge(item, order) {
+  if (!item || item.posted) return null;
+  const d = parseOrderDate(order && order.date);
+  if (!d) return null;
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days <= 30) return null;
+  return el('span', 'badge overdue' + (days > 60 ? ' red' : ''), days + 'd overdue');
+}
+
+// v1.3.0: tone presets (session state only, default balanced).
+const TONES = [['balanced', 'Balanced'], ['concise', 'Concise'],
+  ['enthusiastic', 'Enthusiastic'], ['critical', 'Critical']];
+
+function toneLabel(v) {
+  for (const [key, label] of TONES) if (key === v) return label;
+  return v;
+}
+
+// v1.4.0: posted reviews with helpfulVotes > 0, plus best tone/rating by
+// mean votes per bucket (ties broken by larger sample). Buckets need >=1
+// review each by construction. '' tone counts as balanced.
+function voteStats() {
+  const list = [];
+  if (state.data) {
+    for (const o of state.data.orders) {
+      for (const it of o.items) {
+        const v = Number(it.helpfulVotes) || 0;
+        if (it.posted && v > 0) list.push({ order: o, item: it, votes: v });
+      }
+    }
+  }
+  const bestOf = (keyFn) => {
+    const m = new Map();
+    for (const { item, votes } of list) {
+      const k = keyFn(item);
+      const e = m.get(k) || { sum: 0, n: 0 };
+      e.sum += votes;
+      e.n++;
+      m.set(k, e);
+    }
+    let best = null;
+    for (const [k, e] of m) {
+      const avg = e.sum / e.n;
+      if (!best || avg > best.avg || (avg === best.avg && e.n > best.n)) {
+        best = { key: k, avg, n: e.n };
+      }
+    }
+    return best;
+  };
+  return {
+    list,
+    bestTone: bestOf(it => it.tone || 'balanced'),
+    bestRating: bestOf(it => String(clampRating(it.rating) || 5))
+  };
+}
+
+// v1.4.0 smart default: best-performing tone when >=3 voted reviews exist.
+function defaultTone() {
+  const stats = voteStats();
+  if (stats.list.length >= 3 && stats.bestTone) return stats.bestTone.key;
+  return 'balanced';
+}
+
+// context: {kind:'bulk'} or {kind:'card', key} — an explicit user change is
+// remembered for the session and wins over the smart default on re-render.
+function makeToneSelect(context) {
+  const s = el('select', 'tone-select');
+  s.setAttribute('aria-label', 'Review tone');
+  for (const [v, label] of TONES) {
+    const o = el('option', null, label);
+    o.value = v;
+    s.appendChild(o);
+  }
+  let initial = state.data ? defaultTone() : 'balanced';
+  if (context) {
+    const saved = context.kind === 'bulk'
+      ? state.toneChoice.bulk
+      : state.toneChoice.cards[context.key];
+    if (saved) initial = saved;
+    s.addEventListener('change', () => {
+      if (context.kind === 'bulk') state.toneChoice.bulk = s.value;
+      else state.toneChoice.cards[context.key] = s.value;
+    });
+  }
+  s.value = initial;
+  return s;
+}
+
+function findItemByAsin(asin) {
+  for (const o of state.data.orders) {
+    for (const it of o.items) if (it.asin === asin) return it;
+  }
+  return null;
+}
+
+function makeThumb(item, cls) {
+  if (item.image) {
+    const img = el('img', 'thumb' + (cls ? ' ' + cls : ''));
+    img.src = '/' + encodeURI(item.image).replace(/#/g, '%23').replace(/\?/g, '%3F');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.addEventListener('error', () => {
+      const blank = el('div', 'thumb-blank');
+      img.replaceWith(blank);
+    });
+    return img;
+  }
+  return el('div', 'thumb-blank');
+}
+
+function showError(message) {
+  const box = document.getElementById('error');
+  box.textContent = message;
+  box.hidden = false;
+}
+
+function hideError() {
+  document.getElementById('error').hidden = true;
+}
+
+// v1.3.0: dismissible summary notice (bulk-action + import results).
+function showNotice(message) {
+  const box = document.getElementById('notice');
+  box.textContent = '';
+  box.appendChild(el('span', null, message));
+  const dismiss = el('button', 'linkbtn dismiss', 'Dismiss');
+  dismiss.type = 'button';
+  dismiss.addEventListener('click', () => { box.hidden = true; box.textContent = ''; });
+  box.appendChild(dismiss);
+  box.hidden = false;
+}
+
+// ---------------------------------------------------------------------------
+// Data loading
+// ---------------------------------------------------------------------------
+
+async function load() {
+  try {
+    const res = await fetch('/api/orders');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    state.data = await res.json();
+    state.selected.clear(); // selection is tied to the loaded item set
+    state.showOlder = false; // v1.8.8 (§26.2): cutoff hiding is the default on every load
+    hideError();
+    renderAll();
+  } catch (e) {
+    showError('Could not load order data from the local server. ' +
+      'Check that the service is running: systemctl --user status amazon-order-sync');
+  }
+}
+
+// Raw variant (no refresh) so bulk actions can loop and refresh once.
+async function markPostedRaw(asin, posted) {
+  const res = await fetch('/api/mark-posted', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ asin, posted })
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
+
+async function markPosted(asin, posted) {
+  try {
+    await markPostedRaw(asin, posted);
+    delete state.edits[asin]; // v1.7.2 (§20.6): edit persisted/consumed — drop it
+    await load();
+  } catch (e) {
+    showError('Failed to update the note. ' +
+      'Check that the service is running: systemctl --user status amazon-order-sync');
+  }
+}
+
+// v1.8.0 (§21.1): dismiss a confirmed missing-review flag, then reload so
+// the badge/notice clear. 404 (unknown ASIN) surfaces as an error too.
+async function dismissMissing(asin) {
+  try {
+    const res = await fetch('/api/dismiss-missing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ asin })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    await load();
+  } catch (e) {
+    showError('Failed to dismiss the missing-review flag (' + e.message + '). ' +
+      'Check that the service is running: systemctl --user status amazon-order-sync');
+  }
+}
+
+// v1.8.0 (§21.1): red REVIEW MISSING badge carrying a small dismiss (×)
+// control. All text via textContent; the click never bubbles to card/row
+// handlers.
+function missingBadge(item) {
+  const b = el('span', 'badge missing', 'Review missing');
+  if (item.asin) {
+    const x = el('button', 'dismiss-x', '×');
+    x.type = 'button';
+    x.title = 'Dismiss — stop flagging this review as missing';
+    x.setAttribute('aria-label', 'Dismiss missing-review flag for ' + item.asin);
+    x.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissMissing(item.asin);
+    });
+    b.appendChild(x);
+  }
+  return b;
+}
+
+// Review Studio: persist an edited draft. Throws on non-2xx.
+async function saveReview(asin, title, text) {
+  const res = await fetch('/api/save-review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ asin, title, text })
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// Review Studio: regenerate a draft via Gemini at the chosen rating and
+// (v1.3.0) tone. `tone` is only sent when non-default so older servers
+// (which 400 on unknown fields' values) keep working. Throws on non-2xx.
+async function regenerateReview(asin, rating, tone) {
+  const body = { asin, rating };
+  if (tone && tone !== 'balanced') body.tone = tone;
+  const res = await fetch('/api/regenerate-review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+function clampRating(value) {
+  const n = parseInt(value, 10);
+  if (isNaN(n)) return null;
+  return Math.min(5, Math.max(1, n));
+}
+
+// Auto-grow a textarea to fit its content (no scrollbar while typing).
+function autoGrow(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+async function copyReview(btn, item) {
+  const text = item.reviewTitle
+    ? item.reviewTitle + '\n\n' + item.reviewText
+    : item.reviewText;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = el('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) {
+    btn.textContent = 'Copy failed';
+    setTimeout(() => { btn.textContent = 'Copy review'; }, 1500);
+  }
+}
+
+// v1.6.1 (§17.3): STOP SYNC — abort the active headless run (either mode).
+// Shared by the Overview export-bar button and the SYNC tab controls (§18.6).
+// v1.9.0 (§27.2): ALWAYS POSTs and then reloads — even when only the local
+// busy flag says "running" — so it doubles as the stuck-state recovery:
+// the server force-clears a stuck run flag (200 {recovered:true}) and a
+// successful stop also drops any stale local busy flags.
+async function stopSync() {
+  try {
+    const res = await fetch('/api/sync-stop', { method: 'POST' });
+    if (res.status === 409) {
+      // v1.9.0 (§27.2): server error verbatim when present.
+      let err409 = '';
+      try { const b = await res.json(); err409 = (b && typeof b.error === 'string') ? b.error : ''; } catch (e) {}
+      showNotice(err409 || 'No run in progress');
+    } else if (!res.ok) {
+      showNotice('Could not stop sync (HTTP ' + res.status + ')');
+    } else {
+      let body = null;
+      try { body = await res.json(); } catch (e) {}
+      // The server says nothing is running now — any local busy flag still
+      // claiming a run is stale; drop it so the buttons unwedge at once.
+      state.syncNowBusy = false;
+      state.reviewCheckBusy = false;
+      showNotice(body && body.recovered ? 'Recovered a stuck sync flag' : 'Sync stopped');
+    }
+  } catch (e) {
+    showNotice('Could not stop sync (' + e.message + ')');
+  } finally {
+    await load(); // refresh headless meta + button state
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Overview tab
+// ---------------------------------------------------------------------------
+
+function renderOverview(root) {
+  const orders = state.data.orders;
+  const allItems = [];
+  for (const o of orders) for (const it of o.items) allItems.push(it);
+
+  const totalOrders = orders.length;
+  const lifetime = orders.reduce((s, o) => s + parseCurrency(o.total), 0);
+  // v1.8.8 (§26.2): "items pending review" counts only within-cutoff items.
+  const pending = allItems.filter(i => !i.posted && !i.beyondCutoff).length;
+  const draftsReady = allItems.filter(i => !i.posted && i.hasDraft).length;
+  const postedCount = allItems.filter(i => i.posted).length;
+
+  // Export strip: plain links; the server sets Content-Disposition so the
+  // browser downloads the files directly.
+  const exportBar = el('div', 'export-bar');
+  exportBar.appendChild(el('span', 'manifest', 'Export:'));
+  const csvLink = el('a', 'quiet-link', 'CSV');
+  csvLink.href = '/api/export.csv';
+  exportBar.appendChild(csvLink);
+  const jsonLink = el('a', 'quiet-link', 'JSON');
+  jsonLink.href = '/api/export.json';
+  exportBar.appendChild(jsonLink);
+
+  // v1.3.0: backfill import — hidden multi-file CSV picker, JSON POST,
+  // dismissible result notice, then refresh.
+  const importBtn = el('button', 'quiet-link', 'Import');
+  importBtn.type = 'button';
+  const fileInput = el('input');
+  fileInput.type = 'file';
+  fileInput.multiple = true;
+  fileInput.accept = '.csv';
+  fileInput.hidden = true;
+  importBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) return;
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importing…';
+    try {
+      const payload = [];
+      for (const f of files) payload.push({ name: f.name, content: await f.text() });
+      const res = await fetch('/api/import-backfill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: payload })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const r = await res.json();
+      let msg = 'Import finished: ' + (r.imported_orders || 0) + ' orders, ' +
+        (r.imported_items || 0) + ' items imported · ' +
+        (r.skipped_existing || 0) + ' existing skipped · ' +
+        (r.skipped_rows || 0) + ' rows skipped';
+      if (Array.isArray(r.errors) && r.errors.length) {
+        msg += ' · errors: ' + r.errors.slice(0, 3).join('; ');
+      }
+      showNotice(msg);
+      await load();
+    } catch (e) {
+      showNotice('Import failed (' + e.message + ')');
+    } finally {
+      importBtn.disabled = false;
+      importBtn.textContent = 'Import';
+      fileInput.value = '';
+    }
+  });
+  exportBar.appendChild(importBtn);
+  exportBar.appendChild(fileInput);
+
+  // v1.5.0: SYNC NOW — headless auto-sync trigger. v1.6.1 (§17.3): while a
+  // run is active server-side OR a request is locally in flight, the button
+  // becomes STOP SYNC (amber/red emphasis) and aborts the run instead.
+  // v1.8.2 (§22.2): while the login-block gate is active, SYNC NOW is
+  // disabled with an explaining title; STOP SYNC is unaffected (no run can
+  // be active while blocked).
+  const hMeta = headlessMeta();
+  const runActive = state.syncNowBusy || !!(hMeta && hMeta.running);
+  const loginBlocked = !runActive && !!(hMeta && hMeta.loginBlocked);
+  const syncBtn = el('button', 'quiet-link' + (runActive ? ' danger' : ''),
+    runActive ? 'Stop sync' : 'Sync now');
+  syncBtn.type = 'button';
+  syncBtn.id = 'syncNowBtn';
+  syncBtn.disabled = loginBlocked;
+  if (loginBlocked) syncBtn.title = 'Log in required — run SETUP LOGIN first';
+  syncBtn.addEventListener('click', runActive ? stopSync : syncNow);
+  exportBar.appendChild(syncBtn);
+
+// v1.5.0: SETUP LOGIN — quiet, always available when a browser was found;
+  // opens a visible window so the user can log into Amazon once.
+  // v1.8.2 (§22.2): amber emphasis while the login-block gate is active —
+  // this is the required action.
+  if (hMeta && hMeta.browserFound) {
+    const setupBtn = el('button', 'quiet-link' + (loginBlocked ? ' amber' : ''), 'Setup login');
+    setupBtn.type = 'button';
+    setupBtn.id = 'setupLoginBtn';
+    if (loginBlocked) setupBtn.title = 'Required — your Amazon session expired';
+    setupBtn.addEventListener('click', setupLogin);
+    exportBar.appendChild(setupBtn);
+  }
+  root.appendChild(exportBar);
+
+  const cards = el('div', 'cards');
+  const stats = [
+    [totalOrders, 'Total orders'],
+    [formatCurrency(lifetime), 'Lifetime spend'],
+    [pending, 'Items pending review'],
+    [draftsReady, 'Drafts ready'],
+    [postedCount, 'Posted reviews']
+  ];
+  for (const [num, lbl] of stats) {
+    const card = el('div', 'stat');
+    card.appendChild(el('div', 'num', String(num)));
+    card.appendChild(el('div', 'lbl', lbl));
+    cards.appendChild(card);
+  }
+  root.appendChild(cards);
+
+  // v1.5.0: AUTO SYNC status line. Hidden entirely when the feature is off
+  // and no run has ever happened. Error guidance is appended inline.
+  if (hMeta && (hMeta.enabled || headlessLastRunMs(hMeta))) {
+    const lastMs = headlessLastRunMs(hMeta);
+    let line = 'AUTO SYNC: ' + (hMeta.enabled ? 'ON' : 'OFF') +
+      ' · LAST: ' + (lastMs ? relTime(lastMs) : 'never');
+    if (hMeta.running) {
+      line += ' · RUNNING';
+    } else if (hMeta.lastResult === 'ok') {
+      line += ' · OK';
+    } else if (hMeta.lastResult === 'cancelled') {
+      line += ' · CANCELLED';
+    } else if (hMeta.lastResult === 'error' || hMeta.lastError) {
+      line += ' · ERROR: ' + (hMeta.lastError || 'unknown');
+      const errText = String(hMeta.lastError || '');
+      if (errText === 'no-browser') {
+        line += ' — install chromium to enable auto sync';
+      } else if (/login/i.test(errText)) {
+        line += ' — press SETUP LOGIN to re-authenticate';
+      }
+    }
+    const statusLine = el('div', 'manifest', line);
+    statusLine.id = 'autoSyncLine';
+    statusLine.style.margin = '2px 0 14px';
+    root.appendChild(statusLine);
+  }
+
+  // v1.6.0: SYNC HEALTH panel (SPEC §16.6) — recent headless run history,
+  // placed right next to the AUTO SYNC status line; hidden when no history.
+  const hHistory = hMeta && Array.isArray(hMeta.history) ? hMeta.history : [];
+  if (hHistory.length) {
+    const shPanel = el('div', 'panel');
+    shPanel.id = 'syncHealthPanel';
+    const shHead = el('div', 'panel-head');
+    shHead.appendChild(el('h2', null, 'Sync health'));
+    // v1.9.0: wipe the run history (server keeps lastRunAt and any active
+    // login block; stale error guidance clears with it).
+    const shClear = el('button', 'quiet-link', 'Clear');
+    shClear.title = 'Clear the run history';
+    shClear.addEventListener('click', async () => {
+      shClear.disabled = true;
+      try {
+        await fetch('/api/sync-history/clear', { method: 'POST' });
+      } catch (e) { /* reload below either way */ }
+      await load();
+    });
+    shHead.appendChild(shClear);
+    shPanel.appendChild(shHead);
+    for (const run of hHistory.slice(0, 10)) {
+      const ok = run && run.result === 'ok';
+      const cancelled = run && run.result === 'cancelled';
+      let line = (run && run.t ? relTime(run.t) : 'unknown') + ' · ';
+      if (ok) {
+        line += 'OK · ' + (Number(run.ordersSynced) || 0) + ' orders · ' +
+          Math.round((Number(run.durationMs) || 0) / 1000) + 's';
+      } else if (cancelled) {
+        // v1.6.1 (§17.3): cancelled runs render CANCELLED in amber.
+        // v1.9.2: with the orders that landed before the stop.
+        line += 'CANCELLED · ' + (Number(run.ordersSynced) || 0) + ' orders';
+      } else {
+        line += 'ERROR: ' + String((run && run.error) || 'unknown');
+        if (Number(run && run.ordersSynced) > 0) line += ' · ' + Number(run.ordersSynced) + ' orders';
+      }
+      shPanel.appendChild(el('div', 'sh-row' + (ok ? '' : cancelled ? ' cancelled' : ' error'), line));
+    }
+    root.appendChild(shPanel);
+  }
+
+  // v1.6.0: PRICE WATCH panel (SPEC §16.2) — items whose live listing price
+  // dropped below what was paid; hidden when there are no drops.
+  const priceDrops = state.data && Array.isArray(state.data.priceDrops) ? state.data.priceDrops : [];
+  if (priceDrops.length) {
+    const fmtPrice = (v) => typeof v === 'number' ? formatCurrency(v) : String(v);
+    const pwPanel = el('div', 'panel');
+    pwPanel.id = 'priceWatchPanel';
+    pwPanel.appendChild(el('h2', null, 'Price watch'));
+    for (const d of priceDrops.slice(0, 10)) {
+      const row = el('div', 'pw-row');
+      row.appendChild(el('span', 'pw-name', d.name || d.asin || '(unnamed item)'));
+      row.appendChild(el('span', 'pw-prices', 'PAID ' + fmtPrice(d.paid) + ' → NOW ' + fmtPrice(d.listing)));
+      row.appendChild(el('span', 'badge savings', '−' + (Number(d.pct) || 0) + '%'));
+      pwPanel.appendChild(row);
+    }
+    root.appendChild(pwPanel);
+  }
+
+  // v1.3.0: most-helpful-reviews leaderboard — top 5 posted items with
+  // helpfulVotes > 0, pure-CSS horizontal bars proportional to the max.
+  // Hidden entirely when nothing has votes.
+  const helpful = [];
+  for (const o of orders) {
+    for (const it of o.items) {
+      const v = Number(it.helpfulVotes) || 0;
+      if (it.posted && v > 0) helpful.push({ item: it, order: o, votes: v });
+    }
+  }
+  if (helpful.length) {
+    helpful.sort((a, b) => b.votes - a.votes);
+    const top = helpful.slice(0, 5);
+    const maxVotes = top[0].votes;
+    const helpPanel = el('div', 'panel');
+    helpPanel.appendChild(el('h2', null, 'Most helpful reviews'));
+    for (const { item, order, votes } of top) {
+      const row = el('div', 'helpful-row');
+      row.appendChild(el('span', 'h-name', item.name || item.asin || '(unnamed item)'));
+      const track = el('div', 'h-track');
+      const fill = el('div', 'h-fill');
+      fill.style.width = Math.max((votes / maxVotes) * 100, 2).toFixed(1) + '%';
+      track.appendChild(fill);
+      row.appendChild(track);
+      row.appendChild(el('span', 'h-meta',
+        votes + (votes === 1 ? ' vote' : ' votes') + ' · ' + (order.orderId || '(unknown order)')));
+      helpPanel.appendChild(row);
+    }
+    root.appendChild(helpPanel);
+  }
+
+  // v1.4.0: REVIEW PERFORMANCE — one bar per posted review with votes,
+  // ordered by order date, tinted by tone; hidden until >=1 voted review.
+  const perf = voteStats();
+  if (perf.list.length) {
+    const perfPanel = el('div', 'panel');
+    perfPanel.appendChild(el('h2', null, 'Review performance'));
+    const byDate = [...perf.list].sort((a, b) => {
+      const da = parseOrderDate(a.order.date);
+      const db = parseOrderDate(b.order.date);
+      return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+    });
+    const maxVotes = Math.max(...byDate.map(r => r.votes));
+    const pchart = el('div', 'perf-chart');
+    for (const { item, votes } of byDate) {
+      const col = el('div', 'perf-col');
+      col.appendChild(el('div', 'perf-votes', String(votes)));
+      const bar = el('div', 'perf-bar tone-' + (item.tone || 'balanced') + '-bg');
+      // Min sliver so a 1-vote bar stays visible next to tall bars.
+      bar.style.height = Math.max((votes / maxVotes) * 100, 2).toFixed(1) + '%';
+      col.appendChild(bar);
+      const name = item.name || item.asin || '(unnamed item)';
+      const lbl = el('div', 'perf-lbl', name.length > 20 ? name.slice(0, 19) + '…' : name);
+      lbl.title = name;
+      col.appendChild(lbl);
+      pchart.appendChild(col);
+    }
+    perfPanel.appendChild(pchart);
+
+    const legend = el('div', 'perf-legend');
+    for (const [tone, label] of TONES) {
+      const entry = el('span');
+      entry.appendChild(el('span', 'perf-swatch tone-' + tone + '-bg'));
+      entry.appendChild(document.createTextNode(label));
+      legend.appendChild(entry);
+    }
+    perfPanel.appendChild(legend);
+
+    if (perf.list.length >= 3 && perf.bestTone && perf.bestRating) {
+      perfPanel.appendChild(el('div', 'perf-insight',
+        'Most helpful tone: ' + toneLabel(perf.bestTone.key) +
+        ' (avg ' + perf.bestTone.avg.toFixed(1) + ' votes)'));
+      perfPanel.appendChild(el('div', 'perf-insight',
+        'Most helpful rating: ' + perf.bestRating.key + '★' +
+        ' (avg ' + perf.bestRating.avg.toFixed(1) + ' votes)'));
+    }
+    root.appendChild(perfPanel);
+  }
+
+  // Monthly spend: last 12 months, oldest to newest.
+  const chartPanel = el('div', 'panel');
+  chartPanel.appendChild(el('h2', null, 'Monthly spend (last 12 months)'));
+  const now = new Date();
+  const nowKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+      label: d.toLocaleString('en-US', { month: 'short' }),
+      year: d.getFullYear(),
+      amount: 0
+    });
+  }
+  const byKey = new Map(months.map(m => [m.key, m]));
+  for (const o of orders) {
+    const d = parseOrderDate(o.date);
+    if (!d) continue;
+    const bucket = byKey.get(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+    if (bucket) bucket.amount += parseCurrency(o.total);
+  }
+  const maxAmount = Math.max(...months.map(m => m.amount), 0);
+  const chart = el('div', 'chart');
+  for (const m of months) {
+    const col = el('div', 'bar-col');
+    col.appendChild(el('div', 'bar-amt', m.amount > 0 ? formatCurrency(m.amount) : ''));
+    const bar = el('div', 'bar');
+    if (m.amount === 0) {
+      bar.classList.add('zero'); // hairline tick for months with no spend
+    } else {
+      const pct = Math.max((m.amount / maxAmount) * 100, 1);
+      bar.style.height = pct.toFixed(1) + '%';
+      if (m.key === nowKey) bar.classList.add('current');
+    }
+    col.appendChild(bar);
+    col.appendChild(el('div', 'bar-lbl', m.label + (m.label === 'Jan' ? ' ' + m.year : '')));
+    chart.appendChild(col);
+  }
+  chartPanel.appendChild(chart);
+  root.appendChild(chartPanel);
+
+  // Recent activity: 8 most recently modified orders.
+  const actPanel = el('div', 'panel');
+  actPanel.appendChild(el('h2', null, 'Recent activity'));
+  const recent = [...orders].sort((a, b) => b.modified - a.modified).slice(0, 8);
+  if (recent.length === 0) {
+    actPanel.appendChild(el('p', 'empty',
+      'No orders synced yet. Open your Amazon order history in Chrome and run the extension to sync.'));
+  }
+  for (const o of recent) {
+    const row = el('div', 'act-row');
+    row.appendChild(el('span', 'when', relTime(o.modified)));
+    row.appendChild(el('span', 'mono', o.orderId || '(unknown order)'));
+    const itemCount = o.items.length;
+    row.appendChild(el('span', 'meta',
+      (o.total || '') + ' · ' + itemCount + (itemCount === 1 ? ' item' : ' items')));
+    actPanel.appendChild(row);
+  }
+  root.appendChild(actPanel);
+}
+
+// ---------------------------------------------------------------------------
+// Orders tab
+// ---------------------------------------------------------------------------
+
+function orderMatches(o, q) {
+  if (!q) return true;
+  if ((o.orderId || '').toLowerCase().includes(q)) return true;
+  if ((o.status || '').toLowerCase().includes(q)) return true;
+  for (const it of o.items) {
+    if ((it.name || '').toLowerCase().includes(q)) return true;
+    if ((it.brand || '').toLowerCase().includes(q)) return true;
+    if ((it.asin || '').toLowerCase().includes(q)) return true;
+  }
+  return false;
+}
+
+function renderItemRow(it, order) {
+  const row = el('div', 'item-row');
+  row.appendChild(makeThumb(it));
+
+  const mid = el('div');
+  const nameDiv = el('div', 'item-name');
+  const href = safeUrl(it.url);
+  if (href) {
+    const a = el('a', null, it.name || it.asin || '(unnamed item)');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    nameDiv.appendChild(a);
+  } else {
+    nameDiv.textContent = it.name || it.asin || '(unnamed item)';
+  }
+  mid.appendChild(nameDiv);
+  const subParts = [];
+  if (it.brand) subParts.push(it.brand);
+  if (it.asin) subParts.push(it.asin);
+  if (it.rating) subParts.push('★ ' + it.rating);
+  if (subParts.length) mid.appendChild(el('div', 'item-sub', subParts.join(' · ')));
+  row.appendChild(mid);
+
+  const right = el('div', 'item-right');
+  if (it.price) right.appendChild(el('span', 'price', it.price));
+  // v1.6.0: repeat-purchase flag (SPEC §16.5) — muted badge when N>1.
+  if ((Number(it.repeatCount) || 0) > 1) right.appendChild(el('span', 'badge repeat', 'REPEAT ×' + Number(it.repeatCount)));
+  const overdue = overdueBadge(it, order);
+  if (overdue) right.appendChild(overdue);
+  // v1.8.0 (§21.1): posted review confirmed missing on Amazon.
+  if (it.reviewMissing) right.appendChild(missingBadge(it));
+  const badge = itemBadge(it);
+  right.appendChild(el('span', 'badge ' + badge.cls, badge.label));
+  if (it.posted && it.asin) {
+    const un = el('button', 'linkbtn', 'Mark not posted');
+    un.type = 'button';
+    un.addEventListener('click', () => markPosted(it.asin, false));
+    right.appendChild(un);
+  }
+  row.appendChild(right);
+  return row;
+}
+
+function renderOrders(root) {
+  const q = state.query.trim().toLowerCase();
+  // Search-only filtering (v2.0.1): a card survives when any of its items
+  // matches the query.
+  const orders = state.data.orders.filter(o => orderMatches(o, q));
+
+  if (state.data.orders.length === 0) {
+    root.appendChild(el('p', 'empty',
+      'No orders synced yet. Open your Amazon order history in Chrome and run the extension to sync.'));
+    return;
+  }
+  if (orders.length === 0) {
+    root.appendChild(el('p', 'empty', 'No orders match your search.'));
+    return;
+  }
+
+  // Group by year, then month (newest first).
+  const byYear = new Map();
+  for (const o of orders) {
+    const d = parseOrderDate(o.date);
+    const year = d ? String(d.getFullYear()) : 'Unknown';
+    const monthNum = d ? d.getMonth() + 1 : 0;
+    const monthName = d ? d.toLocaleString('en-US', { month: 'long' }) : 'Unknown date';
+    if (!byYear.has(year)) byYear.set(year, new Map());
+    const byMonth = byYear.get(year);
+    if (!byMonth.has(monthNum)) byMonth.set(monthNum, { name: monthName, orders: [] });
+    byMonth.get(monthNum).orders.push(o);
+  }
+  const years = [...byYear.keys()].sort((a, b) =>
+    a === 'Unknown' ? 1 : b === 'Unknown' ? -1 : Number(b) - Number(a));
+
+  for (const year of years) {
+    root.appendChild(el('div', 'year-h', year));
+    const byMonth = byYear.get(year);
+    const monthNums = [...byMonth.keys()].sort((a, b) => b - a);
+    for (const mn of monthNums) {
+      const bucket = byMonth.get(mn);
+      const key = year + '-' + mn;
+      const subtotal = bucket.orders.reduce((s, o) => s + parseCurrency(o.total), 0);
+      const isCollapsed = state.collapsed.has(key);
+
+      const head = el('button', 'month-head');
+      head.type = 'button';
+      head.appendChild(el('span', 'caret', isCollapsed ? '▸' : '▾'));
+      head.appendChild(el('span', null, bucket.name + (year !== 'Unknown' ? ' ' + year : '')));
+      head.appendChild(el('span', 'meta',
+        bucket.orders.length + (bucket.orders.length === 1 ? ' order' : ' orders') +
+        ' · ' + formatCurrency(subtotal)));
+      root.appendChild(head);
+
+      const body = el('div', 'month-body' + (isCollapsed ? ' collapsed' : ''));
+      for (const o of bucket.orders) {
+        body.appendChild(renderOrderCard(o));
+      }
+      root.appendChild(body);
+
+      head.addEventListener('click', () => {
+        if (state.collapsed.has(key)) state.collapsed.delete(key);
+        else state.collapsed.add(key);
+        renderAll();
+      });
+    }
+  }
+}
+
+function renderOrderCard(o) {
+  const card = el('div', 'order-card');
+
+  const head = el('div', 'order-head');
+  head.appendChild(el('span', 'mono', o.orderId || '(unknown order)'));
+  if (o.date) head.appendChild(el('span', 'date', o.date));
+  if (o.status) head.appendChild(el('span', 'pill ' + statusPillClass(o.status), o.status));
+  if (o.shipTo) head.appendChild(el('span', 'shipto', 'Ship to: ' + o.shipTo));
+  if (o.total) head.appendChild(el('span', 'total', o.total));
+  card.appendChild(head);
+
+  for (const it of o.items) {
+    card.appendChild(renderItemRow(it, o));
+  }
+  return card;
+}
+
+// ---------------------------------------------------------------------------
+// Needs Review tab
+// ---------------------------------------------------------------------------
+
+// v1.8.7 (§25.2): batch size for Needs Review pagination.
+const REVIEW_BATCH = 50;
+
+function renderReview(root) {
+  const q = state.query.trim().toLowerCase();
+
+  // v1.8.0 (§21.1): amber one-liner while any posted review is confirmed
+  // missing on Amazon (meta.missingReviews, confirmed sightings only).
+  const missing = Array.isArray(state.data.missingReviews) ? state.data.missingReviews : [];
+  if (missing.length > 0) {
+    root.appendChild(el('div', 'missing-notice',
+      missing.length + ' POSTED REVIEW(S) NOT FOUND ON AMAZON — YOUR TEXT IS SAFE IN THE NOTE; REPOST OR DISMISS'));
+  }
+
+  const rows = [];
+  // v1.8.8 (§26.2): beyond-cutoff items are hidden by default. hiddenOlder
+  // counts the older items that match the search filter — it feeds the
+  // SHOW OLDER chip and stays stable whether the toggle is on or off.
+  let hiddenOlder = 0;
+  for (const o of state.data.orders) {
+    for (const it of o.items) {
+      // v1.8.0 (§21.1): a posted item flagged reviewMissing stays listed so
+      // it can be reposted (text is safe in the note) or dismissed.
+      if (it.posted && !it.reviewMissing) continue;
+      if (q && !orderMatches(o, q)) continue;
+      // v1.8.8 (§26.2): cutoff hiding composes with search and the
+      // §25.2 batching (hidden items never enter `rows`, so they never count
+      // as "remaining" in LOAD MORE math; with SHOW OLDER on they do).
+      if (it.beyondCutoff) {
+        hiddenOlder++;
+        if (!state.showOlder) continue;
+      }
+      rows.push({ order: o, item: it });
+    }
+  }
+
+  if (!state.data.geminiConfigured) {
+    root.appendChild(el('p', 'hint',
+      'No Gemini API key is configured, so AI review drafts are not generated automatically. ' +
+      'You can still write reviews by hand in the order notes.'));
+  }
+
+  // Chip row: SHOW OLDER cutoff toggle (below) plus the select-all control.
+  const chips = el('div', 'chipbar');
+
+  // v1.8.8 (§26.2): quiet SHOW OLDER chip — visible
+  // only while older items exist under the current search; toggles revealing
+  // them (active state while on). Never persisted; load() resets it to off.
+  if (hiddenOlder > 0) {
+    const cutoffDays = Number(state.data.reviewCutoffDays) || 60;
+    const olderChip = el('button', 'chip' + (state.showOlder ? ' active' : ''),
+      'Show older (' + hiddenOlder + ')');
+    olderChip.type = 'button';
+    olderChip.id = 'showOlderChip';
+    olderChip.title = (state.showOlder ? 'Hide' : 'Reveal') +
+      ' items from orders older than ' + cutoffDays + ' days';
+    olderChip.addEventListener('click', () => {
+      state.showOlder = !state.showOlder;
+      renderAll();
+    });
+    chips.appendChild(olderChip);
+  }
+
+  const unposted = [];
+  for (const o of state.data.orders) {
+    // v1.8.0 (§21.1): flagged reviewMissing items count as waiting too.
+    for (const it of o.items) if (!it.posted || it.reviewMissing) unposted.push(it);
+  }
+  if (unposted.length === 0) {
+    root.appendChild(chips);
+    root.appendChild(el('p', 'empty', 'Nothing waiting for a review. Nice.'));
+    return;
+  }
+
+  // Select-all/none control (right end of the chip row). Re-rendered with
+  // the panel; toggles EVERY MATCHING item — rendered or not (v1.8.7 §25.2:
+  // selection is fully data-driven) — without touching unsaved textarea
+  // edits (rendered checkboxes are synced in place).
+  const visibleAsins = rows.map(r => r.item.asin).filter(Boolean);
+  const slot = el('div');
+  const selAll = el('button', 'linkbtn');
+  selAll.type = 'button';
+  selAll.style.marginLeft = 'auto';
+  const paintSelAll = () => {
+    const allOn = visibleAsins.length > 0 && visibleAsins.every(a => state.selected.has(a));
+    selAll.textContent = allOn ? 'Select none' : 'Select all';
+  };
+  paintSelAll();
+  selAll.addEventListener('click', () => {
+    const allOn = visibleAsins.length > 0 && visibleAsins.every(a => state.selected.has(a));
+    for (const a of visibleAsins) {
+      if (allOn) state.selected.delete(a); else state.selected.add(a);
+    }
+    paintSelAll();
+    syncSelectionUI(slot);
+  });
+  chips.appendChild(selAll);
+  root.appendChild(chips);
+
+  if (rows.length === 0) {
+    root.appendChild(el('p', 'empty', hiddenOlder > 0
+      ? 'Nothing within the review cutoff matches — SHOW OLDER reveals ' +
+        hiddenOlder + ' older item' + (hiddenOlder === 1 ? '' : 's') + '.'
+      : 'No items match your search.'));
+    return;
+  }
+
+  // Sticky bulk bar lives in this slot; it is re-rendered in place on
+  // selection changes so in-progress card edits survive.
+  renderBulkBar(slot);
+  root.appendChild(slot);
+
+  // v1.8.7 (§25.2): paginate the list in batches of REVIEW_BATCH. The first
+  // batch renders here; LOAD MORE appends the next batch in place (nodes are
+  // inserted before the button — already-rendered cards are never rebuilt,
+  // so unsaved Review Studio edits in them survive). state.reviewLimit is
+  // reset to REVIEW_BATCH by renderAll on every tab/search/load change;
+  // unrendering a card never touches state.selected.
+  const moreBtn = el('button', 'loadmore');
+  moreBtn.type = 'button';
+  let rendered = 0;
+  const paintMore = () => {
+    moreBtn.textContent = 'LOAD MORE (' + (rows.length - rendered) + ' REMAINING)';
+  };
+  const renderBatch = () => {
+    const next = Math.min(rendered + REVIEW_BATCH, rows.length);
+    for (let i = rendered; i < next; i++) {
+      root.insertBefore(renderReviewCard(rows[i].order, rows[i].item, slot), moreBtn);
+    }
+    rendered = next;
+    state.reviewLimit = rendered;
+    if (rendered >= rows.length) moreBtn.remove();
+    else paintMore();
+  };
+  moreBtn.addEventListener('click', renderBatch);
+  root.appendChild(moreBtn);
+  renderBatch(); // first batch; removes the button when nothing remains
+}
+
+// Sync checkboxes + bulk bar after select-all/none (no full re-render).
+function syncSelectionUI(slot) {
+  for (const cb of document.querySelectorAll('#panel-review .selbox')) {
+    if (cb.dataset.asin) cb.checked = state.selected.has(cb.dataset.asin);
+  }
+  renderBulkBar(slot);
+}
+
+// v1.3.0: sticky bulk bar — visible while >=1 item is selected. Actions loop
+// the existing per-item endpoints sequentially with live progress, refresh
+// once at the end, and collect failures into a summary notice.
+function renderBulkBar(slot) {
+  slot.textContent = '';
+  const n = state.selected.size;
+  if (n === 0) return;
+
+  const bar = el('div', 'bulk-bar');
+  const markBtn = el('button', 'btn', 'Mark posted (' + n + ')');
+  markBtn.type = 'button';
+
+  const ratingSel = el('select');
+  ratingSel.setAttribute('aria-label', 'Bulk rating');
+  const keep = el('option', null, 'Keep each');
+  keep.value = '';
+  ratingSel.appendChild(keep);
+  for (let i = 1; i <= 5; i++) {
+    const o = el('option', null, String(i) + (i === 1 ? ' star' : ' stars'));
+    o.value = String(i);
+    ratingSel.appendChild(o);
+  }
+
+  const toneSel = makeToneSelect({ kind: 'bulk' });
+
+  const regenBtn = el('button', 'btn', 'Regenerate (' + n + ')');
+  regenBtn.type = 'button';
+  const clearBtn = el('button', 'linkbtn', 'Clear');
+  clearBtn.type = 'button';
+  const progress = el('span', 'bulk-progress');
+
+  const setBusy = (busy) => {
+    markBtn.disabled = busy;
+    regenBtn.disabled = busy;
+    clearBtn.disabled = busy;
+    ratingSel.disabled = busy;
+    toneSel.disabled = busy;
+  };
+
+  const runBulk = async (kind) => {
+    const asins = [...state.selected];
+    const ratingOverride = clampRating(ratingSel.value);
+    const tone = toneSel.value;
+    setBusy(true);
+    const failures = [];
+    let done = 0;
+    for (const asin of asins) {
+      progress.textContent = done + '/' + asins.length + '…';
+      try {
+        if (kind === 'mark') {
+          await markPostedRaw(asin, true);
+        } else {
+          const rating = ratingOverride ||
+            clampRating((findItemByAsin(asin) || {}).rating) || 5;
+          await regenerateReview(asin, rating, tone);
+        }
+        delete state.edits[asin]; // v1.7.2 (§20.6): success — drop the unsaved edit
+      } catch (e) {
+        failures.push(asin + ' (' + e.message + ')');
+      }
+      done++;
+      progress.textContent = done + '/' + asins.length;
+    }
+    setBusy(false);
+    await load(); // single refresh at the end; also clears the selection
+    if (failures.length) {
+      showNotice('Bulk ' + (kind === 'mark' ? 'mark-posted' : 'regenerate') +
+        ': ' + (asins.length - failures.length) + '/' + asins.length +
+        ' succeeded. Failed: ' + failures.join(', '));
+    } else {
+      showNotice(kind === 'mark'
+        ? 'Marked ' + done + (done === 1 ? ' item' : ' items') + ' posted.'
+        : 'Regenerated ' + done + (done === 1 ? ' draft' : ' drafts') + '.');
+    }
+  };
+
+  markBtn.addEventListener('click', () => runBulk('mark'));
+  regenBtn.addEventListener('click', () => runBulk('regen'));
+  clearBtn.addEventListener('click', () => {
+    state.selected.clear();
+    for (const cb of document.querySelectorAll('#panel-review .selbox')) cb.checked = false;
+    renderBulkBar(slot);
+  });
+
+  bar.appendChild(markBtn);
+  bar.appendChild(ratingSel);
+  bar.appendChild(toneSel);
+  bar.appendChild(regenBtn);
+  bar.appendChild(clearBtn);
+  bar.appendChild(progress);
+  slot.appendChild(bar);
+}
+
+// Review Studio card: editable title/body, star-rating picker, and
+// save/regenerate actions alongside the existing copy/Amazon/mark-posted.
+// All dynamic text goes through textContent / input .value (never innerHTML).
+function renderReviewCard(order, item, bulkSlot) {
+  const card = el('div', 'review-card selectable');
+
+  // Leading selection checkbox (v1.3.0 bulk actions). Selection changes only
+  // re-render the bulk bar so unsaved edits on other cards survive.
+  const cb = el('input', 'selbox');
+  cb.type = 'checkbox';
+  cb.setAttribute('aria-label', 'Select for bulk actions');
+  if (item.asin) {
+    cb.dataset.asin = item.asin;
+    cb.checked = state.selected.has(item.asin);
+    cb.addEventListener('change', () => {
+      if (cb.checked) state.selected.add(item.asin);
+      else state.selected.delete(item.asin);
+      if (bulkSlot) renderBulkBar(bulkSlot);
+    });
+  } else {
+    cb.disabled = true;
+    cb.title = 'No ASIN — bulk actions unavailable';
+  }
+  card.appendChild(cb);
+  card.appendChild(makeThumb(item));
+
+  const body = el('div');
+  body.appendChild(el('div', 'item-name', item.name || item.asin || '(unnamed item)'));
+  const where = el('div', 'where',
+    'Order ' + (order.orderId || '?') + (order.date ? ' · ' + order.date : ''));
+  // v1.6.0: repeat-purchase flag (SPEC §16.5) — muted badge when N>1.
+  if ((Number(item.repeatCount) || 0) > 1) {
+    where.appendChild(document.createTextNode(' '));
+    where.appendChild(el('span', 'badge repeat', 'REPEAT ×' + Number(item.repeatCount)));
+  }
+  const overdue = overdueBadge(item, order);
+  if (overdue) {
+    where.appendChild(document.createTextNode(' '));
+    where.appendChild(overdue);
+  }
+  // v1.8.0 (§21.1): posted review confirmed missing on Amazon.
+  if (item.reviewMissing) {
+    where.appendChild(document.createTextNode(' '));
+    where.appendChild(missingBadge(item));
+  }
+  body.appendChild(where);
+
+  const studio = el('div', 'studio');
+
+  // v1.7.2 (§20.6): unsaved edits win over server data on every render.
+  const edit = (item.asin && state.edits[item.asin]) || null;
+  const recordEdit = () => {
+    if (!item.asin) return;
+    state.edits[item.asin] = { title: titleInput.value, text: textInput.value, rating };
+  };
+
+  studio.appendChild(el('label', 'field-label', 'Title'));
+  const titleInput = el('input', 'title-input');
+  titleInput.type = 'text';
+  titleInput.value = edit ? edit.title : (item.reviewTitle || '');
+  titleInput.placeholder = 'Review title';
+  titleInput.addEventListener('input', recordEdit);
+  studio.appendChild(titleInput);
+
+  const bodyHead = el('div', 'field-row');
+  bodyHead.appendChild(el('label', 'field-label', 'Review'));
+  const counter = el('span', 'char-counter');
+  bodyHead.appendChild(counter);
+  studio.appendChild(bodyHead);
+
+  const textInput = el('textarea', 'review-input');
+  textInput.value = edit ? edit.text : (item.reviewText || '');
+  textInput.placeholder = item.hasDraft
+    ? ''
+    : 'No draft yet — write one here, or press Regenerate to create one.';
+  textInput.rows = 3;
+  studio.appendChild(textInput);
+
+  const updateCounter = () => {
+    const n = textInput.value.length;
+    counter.textContent = n + (n === 1 ? ' char' : ' chars');
+  };
+  updateCounter();
+  textInput.addEventListener('input', () => { autoGrow(textInput); updateCounter(); recordEdit(); });
+
+  // Star-rating picker (1–5); defaults to the draft's rating, else 5.
+  // v1.7.2 (§20.6): an unsaved rating edit wins over the server value.
+  let rating = (edit && clampRating(edit.rating)) || clampRating(item.rating) || 5;
+  const ratingRow = el('div', 'field-row');
+  ratingRow.appendChild(el('span', 'field-label', 'Rating'));
+  const stars = el('div', 'stars');
+  stars.setAttribute('role', 'radiogroup');
+  stars.setAttribute('aria-label', 'Star rating');
+  const starBtns = [];
+  const paintStars = () => {
+    for (let i = 0; i < starBtns.length; i++) {
+      starBtns[i].classList.toggle('on', i < rating);
+      starBtns[i].setAttribute('aria-checked', String(i + 1 === rating));
+    }
+  };
+  for (let i = 1; i <= 5; i++) {
+    const s = el('button', 'star', '★');
+    s.type = 'button';
+    s.title = i + (i === 1 ? ' star' : ' stars');
+    s.setAttribute('role', 'radio');
+    s.setAttribute('aria-label', s.title);
+    const val = i;
+    s.addEventListener('click', () => { rating = val; paintStars(); recordEdit(); });
+    starBtns.push(s);
+    stars.appendChild(s);
+  }
+  paintStars();
+  ratingRow.appendChild(stars);
+  studio.appendChild(ratingRow);
+
+  // Inline status note for save/regenerate feedback.
+  const status = el('span', 'studio-status');
+  let statusTimer = null;
+  const setStatus = (kind, msg, sticky) => {
+    if (statusTimer) { clearTimeout(statusTimer); statusTimer = null; }
+    status.className = 'studio-status' + (kind ? ' ' + kind : '');
+    status.textContent = msg || '';
+    if (msg && !sticky) {
+      statusTimer = setTimeout(() => { status.textContent = ''; }, 3000);
+    }
+  };
+
+  const actions = el('div', 'actions');
+
+  // SAVE DRAFT — persist the current input values to the order note.
+  const saveBtn = el('button', 'btn', 'Save draft');
+  saveBtn.type = 'button';
+  if (!item.asin) saveBtn.disabled = true;
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    setStatus('', '');
+    try {
+      const data = await saveReview(item.asin, titleInput.value, textInput.value);
+      item.reviewTitle = titleInput.value;
+      item.reviewText = textInput.value;
+      item.hasDraft = textInput.value.trim().length > 0;
+      delete state.edits[item.asin]; // v1.7.2 (§20.6): saved — drop the edit
+      setStatus('ok', 'Saved' + (data && data.item_name ? ' — ' + data.item_name : ''));
+    } catch (e) {
+      setStatus('err', 'Save failed (' + e.message + ')', true);
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+  actions.appendChild(saveBtn);
+
+  // REGENERATE — new AI draft at the chosen rating; the card updates in
+  // place. Disabled with a busy label while the request is in flight.
+  const regenBtn = el('button', 'btn', 'Regenerate');
+  regenBtn.type = 'button';
+  if (!item.asin) regenBtn.disabled = true;
+  // v1.3.0 per-card tone; v1.4.0: smart default = best-performing tone,
+  // explicit user choice sticks for the session.
+  const toneSel = makeToneSelect({ kind: 'card', key: item.asin || item.name || '' });
+  regenBtn.addEventListener('click', async () => {
+    regenBtn.disabled = true;
+    regenBtn.textContent = 'Regenerating…';
+    setStatus('', '');
+    try {
+      const data = await regenerateReview(item.asin, rating, toneSel.value);
+      titleInput.value = data.title || '';
+      textInput.value = data.text || '';
+      autoGrow(textInput);
+      updateCounter();
+      const newRating = clampRating(data.rating);
+      if (newRating) { rating = newRating; paintStars(); }
+      item.reviewTitle = titleInput.value;
+      item.reviewText = textInput.value;
+      item.hasDraft = textInput.value.trim().length > 0;
+      item.rating = rating;
+      delete state.edits[item.asin]; // v1.7.2 (§20.6): regenerated — drop the edit
+      if (data.fallback) {
+        setStatus('warn', 'Fallback draft — Gemini unavailable', true);
+      } else {
+        setStatus('ok', 'Draft regenerated');
+      }
+    } catch (e) {
+      setStatus('err', 'Regenerate failed (' + e.message + ')', true);
+    } finally {
+      regenBtn.disabled = false;
+      regenBtn.textContent = 'Regenerate';
+    }
+  });
+  actions.appendChild(regenBtn);
+  actions.appendChild(toneSel);
+
+  const copyBtn = el('button', 'btn', 'Copy review');
+  copyBtn.type = 'button';
+  copyBtn.addEventListener('click', () => copyReview(copyBtn, {
+    reviewTitle: titleInput.value,
+    reviewText: textInput.value
+  }));
+  actions.appendChild(copyBtn);
+
+  if (item.asin) {
+    const reviewLink = el('a', 'btn', 'Leave review on Amazon');
+    reviewLink.href = 'https://www.amazon.com/review/create-review?asin=' +
+      encodeURIComponent(item.asin);
+    reviewLink.target = '_blank';
+    reviewLink.rel = 'noopener noreferrer';
+    actions.appendChild(reviewLink);
+
+    const markBtn = el('button', 'btn primary', 'Mark posted');
+    markBtn.type = 'button';
+    markBtn.addEventListener('click', () => markPosted(item.asin, true));
+    actions.appendChild(markBtn);
+  }
+
+  actions.appendChild(status);
+
+  body.appendChild(studio);
+  body.appendChild(actions);
+  card.appendChild(body);
+
+  // Grow the textarea to fit the restored draft once the card is in layout.
+  requestAnimationFrame(() => autoGrow(textInput));
+
+  return card;
+}
+
+// ---------------------------------------------------------------------------
+// SYNC tab (v1.7.0, SPEC §18.6)
+// ---------------------------------------------------------------------------
+
+// Form state: initialized once from headless.lastOptions (the last effective
+// options), else full defaults; user edits stick for the session.
+function currentSyncForm() {
+  if (!state.syncFormInit) {
+    state.syncFormInit = true;
+    const h = headlessMeta();
+    const lo = h && h.lastOptions && typeof h.lastOptions === 'object' ? h.lastOptions : null;
+    const r = lo && lo.refresh && typeof lo.refresh === 'object' ? lo.refresh : {};
+    state.syncForm = {
+      mode: lo && (lo.mode === 'quick' || lo.mode === 'catchup') ? lo.mode : 'full',
+      maxOrders: lo && Number.isInteger(lo.maxOrders) && lo.maxOrders > 0 ? lo.maxOrders : 0,
+      timeBudgetSec: lo && Number.isInteger(lo.timeBudgetSec) && lo.timeBudgetSec > 0 ? lo.timeBudgetSec : 0,
+      refresh: {
+        prices: r.prices !== false,
+        votes: r.votes !== false,
+        details: r.details !== false
+      }
+    };
+  }
+  return state.syncForm;
+}
+
+function logTimeLabel(t) {
+  const d = new Date(Number(t) || Date.now());
+  return isNaN(d.getTime()) ? '--:--:--' : d.toLocaleTimeString('en-GB', { hour12: false });
+}
+
+function renderLogLine(l) {
+  const row = el('div', 'logline');
+  row.appendChild(el('span', 'lt', logTimeLabel(l && l.t)));
+  row.appendChild(document.createTextNode(String(l && l.text != null ? l.text : '')));
+  return row;
+}
+
+// Append to the persistent buffer and, when the SYNC tab's log box is in the
+// DOM, to the view (auto-scroll only while pinned to the bottom).
+function appendLogLines(lines) {
+  if (!Array.isArray(lines) || !lines.length) return;
+  state.logLines.push(...lines);
+  if (state.logLines.length > 2000) state.logLines = state.logLines.slice(-2000);
+  const box = document.getElementById('logBox');
+  if (box) {
+    // v1.8.8 (§26.3): real lines replace the "Waiting…" placeholder so the
+    // view (and COPY) only ever holds log text.
+    const ph = box.querySelector('.logplaceholder');
+    if (ph) ph.remove();
+    for (const l of lines) box.appendChild(renderLogLine(l));
+    while (box.childNodes.length > 2000) box.removeChild(box.firstChild);
+    if (state.logPinned) box.scrollTop = box.scrollHeight;
+  }
+}
+
+// Log poller: the ONLY new polling in v1.7.0 — runs every 2s and only while
+// the SYNC tab is the visible tab AND the document is visible.
+// v1.7.2 (§20.6): single chain via a generation counter. Every start/stop
+// bumps state.logPollGen; a tick captures its generation and reschedules
+// only while that generation still matches, so renderAll/pause/visibility
+// races can never spawn a second chain. scheduleLogPoll is the ONLY
+// scheduling site.
+function scheduleLogPoll(gen, delay) {
+  if (gen !== state.logPollGen) return; // superseded chain — let it die
+  if (state.tab !== 'sync' || document.hidden) return;
+  if (state.logTimer) clearTimeout(state.logTimer);
+  state.logTimer = setTimeout(() => {
+    state.logTimer = null;
+    logPollTick(gen);
+  }, delay);
+}
+
+async function logPollTick(gen) {
+  if (gen !== state.logPollGen) return; // a start/stop happened — die
+  if (state.tab !== 'sync' || document.hidden) return;
+  // A fetch from a superseded chain may still be in flight (start/stop races
+  // can't cancel it); defer rather than overlap so at most ONE /api/logs
+  // request is ever outstanding.
+  if (!state.logPaused && !state.logPollBusy) {
+    state.logPollBusy = true;
+    try {
+      const url = state.logCursor == null ? '/api/logs' : '/api/logs?after=' + state.logCursor;
+      const res = await fetch(url);
+      if (res.ok) {
+        const d = await res.json();
+        appendLogLines(d && d.lines);
+        if (d && Number.isInteger(d.next)) state.logCursor = d.next;
+      }
+      // v1.9.3: the GEMINI USAGE panel refreshes with the same cheap poll —
+      // /api/orders is far too heavy for 2s polling at thousands of notes.
+      try {
+        const ures = await fetch('/api/gemini-usage');
+        if (ures.ok) {
+          const u = await ures.json();
+          if (u && Number.isInteger(u.used) && Number.isInteger(u.limit) && u.limit > 0) {
+            if (state.data) state.data.gemini = u;
+            const numEl = document.getElementById('gemNum');
+            const fillEl = document.getElementById('gemFill');
+            const text = u.used + ' / ' + u.limit;
+            if (numEl && numEl.textContent !== text) numEl.textContent = text;
+            if (fillEl) {
+              const pct = Math.min(100, Math.max(0, (u.used / u.limit) * 100));
+              fillEl.style.width = pct.toFixed(1) + '%';
+              fillEl.classList.toggle('warn', pct >= 80);
+            }
+          }
+        }
+      } catch { /* usage endpoint unreachable — keep last known */ }
+    } catch { /* daemon unreachable — retry next tick */ }
+    state.logPollBusy = false;
+  }
+  scheduleLogPoll(gen, 2000);
+}
+
+function startLogPolling() {
+  state.logPollGen++; // invalidate any chain already in flight
+  scheduleLogPoll(state.logPollGen, 0);
+}
+
+function stopLogPolling() {
+  state.logPollGen++; // invalidate any chain already in flight
+  if (state.logTimer) {
+    clearTimeout(state.logTimer);
+    state.logTimer = null;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopLogPolling();
+  else if (state.tab === 'sync') startLogPolling();
+});
+
+function renderSync(root) {
+  const hMeta = headlessMeta();
+  const form = currentSyncForm();
+  const runActive = state.syncNowBusy || !!(hMeta && hMeta.running);
+
+  // --- GUIDANCE (§18.4): amber-bordered box when the last run errored. ---
+  // v1.8.8 (§26.3): dismiss (×) control — per-session, like the stale banner.
+  const g = hMeta && hMeta.guidance;
+  if (g && g.message && !state.guidanceDismissed) {
+    const box = el('div', 'guidance-box');
+    box.id = 'guidanceBox';
+    const gHead = el('div', 'g-head');
+    gHead.appendChild(el('div', 'g-msg', String(g.message)));
+    const gDismiss = el('button', 'g-dismiss', '×');
+    gDismiss.type = 'button';
+    gDismiss.id = 'guidanceDismiss';
+    gDismiss.title = 'Dismiss for this session';
+    gDismiss.setAttribute('aria-label', 'Dismiss guidance');
+    gDismiss.addEventListener('click', () => {
+      state.guidanceDismissed = true;
+      box.remove();
+    });
+    gHead.appendChild(gDismiss);
+    box.appendChild(gHead);
+    if (Array.isArray(g.steps) && g.steps.length) {
+      const ol = el('ol');
+      for (const s of g.steps) ol.appendChild(el('li', null, String(s)));
+      box.appendChild(ol);
+    }
+    root.appendChild(box);
+  }
+
+  // --- CONTROLS panel ---
+  const ctl = el('div', 'panel');
+  ctl.id = 'syncControls';
+  ctl.appendChild(el('h2', null, 'Controls'));
+
+  const modeRow = el('div', 'ctl-row');
+  modeRow.appendChild(el('span', 'field-label', 'Mode'));
+  for (const [val, label] of [['quick', 'Quick — skip completed'], ['catchup', 'Catch-up — only new orders'], ['full', 'Full']]) {
+    const lab = el('label', 'radio-opt');
+    const radio = el('input');
+    radio.type = 'radio';
+    radio.name = 'syncMode';
+    radio.value = val;
+    radio.checked = form.mode === val;
+    radio.addEventListener('change', () => { form.mode = val; });
+    lab.appendChild(radio);
+    lab.appendChild(document.createTextNode(label));
+    modeRow.appendChild(lab);
+  }
+  ctl.appendChild(modeRow);
+
+  const numRow = el('div', 'ctl-row');
+  const numField = (label, key, hint) => {
+    const wrap = el('div', 'ctl-field');
+    wrap.appendChild(el('span', 'field-label', label));
+    const inp = el('input', 'num-input');
+    inp.type = 'number';
+    inp.min = '0';
+    inp.step = '1';
+    inp.value = String(form[key]);
+    inp.title = hint;
+    inp.id = 'sync-' + key;
+    // v1.9.0: commit on EVERY keystroke, not just blur — a blur-only change
+    // event is lost when a re-render lands between typing and clicking, which
+    // made an edited 0 silently revert to the previous value at submit time.
+    inp.addEventListener('input', () => {
+      const n = parseInt(inp.value, 10);
+      form[key] = (Number.isInteger(n) && n > 0) ? n : 0;
+    });
+    wrap.appendChild(inp);
+    return wrap;
+  };
+  numRow.appendChild(numField('Max orders (0 = all)', 'maxOrders', '0 = all orders'));
+  numRow.appendChild(numField('Time budget, sec (0 = none)', 'timeBudgetSec', '0 = no time budget'));
+  ctl.appendChild(numRow);
+
+  const refRow = el('div', 'ctl-row');
+  refRow.appendChild(el('span', 'field-label', 'Refresh'));
+  for (const [key, label] of [['prices', 'Prices'], ['votes', 'Review status + votes'], ['details', 'Details']]) {
+    const lab = el('label', 'check-opt');
+    const cb = el('input');
+    cb.type = 'checkbox';
+    cb.checked = form.refresh[key];
+    cb.id = 'sync-refresh-' + key;
+    cb.addEventListener('change', () => { form.refresh[key] = cb.checked; });
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(label));
+    refRow.appendChild(lab);
+  }
+  ctl.appendChild(refRow);
+
+  const actions = el('div', 'actions');
+  if (runActive) {
+    // §17.3 behavior, also on the SYNC tab: STOP SYNC while a run is active.
+    const stopBtn = el('button', 'quiet-link danger', 'Stop sync');
+    stopBtn.type = 'button';
+    stopBtn.id = 'syncTabStopBtn';
+    stopBtn.addEventListener('click', stopSync);
+    actions.appendChild(stopBtn);
+  } else {
+    // v1.8.2 (§22.2): while the login-block gate is active, both triggers
+    // are disabled with explaining titles and an amber hint replaces the
+    // idle button row.
+    const loginBlocked = !!(hMeta && hMeta.loginBlocked);
+    const startBtn = el('button', 'btn primary', state.syncNowBusy ? 'Syncing…' : 'Start sync');
+    startBtn.type = 'button';
+    startBtn.id = 'startSyncBtn';
+    startBtn.disabled = loginBlocked || state.syncNowBusy || state.reviewCheckBusy;
+    if (loginBlocked) startBtn.title = 'Log in required — run SETUP LOGIN first';
+    startBtn.addEventListener('click', () => {
+      // v1.9.0 belt: re-read the live inputs at submit time, so even an
+      // event-ordering oddity can never send a stale number.
+      for (const key of ['maxOrders', 'timeBudgetSec']) {
+        const live = document.getElementById('sync-' + key);
+        if (live) {
+          const n = parseInt(live.value, 10);
+          form[key] = (Number.isInteger(n) && n > 0) ? n : 0;
+        }
+      }
+      syncNow({
+        mode: form.mode,
+        maxOrders: form.maxOrders,
+        timeBudgetSec: form.timeBudgetSec,
+        refresh: {
+          prices: form.refresh.prices,
+          votes: form.refresh.votes,
+          details: form.refresh.details
+        }
+      });
+    });
+    actions.appendChild(startBtn);
+
+    const rcBtn = el('button', 'btn', state.reviewCheckBusy ? 'Checking…' : 'Review check now');
+    rcBtn.type = 'button';
+    rcBtn.id = 'reviewCheckBtn';
+    rcBtn.disabled = loginBlocked || state.reviewCheckBusy || state.syncNowBusy;
+    if (loginBlocked) rcBtn.title = 'Log in required — run SETUP LOGIN first';
+    rcBtn.addEventListener('click', reviewCheckNow);
+    actions.appendChild(rcBtn);
+
+    if (loginBlocked) {
+      const hint = el('span', 'login-block-hint', 'LOG IN REQUIRED — RUN SETUP LOGIN FIRST');
+      hint.id = 'loginBlockHint';
+      actions.appendChild(hint);
+    }
+  }
+  ctl.appendChild(actions);
+  root.appendChild(ctl);
+
+  // --- RUN STATUS + HISTORY panel ---
+  const stPanel = el('div', 'panel');
+  stPanel.id = 'runStatusPanel';
+  stPanel.appendChild(el('h2', null, 'HEADLESS RUN STATUS')); // v1.7.2 (§20.6)
+  const statusLine = el('div', 'run-status');
+  if (hMeta && hMeta.running) {
+    statusLine.appendChild(el('span', 'pill amber', 'Running'));
+    const mode = hMeta.lastOptions && hMeta.lastOptions.mode
+      ? String(hMeta.lastOptions.mode).toUpperCase() : 'FULL';
+    let line = mode + ' mode';
+    const startMs = (typeof hMeta.runStartedAt === 'number') ? hMeta.runStartedAt
+      : (hMeta.runStartedAt ? Date.parse(hMeta.runStartedAt) : null);
+    if (startMs && !isNaN(startMs)) line += ' · started ' + relTime(startMs);
+    statusLine.appendChild(document.createTextNode(line));
+  } else {
+    statusLine.appendChild(el('span', 'pill grey', 'Idle'));
+    const lastMs = headlessLastRunMs(hMeta);
+    statusLine.appendChild(document.createTextNode(lastMs ? 'last run ' + relTime(lastMs) : 'no runs yet'));
+  }
+  stPanel.appendChild(statusLine);
+
+  // v1.7.2 (§20.6): quiet browser-sync freshness line under the headless
+  // status — distinguishes the extension-driven sync from headless runs.
+  const lastBrowserSyncMs = state.data && typeof state.data.lastSyncAt === 'number'
+    ? state.data.lastSyncAt : null;
+  stPanel.appendChild(el('div', 'manifest',
+    'LAST BROWSER SYNC: ' + (lastBrowserSyncMs ? relTime(lastBrowserSyncMs) : 'never')));
+
+  stPanel.appendChild(el('h2', null, 'History'));
+  const hist = hMeta && Array.isArray(hMeta.history) ? hMeta.history.slice(0, 20) : [];
+  if (!hist.length) {
+    stPanel.appendChild(el('p', 'empty', 'No runs recorded yet.'));
+  } else {
+    const table = el('table', 'sync-hist');
+    const thead = el('thead');
+    const htr = el('tr');
+    for (const h of ['Time', 'Result', 'Orders', 'Duration']) htr.appendChild(el('th', null, h));
+    thead.appendChild(htr);
+    table.appendChild(thead);
+    const tbody = el('tbody');
+    for (const run of hist) {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, run && run.t ? relTime(run.t) : 'unknown'));
+      const ok = run && run.result === 'ok';
+      const cancelled = run && run.result === 'cancelled';
+      const resTd = el('td', ok ? 'hist-ok' : cancelled ? 'hist-cancelled' : 'hist-error',
+        ok ? 'OK' : cancelled ? 'CANCELLED' : 'ERROR');
+      if (!ok && !cancelled && run && run.error) resTd.title = String(run.error);
+      tr.appendChild(resTd);
+      tr.appendChild(el('td', null, String(Number(run && run.ordersSynced) || 0)));
+      tr.appendChild(el('td', null, Math.round((Number(run && run.durationMs) || 0) / 1000) + 's'));
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    stPanel.appendChild(table);
+  }
+  root.appendChild(stPanel);
+
+  // --- LIVE LOG panel ---
+  const logPanel = el('div', 'panel');
+  logPanel.id = 'liveLogPanel';
+  logPanel.appendChild(el('h2', null, 'Live log'));
+  const bar = el('div', 'logbar');
+  const pauseBtn = el('button', 'chip' + (state.logPaused ? ' active' : ''),
+    state.logPaused ? 'Resume' : 'Pause');
+  pauseBtn.type = 'button';
+  pauseBtn.id = 'logPauseBtn';
+  pauseBtn.addEventListener('click', () => { state.logPaused = !state.logPaused; renderAll(); });
+  bar.appendChild(pauseBtn);
+  const clearBtn = el('button', 'chip', 'Clear view');
+  clearBtn.type = 'button';
+  clearBtn.id = 'logClearBtn';
+  clearBtn.addEventListener('click', () => {
+    state.logLines = [];
+    const b = document.getElementById('logBox');
+    if (b) b.textContent = '';
+  });
+  bar.appendChild(clearBtn);
+
+  // v1.8.8 (§26.3): COPY — copies the currently visible log text to the
+  // clipboard; transient COPIED label state (chips render uppercase).
+  const copyLogBtn = el('button', 'chip', 'Copy');
+  copyLogBtn.type = 'button';
+  copyLogBtn.id = 'logCopyBtn';
+  copyLogBtn.addEventListener('click', async () => {
+    const b = document.getElementById('logBox');
+    const parts = [];
+    if (b) {
+      for (const n of b.querySelectorAll('.logline')) {
+        if (n.classList.contains('logplaceholder')) continue; // not log text
+        const lt = n.querySelector('.lt');
+        const body = lt ? n.textContent.slice(lt.textContent.length) : n.textContent;
+        parts.push((lt ? lt.textContent + ' ' : '') + body);
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(parts.join('\n'));
+      copyLogBtn.textContent = 'Copied';
+    } catch (e) {
+      copyLogBtn.textContent = 'Copy failed';
+    }
+    setTimeout(() => { copyLogBtn.textContent = 'Copy'; }, 1500);
+  });
+  bar.appendChild(copyLogBtn);
+
+  // v1.8.8 (§26.3): CLEAR — empties the SERVER ring buffer via
+  // POST /api/logs/clear and clears the local view. The polling cursor is
+  // left untouched (monotonic), so the poller never refetches old lines —
+  // only lines logged after the clear stream in.
+  const clearServerBtn = el('button', 'chip', 'Clear');
+  clearServerBtn.type = 'button';
+  clearServerBtn.id = 'logClearServerBtn';
+  clearServerBtn.title = 'Clear the server log buffer and this view';
+  clearServerBtn.addEventListener('click', async () => {
+    clearServerBtn.disabled = true;
+    try {
+      const res = await fetch('/api/logs/clear', { method: 'POST' });
+      if (!res.ok) {
+        showNotice('Could not clear the log (HTTP ' + res.status + ')');
+      } else {
+        state.logLines = [];
+        const b = document.getElementById('logBox');
+        if (b) b.textContent = '';
+      }
+    } catch (e) {
+      showNotice('Could not clear the log (' + e.message + ')');
+    } finally {
+      clearServerBtn.disabled = false;
+    }
+  });
+  bar.appendChild(clearServerBtn);
+  bar.appendChild(el('span', 'spacer'));
+  bar.appendChild(el('span', 'manifest', 'Polls only while this tab is visible'));
+  logPanel.appendChild(bar);
+
+  const box = el('div', 'logbox');
+  box.id = 'logBox';
+  if (state.logLines.length) {
+    for (const l of state.logLines) box.appendChild(renderLogLine(l));
+  } else {
+    box.appendChild(el('div', 'logline logplaceholder', 'Waiting for log lines…'));
+  }
+  box.addEventListener('scroll', () => {
+    state.logPinned = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+  });
+  logPanel.appendChild(box);
+  root.appendChild(logPanel);
+  requestAnimationFrame(() => { if (state.logPinned) box.scrollTop = box.scrollHeight; });
+
+  // --- GEMINI USAGE panel (hidden without an API key) ---
+  const gem = state.data && state.data.gemini;
+  if (state.data && state.data.geminiConfigured !== false &&
+      gem && Number.isInteger(gem.used) && Number.isInteger(gem.limit) && gem.limit > 0) {
+    const p = el('div', 'panel');
+    p.id = 'geminiPanel';
+    p.appendChild(el('h2', null, 'Gemini usage'));
+    const gemNum = el('div', 'gem-num', gem.used + ' / ' + gem.limit);
+    gemNum.id = 'gemNum';
+    p.appendChild(gemNum);
+    const track = el('div', 'gem-track');
+    const fill = el('div', 'gem-fill');
+    fill.id = 'gemFill';
+    const pct = Math.min(100, Math.max(0, (gem.used / gem.limit) * 100));
+    if (pct >= 80) fill.classList.add('warn');
+    fill.style.width = pct.toFixed(1) + '%';
+    track.appendChild(fill);
+    p.appendChild(track);
+    p.appendChild(el('div', 'gem-sub', 'Resets at midnight'));
+    root.appendChild(p);
+  }
+
+  startLogPolling();
+}
+
+// ---------------------------------------------------------------------------
+// Tabs, search, theme toggle, boot
+// ---------------------------------------------------------------------------
+
+// v1.4.0: sync freshness — dismissible amber banner (all tabs) when stale,
+// quiet topbar label when fresh. Dismissal is per-session (memory only).
+function renderSyncFreshness() {
+  const label = document.getElementById('syncLabel');
+  const banner = document.getElementById('syncBanner');
+  const d = state.data || {};
+  const hasData = (d.orders || []).length > 0;
+  const last = typeof d.lastSyncAt === 'number' ? d.lastSyncAt : null;
+  const remindDays = Number(d.syncReminderDays) || 7;
+  const days = last == null ? null : Math.floor((Date.now() - last) / 86400000);
+  const stale = last == null ? hasData : days > remindDays;
+
+  if (stale && !state.bannerDismissed) {
+    banner.textContent = '';
+    const msg = last == null
+      ? 'LAST SYNC NEVER — OPEN YOUR AMAZON ORDERS PAGE AND RUN SYNC TO REFRESH'
+      : 'LAST SYNC ' + days + (days === 1 ? ' DAY' : ' DAYS') +
+        ' AGO — OPEN YOUR AMAZON ORDERS PAGE AND RUN SYNC TO REFRESH';
+    banner.appendChild(el('span', null, msg));
+    const dismiss = el('button', 'linkbtn dismiss', 'Dismiss');
+    dismiss.type = 'button';
+    dismiss.addEventListener('click', () => {
+      state.bannerDismissed = true;
+      banner.hidden = true;
+    });
+    banner.appendChild(dismiss);
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+
+  if (!stale && last != null) {
+    label.textContent = days <= 0 ? 'SYNCED TODAY' : 'SYNCED ' + days + 'd AGO';
+    label.hidden = false;
+  } else {
+    label.hidden = true;
+  }
+}
+
+function renderAll() {
+  if (!state.data) return;
+  // v1.8.7 (§25.2): every full render (tab/search/data change) resets
+  // the Needs Review batch window; LOAD MORE bypasses renderAll entirely.
+  state.reviewLimit = REVIEW_BATCH;
+  document.getElementById('ver').textContent = 'v' + (state.data.version || "2.1.0");
+  renderSyncFreshness();
+
+  // v1.8.0 (§21.1): flagged reviewMissing items count toward the tab badge —
+  // they are listed on the Needs Review tab too. v1.8.8 (§26.2): beyond-cutoff
+  // items are excluded — the badge counts only within-cutoff items (posted
+  // items are never beyondCutoff, so reviewMissing is unaffected).
+  const pending = state.data.orders.reduce(
+    (s, o) => s + o.items.filter(i => (!i.posted && !i.beyondCutoff) || i.reviewMissing).length, 0);
+  const count = document.getElementById('reviewCount');
+  count.textContent = String(pending);
+  count.hidden = pending === 0;
+
+  const panels = {
+    overview: document.getElementById('panel-overview'),
+    orders: document.getElementById('panel-orders'),
+    sync: document.getElementById('panel-sync'),
+    review: document.getElementById('panel-review')
+  };
+  for (const [name, panel] of Object.entries(panels)) {
+    panel.hidden = name !== state.tab;
+    panel.textContent = '';
+  }
+  if (state.tab === 'overview') renderOverview(panels.overview);
+  else if (state.tab === 'orders') renderOrders(panels.orders);
+  else if (state.tab === 'sync') renderSync(panels.sync);
+  else renderReview(panels.review);
+
+  for (const btn of document.querySelectorAll('#tabs .tab')) {
+    btn.classList.toggle('active', btn.dataset.tab === state.tab);
+  }
+
+  // v1.7.0: the log poller only lives on the SYNC tab.
+  if (state.tab !== 'sync') stopLogPolling();
+}
+
+// v1.7.0: #/tab hash routing (boot + tab clicks); keeps deep links working.
+const KNOWN_TABS = ['overview', 'orders', 'sync', 'review'];
+function tabFromHash() {
+  const m = String(location.hash || '').match(/^#\/(\w+)/);
+  return (m && KNOWN_TABS.includes(m[1])) ? m[1] : null;
+}
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  state.tab = btn.dataset.tab;
+  try { history.replaceState(null, '', '#/' + state.tab); } catch { /* file:// etc. */ }
+  renderAll();
+});
+
+window.addEventListener('hashchange', () => {
+  const t = tabFromHash();
+  if (t && t !== state.tab) {
+    state.tab = t;
+    renderAll();
+  }
+});
+
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', () => {
+  state.query = searchInput.value;
+  if (state.tab !== 'orders') {
+    state.tab = 'orders';
+    try { history.replaceState(null, '', '#/orders'); } catch { /* file:// etc. */ }
+  }
+  renderAll();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== searchInput &&
+      !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
+    e.preventDefault();
+    searchInput.focus();
+  } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+    searchInput.value = '';
+    state.query = '';
+    renderAll();
+    searchInput.blur();
+  }
+});
+
+// Theme toggle: cycles dark -> light -> auto, persisted in localStorage.
+// 'auto' removes data-theme so CSS falls back to prefers-color-scheme
+// (dark by default, light when the OS asks for it).
+const themeBtn = document.getElementById('themeToggle');
+const THEME_KEY = 'aos-theme';
+let themeMode = 'auto';
+try { themeMode = localStorage.getItem(THEME_KEY) || 'auto'; } catch { /* storage blocked */ }
+if (themeMode !== 'dark' && themeMode !== 'light' && themeMode !== 'auto') themeMode = 'auto';
+
+function applyTheme(mode) {
+  if (mode === 'auto') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', mode);
+  }
+  themeBtn.textContent = 'THEME: ' + mode.toUpperCase();
+}
+
+themeBtn.addEventListener('click', () => {
+  themeMode = themeMode === 'dark' ? 'light' : themeMode === 'light' ? 'auto' : 'dark';
+  try { localStorage.setItem(THEME_KEY, themeMode); } catch { /* storage blocked */ }
+  applyTheme(themeMode);
+});
+applyTheme(themeMode);
+
+// v1.7.0: honor a #/tab deep link on first load.
+const bootTab = tabFromHash();
+if (bootTab) state.tab = bootTab;
+
+load();
+</script>
+</body>
+</html>

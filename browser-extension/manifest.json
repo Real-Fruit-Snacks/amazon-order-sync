@@ -1,14 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Amazon Order Sync",
-  "version": "1.0.7",
-  "description": "Sync Amazon orders to local Obsidian vault.",
+  "version": "2.1.0",
+  "description": "Sync Amazon orders to a local folder via a tiny local server.",
   "permissions": [
     "activeTab",
     "scripting"
   ],
   "host_permissions": [
     "*://*.amazon.com/*",
+    "*://*.amazon.co.uk/*",
+    "*://*.amazon.de/*",
+    "*://*.amazon.ca/*",
+    "*://*.amazon.fr/*",
+    "*://*.amazon.it/*",
+    "*://*.amazon.es/*",
+    "*://*.amazon.co.jp/*",
+    "*://*.amazon.com.au/*",
     "http://127.0.0.1:27483/*"
   ],
   "action": {
@@ -23,10 +31,21 @@
   "content_scripts": [
     {
       "matches": [
+        "*://*.amazon.com/your-orders*",
         "*://*.amazon.com/your-orders/*",
         "*://*.amazon.com/gp/css/order-history*",
+        "*://*.amazon.com/gp/your-account/order-history*",
         "*://*.amazon.com/review/create-review*",
-        "*://*.amazon.com/review/review-your-purchases*"
+        "*://*.amazon.com/review/review-your-purchases*",
+        "*://*.amazon.com/ap/signin*",
+        "*://*.amazon.co.uk/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.ca/*",
+        "*://*.amazon.fr/*",
+        "*://*.amazon.it/*",
+        "*://*.amazon.es/*",
+        "*://*.amazon.co.jp/*",
+        "*://*.amazon.com.au/*"
       ],
       "js": [
         "content.js"

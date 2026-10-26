@@ -1,5 +1,34 @@
-node_modules/
-.env
-Orders/
+# --- personal data: never commit -------------------------------------------
+AmazonOrders/
+AmazonOrders*/
+AmazonOrders-old.zip
 *.zip
+orders-page.html
+config.json
+!config.example.json
+
+# --- build output / binaries (publish as release assets instead) ----------
+AmazonOrderSync.exe
+AmazonOrderSync.exe.*.part
+AmazonOrderSync.exe.sha256
+tray/bin/
+tray/obj/
+tray/publish/
+
+# --- runtime state ---------------------------------------------------------
+.daemon.lock
+.headless-sync.json
+.gemini-usage.json
+.price-history.json
+browser-profile/
+*.log
+
+# --- editor / OS noise -----------------------------------------------------
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
 .DS_Store
+node_modules/

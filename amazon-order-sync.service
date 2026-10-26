@@ -1,0 +1,11 @@
+[Unit]
+Description=Amazon Order Sync local server
+After=default.target
+
+[Service]
+ExecStart=/usr/bin/env node %h/.local/share/amazon-order-sync/server/server.js
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
