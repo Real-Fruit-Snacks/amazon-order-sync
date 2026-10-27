@@ -16,8 +16,8 @@ jobs:
           - { os: windows-latest, node: "22" }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
       - name: Syntax
@@ -32,8 +32,8 @@ jobs:
   tray:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - name: Build
@@ -41,7 +41,7 @@ jobs:
   powershell:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Parse on Windows PowerShell 5.1
         shell: powershell
         run: |
@@ -55,12 +55,39 @@ jobs:
       - name: PSScriptAnalyzer
         shell: pwsh
         run: |
-          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -Scope CurrentUser
+          # The PowerShell Gallery is flaky from hosted runners: a download fails, or PSGallery
+          # isn't registered at all because the gallery was unreachable when PowerShellGet first
+          # loaded. Use the module if the runner image already has that version; otherwise
+          # re-register the gallery if needed and install, 5 tries, 15/30/45/60 s apart.
+          $modules = @(
+            @{ Name = 'PSScriptAnalyzer'; Version = '1.25.0' }
+          )
+          foreach ($m in $modules) {
+            if (Get-Module -ListAvailable $m.Name | Where-Object { $_.Version -eq [version]$m.Version }) {
+              Write-Host "$($m.Name) $($m.Version) is already on the runner"; continue
+            }
+            for ($try = 1; $true; $try++) {
+              try {
+                if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+                  Write-Host 'PSGallery is not registered; registering it'
+                  Register-PSRepository -Default -ErrorAction Stop
+                }
+                Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
+                Install-Module $m.Name -RequiredVersion $m.Version -Repository PSGallery -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop
+                Write-Host "Installed $($m.Name) $($m.Version) (try $try)"
+                break
+              } catch {
+                if ($try -ge 5) { throw }
+                Write-Warning "Installing $($m.Name) failed (try $try): $_"
+                Start-Sleep -Seconds (15 * $try)
+              }
+            }
+          }
           $r = foreach ($f in 'install.ps1', 'import-old-notes.ps1') { Invoke-ScriptAnalyzer -Path $f -Settings ./PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }
           $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
           if ($r) { exit 1 }
   shell:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: shellcheck install.sh
