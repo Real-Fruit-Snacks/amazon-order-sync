@@ -1,0 +1,39 @@
+/* RFS themes — Nightshift (default, dark) and Dayshift (light). Accent color is Ember. */
+:root, :root[data-theme="nightshift"]{
+  --rfs-bg:#0C0D10;
+  --rfs-surface:#13151A;
+  --rfs-raised:#1A1D24;
+  --rfs-line:#262A33;
+  --rfs-text:#E8E6E1;
+  --rfs-mute:#8A8F99;
+  --rfs-primary:#FF6A3D;
+  --rfs-accent:#FFC247;
+  --rfs-signal:#3DDC97;
+  --rfs-code-bg:#070809;
+  --rfs-font-sans:"IBM Plex Sans", Inter, system-ui, sans-serif;
+  --rfs-font-mono:"IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="nightshift"]){
+  --rfs-bg:#F6F5F2;
+  --rfs-surface:#FFFFFF;
+  --rfs-raised:#ECEAE4;
+  --rfs-line:#D6D3CB;
+  --rfs-text:#1A1B1E;
+  --rfs-mute:#6B6F78;
+  --rfs-primary:#C43F11;
+  --rfs-accent:#9A6700;
+  --rfs-signal:#167A4E;
+  --rfs-code-bg:#FFFFFF;
+}}
+:root[data-theme="dayshift"]{
+  --rfs-bg:#F6F5F2;
+  --rfs-surface:#FFFFFF;
+  --rfs-raised:#ECEAE4;
+  --rfs-line:#D6D3CB;
+  --rfs-text:#1A1B1E;
+  --rfs-mute:#6B6F78;
+  --rfs-primary:#C43F11;
+  --rfs-accent:#9A6700;
+  --rfs-signal:#167A4E;
+  --rfs-code-bg:#FFFFFF;
+}

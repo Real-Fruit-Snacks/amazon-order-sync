@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>amazon-order-sync — your Amazon orders as local Markdown notes</title>
+<meta name="description" content="amazon-order-sync keeps a copy of your Amazon order history as Markdown notes on your own computer, with product images and a spending dashboard on 127.0.0.1. Windows tray app or Linux systemd service.">
+<link rel="canonical" href="https://real-fruit-snacks.github.io/amazon-order-sync/">
+<meta property="og:title" content="amazon-order-sync">
+<meta property="og:description" content="Syncs your Amazon orders into local Markdown notes">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://real-fruit-snacks.github.io/amazon-order-sync/">
+<meta property="og:image" content="https://real-fruit-snacks.github.io/amazon-order-sync/assets/cover-dark.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="560">
+<meta property="og:image:alt" content="amazon-order-sync: the dashboard, with order count, lifetime spend, price drops, a monthly spend chart and recent orders">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#0C0D10">
+<script>
+  // Theme before first paint: a saved choice wins, otherwise follow the OS.
+  (function () {
+    try {
+      var t = localStorage.getItem('rfs-theme');
+      if (t === 'nightshift' || t === 'dayshift') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/rfs.css">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="https://real-fruit-snacks.github.io/" aria-label="RFS home">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Real-Fruit-Snacks/rfs-brand/main/assets/rfs-lockup-dark.svg">
+        <img alt="RFS" src="https://raw.githubusercontent.com/Real-Fruit-Snacks/rfs-brand/main/assets/rfs-lockup-light.svg" data-lockup>
+      </picture>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="name">amazon-order-sync</span>
+    </a>
+    <nav>
+      <a href="#install">Install</a>
+      <a href="#whats-in-it">What's in it</a>
+      <a href="#screens">Screens</a>
+      <a href="#privacy">Privacy</a>
+      <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/guide.md">Guide</a>
+      <a class="keep" href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">GitHub</a>
+      <button class="toggle" type="button" id="theme" aria-label="Switch between Nightshift and Dayshift"><span class="night">Nightshift</span><span class="day">Dayshift</span></button>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div>
+      <p class="label">Node.js 18+ · Brave, Edge, Chromium · Windows and Linux</p>
+      <h1 class="long">amazon-order-sync</h1>
+      <p class="lead">Syncs your Amazon orders into local Markdown notes</p>
+      <p class="sub">Amazon's order history is a slow, paged website. This keeps a copy as plain Markdown files, one per order, with the product images next to them, so you can search, chart and keep it without Amazon. Everything runs on your computer.</p>
+
+    </div>
+    <div>
+      <div class="install side" id="install">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-pane="win">Windows</button>
+          <button role="tab" aria-selected="false" data-pane="lin">Linux</button>
+        </div>
+        <div class="pane" data-active data-id="win"><pre><code>$zip = "$env:TEMP\amazon-order-sync-windows.zip"
+Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip
+Expand-Archive $zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force
+Set-ExecutionPolicy -Scope Process Bypass; &amp; "$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1"</code></pre><button class="copy" data-copy="$zip = &quot;$env:TEMP\amazon-order-sync-windows.zip&quot;&#10;Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip&#10;Expand-Archive $zip &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync&quot; -Force&#10;Set-ExecutionPolicy -Scope Process Bypass; &amp; &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1&quot;">Copy</button></div>
+        <div class="pane" data-id="lin"><pre><code>curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh</code></pre><button class="copy" data-copy="curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh">Copy</button></div>
+        <div class="foot">Then load the extension: <code>brave://extensions</code> → Developer mode → <b>Load unpacked</b> → the <code>browser-extension</code> folder the installer prints. Open your Amazon order history and press <b>Sync Current Page</b>.</div>
+      </div>
+    </div>
+    <div class="full"><img class="shot only-night" src="assets/dashboard-overview-dark.webp" alt="The dashboard's Overview tab: order count, lifetime spend, a monthly spend chart and recent orders" width="1800" height="1140"><img class="shot only-day" src="assets/dashboard-overview-light.webp" alt="The dashboard's Overview tab: order count, lifetime spend, a monthly spend chart and recent orders" width="1800" height="1140"></div>
+  </div>
+</div>
+
+<section id="whats-in-it">
+  <div class="wrap">
+    <p class="label">What's in it</p>
+    <h2>Three small parts, all on your computer</h2>
+    <div class="cards">
+      <div class="card"><h3>Local server</h3><p>One Node.js file with no npm dependencies, on <code>127.0.0.1:27483</code>. Writes one note per order under <code>Orders/YYYY/MM-Month/</code>, saves product images next to them, and serves the dashboard.</p></div>
+      <div class="card"><h3>Browser extension</h3><p>Reads your Amazon order pages and sends them to the server. <b>Sync Current Page</b> or <b>Auto-Sync All Pages</b> from its popup. Runs only on Amazon order and review pages.</p></div>
+      <div class="card"><h3>Dashboard</h3><p>Spend by month, every order searchable, price drops on things you bought, repeat purchases, and CSV or JSON export of the lot. Import your full history from Amazon's "Request My Data" export.</p></div>
+      <div class="card"><h3>Headless sync</h3><p>After a one-time login, the server can run your browser headless with the real extension on a schedule. No cookie scraping, and no browser window.</p></div>
+      <div class="card"><h3>Windows tray app</h3><p>Starts the server hidden, shows notifications, and has a menu for sync, login, the notes folder, the config and the logs. Start with Windows is a checkbox. On Linux, a systemd user service does the same job.</p></div>
+      <div class="card"><h3>Review notes</h3><p>Each item has a review section in its note. With an optional Gemini key the server drafts one for you to rewrite in your own words; the extension fills Amazon's form with what you saved, and you post it yourself.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="screens">
+  <div class="wrap">
+    <p class="label">Screens</p>
+    <h2>Every order, grouped by month</h2>
+    <div class="gallery">
+      <figure><img class="shot only-night" src="assets/dashboard-orders-dark.webp" alt="The Orders tab: orders grouped by month with status, ship-to, items and review state" width="1800" height="1140" loading="lazy"><img class="shot only-day" src="assets/dashboard-orders-light.webp" alt="The Orders tab: orders grouped by month with status, ship-to, items and review state" width="1800" height="1140" loading="lazy">
+        <figcaption>Orders: grouped by year and month, with status, items and review state. Press <code>/</code> to search. Screens show made-up orders.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="notes">
+  <div class="wrap two">
+    <div>
+      <p class="label">The notes</p>
+      <h2>Plain Markdown you keep</h2>
+      <p class="mute">Readable in any editor or Obsidian vault. Re-syncing never overwrites text you wrote or a box you ticked.</p>
+    </div>
+    <pre><code><span class="c">---</span>
+<span class="a">type</span>: order
+<span class="a">order_id</span>: <span class="s">"112-3000028-4000028"</span>
+<span class="a">date</span>: <span class="s">"Ordered on October 13, 2026"</span>
+<span class="a">total</span>: <span class="s">"$59.00"</span>
+<span class="a">status</span>: <span class="s">"Delivered"</span>
+<span class="a">brand</span>: [<span class="s">"BenQ"</span>]
+<span class="a">asin</span>: [<span class="s">"B0SHOT0280"</span>]
+<span class="a">reviewed</span>: [false]
+<span class="c">---</span>
+<span class="p"># Order 112-3000028-4000028</span>
+
+<span class="p">### LED Desk Lamp with Dimmer</span>
+![image](assets/B0SHOT0280.jpg)
+
+<span class="p">#### My Review</span>
+<span class="c">&gt; *Write your review for this item below...*</span>
+**Rating:**
+**Review:**
+- [ ] Posted to Amazon?</code></pre>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap two">
+    <div>
+      <p class="label">Privacy</p>
+      <h2>Nothing leaves your machine</h2>
+      <p class="mute">Unless you add a Gemini key. Then, for each draft, it sends that product's name, brand and listing features, up to three public reviews of it, and up to three of your own posted reviews as style samples. Never your order numbers, prices or address.</p>
+    </div>
+    <ul class="plain">
+      <li>The server binds <code>127.0.0.1</code> and refuses any request not addressed to <code>127.0.0.1</code> or <code>localhost</code>, which stops DNS rebinding.</li>
+      <li>It answers only its own dashboard, its own extension (a fixed ID) and local tools. Scripts on Amazon pages and other websites get <code>403</code>.</li>
+      <li>The headless browser profile holds your signed-in Amazon session and never leaves your computer. Delete it to sign out.</li>
+      <li>Product images are fetched over http(s) only, must be real images, and are capped at 5 MB.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="config">
+  <div class="wrap two">
+    <div>
+      <p class="label">Configuration</p>
+      <h2><code>config.json</code></h2>
+      <p class="mute"><code>%APPDATA%\amazon-order-sync\</code> on Windows, <code>~/.config/amazon-order-sync/</code> on Linux. The installer creates it and never overwrites it. Every key is in the <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/guide.md#configuration">guide</a>.</p>
+    </div>
+    <table>
+      <tr><th>Key</th><th>Default</th></tr>
+      <tr><td>notesPath</td><td><code>~/AmazonOrders</code></td></tr>
+      <tr><td>port</td><td><code>27483</code>; the extension expects it</td></tr>
+      <tr><td>autoSyncEnabled</td><td><code>false</code>; headless sync every <code>autoSyncIntervalHours</code> (24)</td></tr>
+      <tr><td>browserPath</td><td>autodetect: Brave, Edge and Chromium before Chrome</td></tr>
+      <tr><td>geminiApiKey</td><td>empty; turns on review drafts</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="tested">
+  <div class="wrap two">
+    <div>
+      <p class="label">Tested on</p>
+      <ul class="plain">
+        <li>Windows with Brave and the tray app: my own setup, daily</li>
+        <li>CI on every push: server tests on Ubuntu (Node.js 18 and 22) and Windows (Node.js 22), a tray build, and installer checks</li>
+        <li><em>Not</em> tested: macOS, Firefox, Amazon sites other than amazon.com day to day</li>
+      </ul>
+    </div>
+    <div>
+      <p class="label">Known issues</p>
+      <ul class="plain">
+        <li>Google Chrome ignores <code>--load-extension</code> since version 137, so headless sync needs Brave, Edge or Chromium. Manual sync works in Chrome.</li>
+        <li>When Amazon changes its order or review pages, sync or auto-fill can break until the extension is updated.</li>
+        <li>Don't add a <code>---</code> line inside a review when editing a note by hand; it separates items.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>MIT · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/SECURITY.md">Security</a></span>
+    <span><a href="https://real-fruit-snacks.github.io/">RFS</a> · Real tools. No filler. · <a href="https://github.com/Real-Fruit-Snacks/rfs-brand/blob/main/BRAND.md">Brand</a></span>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
