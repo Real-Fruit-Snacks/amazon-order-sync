@@ -5,7 +5,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [2.2.0] — RFS refactor
 
-The standalone app replaces the Obsidian plugin in this repository (the plugin's last release was 1.0.7; its code stays in the history). Installs now come from release assets instead of a copied project folder.
+The standalone app replaces the Obsidian plugin in this repository (the plugin's last release was 1.0.7; its code stays in the history). The repository is public from this release, and installs come from release assets instead of a copied project folder.
 
 **Security**
 

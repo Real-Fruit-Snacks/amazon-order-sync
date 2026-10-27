@@ -3699,7 +3699,7 @@ test('74. catch-up mode: check exists flag + catchup run option', { skip: POSIX_
     assert.equal(chk.body.exists, false);
     const sync = await srv.api('/api/sync', postJson({
         order_id: '111-CATCHUP-01', date: 'Ordered on July 1, 2026', total: '$9.99',
-        status: 'Delivered', ship_to: 'Tester',
+        status: 'Delivered', ship_to: 'Alex Doe',
         items: [{ asin: 'B0CATCHUP001', name: 'Catch Widget', link: '', image: '',
                   current_price: '$9.99', is_reviewed: false, features: '- x' }]
     }));
@@ -3774,7 +3774,7 @@ test('76. cancelled run reports observed order count', { skip: POSIX_ONLY }, asy
     for (let n = 1; n <= 2; n++) {
         const r = await srv.api('/api/sync', postJson({
             order_id: `111-CANCEL-0${n}`, date: 'Ordered on July 2, 2026', total: '$5.00',
-            status: 'Delivered', ship_to: 'Tester',
+            status: 'Delivered', ship_to: 'Alex Doe',
             items: [{ asin: `B0CANCEL00${n}`, name: `Widget ${n}`, link: '', image: '',
                       current_price: '$5.00', is_reviewed: false, features: '- x' }]
         }));

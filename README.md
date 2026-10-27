@@ -7,19 +7,19 @@ Syncs your Amazon orders into local Markdown notes.
   <img alt="amazon-order-sync: the dashboard, with order count, lifetime spend, price drops, a monthly spend chart and recent orders" src="docs/assets/cover-light.svg" width="100%">
 </picture>
 
-Windows (PowerShell; the repo is private, so `gh` must be signed in):
+Windows (PowerShell):
 
 ```powershell
-gh release download --repo Real-Fruit-Snacks/amazon-order-sync --pattern amazon-order-sync-windows.zip --clobber
-Expand-Archive amazon-order-sync-windows.zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force
+$zip = "$env:TEMP\amazon-order-sync-windows.zip"
+Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip
+Expand-Archive $zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force
 Set-ExecutionPolicy -Scope Process Bypass; & "$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1"
 ```
 
 Linux (systemd user service, Node.js 18 or newer):
 
 ```sh
-gh release download --repo Real-Fruit-Snacks/amazon-order-sync --pattern amazon-order-sync-linux.tar.gz --clobber
-tar xzf amazon-order-sync-linux.tar.gz && ./amazon-order-sync/install.sh
+curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz && ./amazon-order-sync/install.sh
 ```
 
 Then load the extension: open `brave://extensions` (or `chrome://extensions`, `edge://extensions`), turn on Developer mode, choose **Load unpacked** and pick the `browser-extension` folder the installer prints. Open your Amazon order history and press **Sync Current Page**.

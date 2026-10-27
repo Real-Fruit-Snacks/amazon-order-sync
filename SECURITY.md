@@ -4,4 +4,4 @@ amazon-order-sync runs on your computer. The server listens on `127.0.0.1` only,
 
 The headless browser profile holds a signed-in Amazon session. Treat that folder like a password.
 
-This repository is private. Report a problem by opening an issue, or privately to the owner if it involves someone else's data. I aim to reply within a week. Only the latest release is supported.
+Report a security problem through GitHub's private vulnerability reporting (Security tab, "Report a vulnerability"), not a public issue. I aim to reply within a week. Only the latest release is supported.
