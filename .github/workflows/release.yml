@@ -1,4 +1,6 @@
 # Push a tag vX.Y.Z (matching the top of CHANGELOG.md) to publish a release.
+# No artifacts between jobs (they count against the account's Actions
+# storage): the Windows job creates the release, the Linux job adds to it.
 name: release
 on:
   push:
@@ -33,29 +35,25 @@ jobs:
           Copy-Item -Recurse server, browser-extension $d
           Copy-Item install.ps1, import-old-notes.ps1, config.example.json, LICENSE, README.md, CHANGELOG.md $d
           Compress-Archive -Path "$d/*" -DestinationPath amazon-order-sync-windows.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: amazon-order-sync-windows.zip
-  release:
-    needs: windows
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: windows
-      - name: Linux package and notes
+      - name: Release notes and publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           v="${GITHUB_REF_NAME#v}"
           grep -q "^## \[${v}\]" CHANGELOG.md || { echo "CHANGELOG.md has no [${v}] section"; exit 1; }
           awk -v v="$v" 'index($0, "## [" v "]") == 1 {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
-          mkdir -p dist/amazon-order-sync
-          cp -r server browser-extension install.sh amazon-order-sync.service config.example.json LICENSE README.md CHANGELOG.md dist/amazon-order-sync/
-          tar czf amazon-order-sync-linux.tar.gz -C dist amazon-order-sync
-      - name: Publish
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md amazon-order-sync-windows.zip
+  linux:
+    needs: windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package and upload
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md \
-            amazon-order-sync-windows.zip amazon-order-sync-linux.tar.gz
+          mkdir -p dist/amazon-order-sync
+          cp -r server browser-extension install.sh amazon-order-sync.service config.example.json LICENSE README.md CHANGELOG.md dist/amazon-order-sync/
+          tar czf amazon-order-sync-linux.tar.gz -C dist amazon-order-sync
+          gh release upload "$GITHUB_REF_NAME" amazon-order-sync-linux.tar.gz
