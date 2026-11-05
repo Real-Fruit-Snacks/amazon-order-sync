@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- The GitHub social preview, 1280 x 640. Render from the repo root with killer-repo's card.mjs:
+       node card.mjs docs/card.html --out docs/assets/social.png
+     It shows the README picture's first frame (docs/assets/slip-dark.svg) beside the name. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face { font-family: "Archivo"; font-weight: 100 900; font-stretch: 62% 125%; src: url(fonts/archivo-latin-var.woff2) format("woff2"); }
+  html, body { margin: 0; width: 1280px; height: 640px; background: #0C0D10; overflow: hidden; }
+  body { position: relative; font-family: "Archivo", sans-serif; color: #E8E6E1; }
+  .words { position: absolute; left: 72px; top: 76px; width: 500px; }
+  h1 { margin: 0; font-size: 132px; font-weight: 900; font-stretch: 62%; line-height: .86; letter-spacing: -0.01em; }
+  p { margin: 34px 0 0; font-size: 33px; line-height: 1.22; font-weight: 500; color: #8A8F99; }
+  .route { position: absolute; left: 72px; bottom: 64px; font-size: 40px; font-weight: 900; font-stretch: 62%; text-transform: uppercase; color: #8A8F99; }
+  .route i { font-style: normal; color: #FF6A3D; margin: 0 .12em; }
+  .route b { color: #E8E6E1; font-weight: 900; }
+  .art { position: absolute; left: 600px; top: 96px; right: 0; height: 436px; overflow: hidden; }
+  .art img { position: absolute; left: -28px; top: -94px; width: 930px; height: auto; }
+</style>
+</head>
+<body>
+  <div class="words"><h1>amazon-<br>order-sync</h1><p>Syncs your Amazon orders into local Markdown notes</p></div>
+  <div class="route">Orders<i>/</i>2026<i>/</i><b>10-October</b></div>
+  <div class="art"><img src="assets/slip-dark.svg" alt=""></div>
+</body>
+</html>

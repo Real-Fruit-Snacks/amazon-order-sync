@@ -3,206 +3,407 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>amazon-order-sync — your Amazon orders as local Markdown notes</title>
-<meta name="description" content="amazon-order-sync keeps a copy of your Amazon order history as Markdown notes on your own computer, with product images and a spending dashboard on 127.0.0.1. Windows tray app or Linux systemd service.">
+<title>amazon-order-sync: syncs your Amazon orders into local Markdown notes</title>
+<meta name="description" content="amazon-order-sync keeps a copy of your Amazon order history on your own computer: one Markdown note per order, filed by month, with the product images next to them and a spending dashboard on 127.0.0.1. Windows tray app or Linux systemd service.">
 <link rel="canonical" href="https://real-fruit-snacks.github.io/amazon-order-sync/">
 <meta property="og:title" content="amazon-order-sync">
 <meta property="og:description" content="Syncs your Amazon orders into local Markdown notes">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://real-fruit-snacks.github.io/amazon-order-sync/">
-<meta property="og:image" content="https://real-fruit-snacks.github.io/amazon-order-sync/assets/cover-dark.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="560">
-<meta property="og:image:alt" content="amazon-order-sync: the dashboard, with order count, lifetime spend, price drops, a monthly spend chart and recent orders">
+<meta property="og:image" content="https://real-fruit-snacks.github.io/amazon-order-sync/assets/social.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="A packing slip for a made-up Amazon order next to the Markdown note amazon-order-sync wrote for it, filed under Orders/2026/10-October">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="assets/favicon.ico" sizes="48x48">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0C0D10">
 <script>
-  // Theme before first paint: a saved choice wins, otherwise follow the OS.
-  (function () {
-    try {
-      var t = localStorage.getItem('rfs-theme');
-      if (t === 'nightshift' || t === 'dayshift') document.documentElement.setAttribute('data-theme', t);
-    } catch (e) {}
-  })();
+  // A saved theme wins over the system setting; the key is shared with the other RFS pages.
+  // js-run hides the first note until script.js prints it (a CSS failsafe shows it after 6 s).
+  (function (d) {
+    try { var t = localStorage.getItem('rfs-theme'); if (t === 'nightshift' || t === 'dayshift') d.dataset.theme = t; } catch (e) {}
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('js-run');
+  })(document.documentElement);
 </script>
-<link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/ibm-plex-mono-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/rfs.css">
-<link rel="stylesheet" href="assets/site.css">
+<link rel="preload" href="fonts/archivo-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/martian-mono-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skip" href="#install">Skip to the install commands</a>
 
-<header class="site">
+<header class="top">
   <div class="wrap">
-    <a class="brand" href="https://real-fruit-snacks.github.io/" aria-label="RFS home">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Real-Fruit-Snacks/rfs-brand/main/assets/rfs-lockup-dark.svg">
-        <img alt="RFS" src="https://raw.githubusercontent.com/Real-Fruit-Snacks/rfs-brand/main/assets/rfs-lockup-light.svg" data-lockup>
-      </picture>
-      <span class="sep" aria-hidden="true"></span>
-      <span class="name">amazon-order-sync</span>
-    </a>
-    <nav>
+    <a class="name" href="./" aria-label="amazon-order-sync, top of the page">amazon-order-sync</a>
+    <nav aria-label="Page">
       <a href="#install">Install</a>
-      <a href="#whats-in-it">What's in it</a>
-      <a href="#screens">Screens</a>
+      <a href="#notes">The notes</a>
+      <a href="#whats-in-it">What’s in it</a>
+      <a href="#screens">Dashboard</a>
       <a href="#privacy">Privacy</a>
       <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/guide.md">Guide</a>
-      <a class="keep" href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">GitHub</a>
-      <button class="toggle" type="button" id="theme" aria-label="Switch between Nightshift and Dayshift"><span class="night">Nightshift</span><span class="day">Dayshift</span></button>
+      <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">GitHub</a>
     </nav>
+    <button class="theme" type="button" id="theme"><span class="sr-only">Theme: </span><span class="t-night">Nightshift</span><span class="t-day">Dayshift</span></button>
   </div>
 </header>
 
-<div class="hero">
-  <div class="grid-bg" aria-hidden="true"></div>
-  <div class="glow" aria-hidden="true"></div>
-  <div class="wrap">
-    <div>
-      <p class="label">Node.js 18+ · Brave, Edge, Chromium · Windows and Linux</p>
-      <h1 class="long">amazon-order-sync</h1>
-      <p class="lead">Syncs your Amazon orders into local Markdown notes</p>
-      <p class="sub">Amazon's order history is a slow, paged website. This keeps a copy as plain Markdown files, one per order, with the product images next to them, so you can search, chart and keep it without Amazon. Everything runs on your computer.</p>
+<main>
+<section class="hero" aria-labelledby="h1">
+  <div class="wrap hero-grid">
+    <h1 id="h1">Syncs your Amazon orders into local Markdown&nbsp;notes</h1>
+    <p class="sub">Amazon’s order history is a slow, paged website. This keeps a copy of it on your computer: one Markdown file per order, filed by month, with the product images saved next to&nbsp;them.</p>
 
-    </div>
-    <div>
-      <div class="install side" id="install">
-        <div class="tabs" role="tablist">
-          <button role="tab" aria-selected="true" data-pane="win">Windows</button>
-          <button role="tab" aria-selected="false" data-pane="lin">Linux</button>
-        </div>
-        <div class="pane" data-active data-id="win"><pre><code>$zip = "$env:TEMP\amazon-order-sync-windows.zip"
-Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip
-Expand-Archive $zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force
-Set-ExecutionPolicy -Scope Process Bypass; &amp; "$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1"</code></pre><button class="copy" data-copy="$zip = &quot;$env:TEMP\amazon-order-sync-windows.zip&quot;&#10;Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip&#10;Expand-Archive $zip &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync&quot; -Force&#10;Set-ExecutionPolicy -Scope Process Bypass; &amp; &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1&quot;">Copy</button></div>
-        <div class="pane" data-id="lin"><pre><code>curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh</code></pre><button class="copy" data-copy="curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh">Copy</button></div>
-        <div class="foot">Then load the extension: <code>brave://extensions</code> → Developer mode → <b>Load unpacked</b> → the <code>browser-extension</code> folder the installer prints. Open your Amazon order history and press <b>Sync Current Page</b>.</div>
-      </div>
-    </div>
-    <div class="full"><img class="shot only-night" src="assets/dashboard-overview-dark.webp" alt="The dashboard's Overview tab: order count, lifetime spend, a monthly spend chart and recent orders" width="1800" height="1140"><img class="shot only-day" src="assets/dashboard-overview-light.webp" alt="The dashboard's Overview tab: order count, lifetime spend, a monthly spend chart and recent orders" width="1800" height="1140"></div>
-  </div>
+    <figure class="bench" id="bench" aria-labelledby="bench-cap">
+<!-- samples:begin -->
+<div class="order" data-i="0">
+<p class="route" data-f="route" aria-label="Filed in Orders/2026/10-October"><span>Orders</span><i>/</i><span>2026</span><i>/</i><b>10-October</b></p>
+<article class="slip" aria-label="Order 112-4418203-6650917, as the extension reads it from your order history">
+<i class="scan" aria-hidden="true"></i>
+<div class="sf s-id" data-f="order_id"><span class="k">Order #</span><span class="v">112-4418203-6650917</span><svg class="bars" viewBox="0 0 272 1" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1v1h-1zM3 0h1v1h-1zM5 0h2v1h-2zM8 0h2v1h-2zM11 0h1v1h-1zM13 0h2v1h-2zM16 0h1v1h-1zM19 0h1v1h-1zM21 0h1v1h-1zM23 0h2v1h-2zM26 0h2v1h-2zM29 0h1v1h-1zM32 0h1v1h-1zM34 0h1v1h-1zM36 0h2v1h-2zM39 0h1v1h-1zM41 0h2v1h-2zM45 0h1v1h-1zM47 0h1v1h-1zM49 0h2v1h-2zM52 0h1v1h-1zM55 0h1v1h-1zM57 0h1v1h-1zM59 0h2v1h-2zM62 0h2v1h-2zM65 0h1v1h-1zM67 0h1v1h-1zM70 0h2v1h-2zM73 0h1v1h-1zM75 0h2v1h-2zM78 0h1v1h-1zM80 0h1v1h-1zM83 0h2v1h-2zM86 0h1v1h-1zM88 0h2v1h-2zM91 0h2v1h-2zM94 0h1v1h-1zM97 0h1v1h-1zM99 0h1v1h-1zM101 0h2v1h-2zM104 0h2v1h-2zM107 0h1v1h-1zM110 0h1v1h-1zM112 0h2v1h-2zM115 0h1v1h-1zM117 0h1v1h-1zM119 0h2v1h-2zM123 0h1v1h-1zM125 0h1v1h-1zM127 0h2v1h-2zM130 0h1v1h-1zM132 0h1v1h-1zM135 0h2v1h-2zM138 0h2v1h-2zM141 0h1v1h-1zM143 0h2v1h-2zM146 0h2v1h-2zM150 0h1v1h-1zM152 0h1v1h-1zM154 0h1v1h-1zM156 0h1v1h-1zM159 0h1v1h-1zM161 0h1v1h-1zM163 0h2v1h-2zM166 0h2v1h-2zM169 0h1v1h-1zM171 0h2v1h-2zM175 0h2v1h-2zM178 0h1v1h-1zM180 0h1v1h-1zM182 0h1v1h-1zM184 0h2v1h-2zM188 0h2v1h-2zM191 0h1v1h-1zM193 0h1v1h-1zM195 0h2v1h-2zM198 0h1v1h-1zM201 0h2v1h-2zM204 0h1v1h-1zM206 0h1v1h-1zM208 0h1v1h-1zM210 0h1v1h-1zM213 0h2v1h-2zM216 0h2v1h-2zM219 0h1v1h-1zM221 0h1v1h-1zM223 0h2v1h-2zM227 0h1v1h-1zM229 0h2v1h-2zM232 0h1v1h-1zM234 0h2v1h-2zM237 0h1v1h-1zM240 0h1v1h-1zM242 0h1v1h-1zM244 0h2v1h-2zM247 0h1v1h-1zM249 0h1v1h-1zM252 0h1v1h-1zM254 0h2v1h-2zM257 0h2v1h-2zM260 0h1v1h-1zM263 0h1v1h-1zM265 0h2v1h-2zM268 0h2v1h-2zM271 0h1v1h-1z"/></svg></div>
+<div class="s-row"><div class="sf" data-f="date"><span class="k">Order placed</span><span class="v">October 13, 2026</span></div><div class="sf" data-f="total"><span class="k">Total</span><span class="v">$58.47</span></div></div>
+<div class="sf s-status" data-f="status"><span class="k">Status</span><span class="v">Delivered October 15</span></div>
+<div class="sf" data-f="ship_to"><span class="k">Ship to</span><span class="v">Robin Park</span></div>
+<div class="sf s-items" data-f="items"><span class="k">2 items</span><ol><li><span class="nm">Clamp-On LED Desk Lamp, Dimmable</span><span class="meta">Lumenwell · $41.99 · B0DLMP4207</span><span class="rv">No review yet</span></li><li><span class="nm">Braided USB-C Cable, 6 ft, 2-Pack</span><span class="meta">Corda · $16.48 · B0DCBL6062</span><span class="rv on">Review posted, 4 of 5</span></li></ol></div>
+</article>
+<div class="file">
+<p class="file-tab"><span class="file-name"><span class="dir">Orders/2026/10-October/</span>Order-112-4418203-6650917.md</span><span class="saved">Saved</span></p>
+<pre class="note" tabindex="0" aria-label="Order-112-4418203-6650917.md"><code><span class="ln" data-f="order_id"><span class="t-r">---</span></span>
+<span class="ln" data-f="order_id"><span class="t-k">type</span>: order</span>
+<span class="ln" data-f="order_id"><span class="t-k">order_id</span>: <span class="t-s">&quot;112-4418203-6650917&quot;</span></span>
+<span class="ln" data-f="date"><span class="t-k">date</span>: <span class="t-s">&quot;October 13, 2026&quot;</span></span>
+<span class="ln" data-f="total"><span class="t-k">total</span>: <span class="t-s">&quot;$58.47&quot;</span></span>
+<span class="ln" data-f="status"><span class="t-k">status</span>: <span class="t-s">&quot;Delivered October 15&quot;</span></span>
+<span class="ln" data-f="ship_to"><span class="t-k">ship_to</span>: <span class="t-s">&quot;Robin Park&quot;</span></span>
+<span class="ln" data-f="items"><span class="t-k">brand</span>: <span class="t-p">[</span><span class="t-s">&quot;Lumenwell&quot;</span><span class="t-p">,</span> <span class="t-s">&quot;Corda&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">price</span>: <span class="t-p">[</span><span class="t-s">&quot;$41.99&quot;</span><span class="t-p">,</span> <span class="t-s">&quot;$16.48&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">asin</span>: <span class="t-p">[</span><span class="t-s">&quot;B0DLMP4207&quot;</span><span class="t-p">,</span> <span class="t-s">&quot;B0DCBL6062&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">url</span>: <span class="t-p">[</span><span class="t-s">&quot;https://www.amazon.com/dp/B0DLMP4207&quot;</span><span class="t-p">,</span> <span class="t-s">&quot;https://www.amazon.com/dp/B0DCBL6062&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">reviewed</span>: <span class="t-p">[</span><span class="t-n">false</span><span class="t-p">,</span> <span class="t-y">true</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">rating</span>: <span class="t-p">[</span><span class="t-s">&quot;&quot;</span><span class="t-p">,</span> <span class="t-s">&quot;4&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"><span class="t-h"># Order 112-4418203-6650917</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-b">**Order Date:**</span> October 13, 2026</span>
+<span class="ln" data-f="body"><span class="t-b">**Total:**</span> $58.47</span>
+<span class="ln" data-f="body"><span class="t-b">**Status:**</span> Delivered October 15</span>
+<span class="ln" data-f="body"><span class="t-b">**Ship To:**</span> Robin Park</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">## 📦 Items</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">### Clamp-On LED Desk Lamp, Dimmable</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-l">![image](assets/B0DLMP4207.jpg)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### Features</span></span>
+<span class="ln" data-f="body">Clamps to desks up to 2.4 in thick</span>
+<span class="ln" data-f="body">- 5 brightness levels, 3 color temperatures</span>
+<span class="ln" data-f="body">- USB-C powered</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### 📝 My Review</span></span>
+<span class="ln" data-f="body"><span class="t-l">[✍️ Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=B0DLMP4207)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-q">&gt; *Write your review for this item below...*</span></span>
+<span class="ln" data-f="body"><span class="t-b">**Rating:**</span> </span>
+<span class="ln" data-f="body"><span class="t-b">**Review:**</span> </span>
+<span class="ln" data-f="body"><span class="t-p">- [ ]</span> Posted to Amazon?</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">### Braided USB-C Cable, 6 ft, 2-Pack</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-l">![image](assets/B0DCBL6062.jpg)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### Features</span></span>
+<span class="ln" data-f="body">Nylon braid, aluminum ends</span>
+<span class="ln" data-f="body">- 60 W charging</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### 📝 My Review</span></span>
+<span class="ln" data-f="body"><span class="t-l">[✍️ Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=B0DCBL6062)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-b">**Title:**</span> Long enough to reach the sofa</span>
+<span class="ln" data-f="body"><span class="t-b">**Review:**</span> Both still work after three months of being stepped on. The ends are a little bulky for my phone case.</span>
+<span class="ln" data-f="body"><span class="t-y">- [x]</span> Posted to Amazon?</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span></code></pre>
 </div>
+</div>
+<div class="order" data-i="1" hidden>
+<p class="route" data-f="route" aria-label="Filed in Orders/2026/09-September"><span>Orders</span><i>/</i><span>2026</span><i>/</i><b>09-September</b></p>
+<article class="slip" aria-label="Order 113-0927751-3104428, as the extension reads it from your order history">
+<i class="scan" aria-hidden="true"></i>
+<div class="sf s-id" data-f="order_id"><span class="k">Order #</span><span class="v">113-0927751-3104428</span><svg class="bars" viewBox="0 0 272 1" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1v1h-1zM3 0h1v1h-1zM5 0h2v1h-2zM8 0h2v1h-2zM11 0h1v1h-1zM13 0h2v1h-2zM16 0h1v1h-1zM19 0h1v1h-1zM21 0h1v1h-1zM23 0h2v1h-2zM26 0h2v1h-2zM29 0h1v1h-1zM32 0h1v1h-1zM34 0h1v1h-1zM36 0h2v1h-2zM39 0h2v1h-2zM42 0h2v1h-2zM46 0h1v1h-1zM48 0h1v1h-1zM50 0h1v1h-1zM52 0h1v1h-1zM55 0h1v1h-1zM57 0h1v1h-1zM59 0h2v1h-2zM62 0h2v1h-2zM65 0h1v1h-1zM67 0h1v1h-1zM70 0h2v1h-2zM73 0h2v1h-2zM76 0h1v1h-1zM78 0h1v1h-1zM80 0h2v1h-2zM84 0h1v1h-1zM86 0h2v1h-2zM89 0h1v1h-1zM91 0h1v1h-1zM93 0h2v1h-2zM97 0h1v1h-1zM99 0h1v1h-1zM101 0h2v1h-2zM104 0h1v1h-1zM106 0h1v1h-1zM109 0h1v1h-1zM111 0h2v1h-2zM114 0h2v1h-2zM117 0h1v1h-1zM119 0h1v1h-1zM122 0h1v1h-1zM124 0h2v1h-2zM127 0h2v1h-2zM130 0h2v1h-2zM133 0h1v1h-1zM136 0h2v1h-2zM139 0h1v1h-1zM141 0h1v1h-1zM143 0h2v1h-2zM146 0h1v1h-1zM149 0h1v1h-1zM151 0h1v1h-1zM153 0h2v1h-2zM156 0h1v1h-1zM159 0h1v1h-1zM161 0h1v1h-1zM163 0h2v1h-2zM166 0h2v1h-2zM169 0h2v1h-2zM172 0h2v1h-2zM176 0h1v1h-1zM178 0h1v1h-1zM180 0h1v1h-1zM182 0h2v1h-2zM185 0h1v1h-1zM188 0h1v1h-1zM190 0h1v1h-1zM192 0h2v1h-2zM195 0h1v1h-1zM197 0h1v1h-1zM200 0h2v1h-2zM203 0h2v1h-2zM206 0h1v1h-1zM208 0h1v1h-1zM210 0h1v1h-1zM213 0h2v1h-2zM216 0h1v1h-1zM218 0h2v1h-2zM221 0h1v1h-1zM223 0h1v1h-1zM226 0h2v1h-2zM229 0h1v1h-1zM231 0h2v1h-2zM234 0h1v1h-1zM236 0h2v1h-2zM240 0h1v1h-1zM242 0h1v1h-1zM244 0h2v1h-2zM247 0h2v1h-2zM250 0h1v1h-1zM253 0h1v1h-1zM255 0h2v1h-2zM258 0h1v1h-1zM260 0h1v1h-1zM263 0h1v1h-1zM265 0h2v1h-2zM268 0h2v1h-2zM271 0h1v1h-1z"/></svg></div>
+<div class="s-row"><div class="sf" data-f="date"><span class="k">Order placed</span><span class="v">September 2, 2026</span></div><div class="sf" data-f="total"><span class="k">Total</span><span class="v">$23.99</span></div></div>
+<div class="sf s-status" data-f="status"><span class="k">Status</span><span class="v">Delivered September 4</span></div>
+<div class="sf" data-f="ship_to"><span class="k">Ship to</span><span class="v">Robin Park</span></div>
+<div class="sf s-items" data-f="items"><span class="k">1 item</span><ol><li><span class="nm">Pre-Seasoned Cast Iron Skillet, 10 Inch</span><span class="meta">Hearthline · $23.99 · B0DSKL1035</span><span class="rv">No review yet</span></li></ol></div>
+</article>
+<div class="file">
+<p class="file-tab"><span class="file-name"><span class="dir">Orders/2026/09-September/</span>Order-113-0927751-3104428.md</span><span class="saved">Saved</span></p>
+<pre class="note" tabindex="0" aria-label="Order-113-0927751-3104428.md"><code><span class="ln" data-f="order_id"><span class="t-r">---</span></span>
+<span class="ln" data-f="order_id"><span class="t-k">type</span>: order</span>
+<span class="ln" data-f="order_id"><span class="t-k">order_id</span>: <span class="t-s">&quot;113-0927751-3104428&quot;</span></span>
+<span class="ln" data-f="date"><span class="t-k">date</span>: <span class="t-s">&quot;September 2, 2026&quot;</span></span>
+<span class="ln" data-f="total"><span class="t-k">total</span>: <span class="t-s">&quot;$23.99&quot;</span></span>
+<span class="ln" data-f="status"><span class="t-k">status</span>: <span class="t-s">&quot;Delivered September 4&quot;</span></span>
+<span class="ln" data-f="ship_to"><span class="t-k">ship_to</span>: <span class="t-s">&quot;Robin Park&quot;</span></span>
+<span class="ln" data-f="items"><span class="t-k">brand</span>: <span class="t-p">[</span><span class="t-s">&quot;Hearthline&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">price</span>: <span class="t-p">[</span><span class="t-s">&quot;$23.99&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">asin</span>: <span class="t-p">[</span><span class="t-s">&quot;B0DSKL1035&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">url</span>: <span class="t-p">[</span><span class="t-s">&quot;https://www.amazon.com/dp/B0DSKL1035&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">reviewed</span>: <span class="t-p">[</span><span class="t-n">false</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">rating</span>: <span class="t-p">[</span><span class="t-s">&quot;&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"><span class="t-h"># Order 113-0927751-3104428</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-b">**Order Date:**</span> September 2, 2026</span>
+<span class="ln" data-f="body"><span class="t-b">**Total:**</span> $23.99</span>
+<span class="ln" data-f="body"><span class="t-b">**Status:**</span> Delivered September 4</span>
+<span class="ln" data-f="body"><span class="t-b">**Ship To:**</span> Robin Park</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">## 📦 Items</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">### Pre-Seasoned Cast Iron Skillet, 10 Inch</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-l">![image](assets/B0DSKL1035.jpg)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### Features</span></span>
+<span class="ln" data-f="body">Pre-seasoned with vegetable oil</span>
+<span class="ln" data-f="body">- Oven safe</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### 📝 My Review</span></span>
+<span class="ln" data-f="body"><span class="t-l">[✍️ Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=B0DSKL1035)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-q">&gt; *Write your review for this item below...*</span></span>
+<span class="ln" data-f="body"><span class="t-b">**Rating:**</span> </span>
+<span class="ln" data-f="body"><span class="t-b">**Review:**</span> </span>
+<span class="ln" data-f="body"><span class="t-p">- [ ]</span> Posted to Amazon?</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span></code></pre>
+</div>
+</div>
+<div class="order" data-i="2" hidden>
+<p class="route" data-f="route" aria-label="Filed in Orders/2026/08-August"><span>Orders</span><i>/</i><span>2026</span><i>/</i><b>08-August</b></p>
+<article class="slip" aria-label="Order 114-6203318-0071592, as the extension reads it from your order history">
+<i class="scan" aria-hidden="true"></i>
+<div class="sf s-id" data-f="order_id"><span class="k">Order #</span><span class="v">114-6203318-0071592</span><svg class="bars" viewBox="0 0 272 1" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h1v1h-1zM3 0h1v1h-1zM5 0h2v1h-2zM8 0h2v1h-2zM11 0h1v1h-1zM13 0h2v1h-2zM16 0h1v1h-1zM19 0h1v1h-1zM21 0h1v1h-1zM23 0h2v1h-2zM26 0h2v1h-2zM29 0h1v1h-1zM32 0h1v1h-1zM34 0h1v1h-1zM36 0h2v1h-2zM39 0h1v1h-1zM41 0h1v1h-1zM44 0h2v1h-2zM47 0h1v1h-1zM49 0h2v1h-2zM52 0h1v1h-1zM55 0h1v1h-1zM57 0h1v1h-1zM59 0h2v1h-2zM62 0h2v1h-2zM65 0h1v1h-1zM67 0h2v1h-2zM71 0h2v1h-2zM74 0h1v1h-1zM76 0h1v1h-1zM78 0h1v1h-1zM80 0h2v1h-2zM84 0h1v1h-1zM86 0h1v1h-1zM88 0h2v1h-2zM91 0h1v1h-1zM93 0h1v1h-1zM96 0h2v1h-2zM99 0h2v1h-2zM102 0h1v1h-1zM104 0h2v1h-2zM107 0h2v1h-2zM111 0h1v1h-1zM113 0h1v1h-1zM115 0h1v1h-1zM117 0h2v1h-2zM120 0h2v1h-2zM124 0h1v1h-1zM126 0h1v1h-1zM128 0h1v1h-1zM130 0h2v1h-2zM133 0h1v1h-1zM136 0h1v1h-1zM138 0h1v1h-1zM140 0h2v1h-2zM143 0h2v1h-2zM146 0h1v1h-1zM149 0h1v1h-1zM151 0h2v1h-2zM154 0h1v1h-1zM156 0h1v1h-1zM159 0h1v1h-1zM161 0h1v1h-1zM163 0h2v1h-2zM166 0h2v1h-2zM169 0h1v1h-1zM171 0h1v1h-1zM174 0h2v1h-2zM177 0h2v1h-2zM180 0h1v1h-1zM182 0h1v1h-1zM184 0h1v1h-1zM187 0h2v1h-2zM190 0h2v1h-2zM193 0h1v1h-1zM195 0h1v1h-1zM197 0h1v1h-1zM200 0h1v1h-1zM202 0h2v1h-2zM205 0h2v1h-2zM208 0h2v1h-2zM211 0h1v1h-1zM214 0h1v1h-1zM216 0h1v1h-1zM218 0h2v1h-2zM221 0h2v1h-2zM224 0h1v1h-1zM227 0h2v1h-2zM230 0h1v1h-1zM232 0h1v1h-1zM234 0h1v1h-1zM236 0h2v1h-2zM240 0h1v1h-1zM242 0h2v1h-2zM245 0h1v1h-1zM247 0h1v1h-1zM249 0h2v1h-2zM253 0h1v1h-1zM255 0h1v1h-1zM257 0h2v1h-2zM260 0h1v1h-1zM263 0h1v1h-1zM265 0h2v1h-2zM268 0h2v1h-2zM271 0h1v1h-1z"/></svg></div>
+<div class="s-row"><div class="sf" data-f="date"><span class="k">Order placed</span><span class="v">August 21, 2026</span></div><div class="sf" data-f="total"><span class="k">Total</span><span class="v">$12.99</span></div></div>
+<div class="sf s-status" data-f="status"><span class="k">Status</span><span class="v">Delivered August 23</span></div>
+<div class="sf" data-f="ship_to"><span class="k">Ship to</span><span class="v">Robin Park</span></div>
+<div class="sf s-items" data-f="items"><span class="k">1 item</span><ol><li><span class="nm">Dot Grid Notebook, A5, 3-Pack</span><span class="meta">Margin · $12.99 · B0DNTB2213</span><span class="rv">No review yet</span></li></ol></div>
+</article>
+<div class="file">
+<p class="file-tab"><span class="file-name"><span class="dir">Orders/2026/08-August/</span>Order-114-6203318-0071592.md</span><span class="saved">Saved</span></p>
+<pre class="note" tabindex="0" aria-label="Order-114-6203318-0071592.md"><code><span class="ln" data-f="order_id"><span class="t-r">---</span></span>
+<span class="ln" data-f="order_id"><span class="t-k">type</span>: order</span>
+<span class="ln" data-f="order_id"><span class="t-k">order_id</span>: <span class="t-s">&quot;114-6203318-0071592&quot;</span></span>
+<span class="ln" data-f="date"><span class="t-k">date</span>: <span class="t-s">&quot;August 21, 2026&quot;</span></span>
+<span class="ln" data-f="total"><span class="t-k">total</span>: <span class="t-s">&quot;$12.99&quot;</span></span>
+<span class="ln" data-f="status"><span class="t-k">status</span>: <span class="t-s">&quot;Delivered August 23&quot;</span></span>
+<span class="ln" data-f="ship_to"><span class="t-k">ship_to</span>: <span class="t-s">&quot;Robin Park&quot;</span></span>
+<span class="ln" data-f="items"><span class="t-k">brand</span>: <span class="t-p">[</span><span class="t-s">&quot;Margin&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">price</span>: <span class="t-p">[</span><span class="t-s">&quot;$12.99&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">asin</span>: <span class="t-p">[</span><span class="t-s">&quot;B0DNTB2213&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">url</span>: <span class="t-p">[</span><span class="t-s">&quot;https://www.amazon.com/dp/B0DNTB2213&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">reviewed</span>: <span class="t-p">[</span><span class="t-n">false</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-k">rating</span>: <span class="t-p">[</span><span class="t-s">&quot;&quot;</span><span class="t-p">]</span></span>
+<span class="ln" data-f="items"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"><span class="t-h"># Order 114-6203318-0071592</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-b">**Order Date:**</span> August 21, 2026</span>
+<span class="ln" data-f="body"><span class="t-b">**Total:**</span> $12.99</span>
+<span class="ln" data-f="body"><span class="t-b">**Status:**</span> Delivered August 23</span>
+<span class="ln" data-f="body"><span class="t-b">**Ship To:**</span> Robin Park</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">## 📦 Items</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">### Dot Grid Notebook, A5, 3-Pack</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-l">![image](assets/B0DNTB2213.jpg)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### Features</span></span>
+<span class="ln" data-f="body">120 numbered pages each</span>
+<span class="ln" data-f="body">- Lay-flat binding</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-h">#### 📝 My Review</span></span>
+<span class="ln" data-f="body"><span class="t-l">[✍️ Leave a Review on Amazon](https://www.amazon.com/review/create-review?asin=B0DNTB2213)</span></span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-q">&gt; *Write your review for this item below...*</span></span>
+<span class="ln" data-f="body"><span class="t-b">**Rating:**</span> </span>
+<span class="ln" data-f="body"><span class="t-b">**Review:**</span> </span>
+<span class="ln" data-f="body"><span class="t-p">- [ ]</span> Posted to Amazon?</span>
+<span class="ln" data-f="body"></span>
+<span class="ln" data-f="body"><span class="t-r">---</span></span>
+<span class="ln" data-f="body"></span></code></pre>
+</div>
+</div>
+<!-- samples:end -->
+      <figcaption id="bench-cap">
+        <button class="next" type="button" id="next">Sync the next order</button><span class="sr-only" aria-live="polite" id="said"></span>
+        <span class="cap">A simulation with three made-up orders. Each note is what the server wrote for that order, unedited: <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/tree/main/docs/samples">docs/samples</a>.</span>
+      </figcaption>
+    </figure>
 
-<section id="whats-in-it">
+    <div class="install" id="install">
+      <h2>Install</h2>
+      <div class="tabs" role="tablist" aria-label="Platform">
+        <button role="tab" type="button" id="tab-win" aria-controls="pane-win" aria-selected="true">Windows</button>
+        <button role="tab" type="button" id="tab-lin" aria-controls="pane-lin" aria-selected="false" tabindex="-1">Linux</button>
+      </div>
+      <div class="pane" role="tabpanel" id="pane-win" aria-labelledby="tab-win">
+        <p class="pane-note">PowerShell. Installs the tray app and starts it with Windows.</p>
+        <div class="cmd"><pre><code><span class="cl">$zip = "$env:TEMP\amazon-order-sync-windows.zip"</span><span class="cl">Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip</span><span class="cl">Expand-Archive $zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force</span><span class="cl">Set-ExecutionPolicy -Scope Process Bypass; &amp; "$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1"</span></code></pre><button class="copy" type="button" data-copy="$zip = &quot;$env:TEMP\amazon-order-sync-windows.zip&quot;&#10;Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip&#10;Expand-Archive $zip &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync&quot; -Force&#10;Set-ExecutionPolicy -Scope Process Bypass; &amp; &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1&quot;">Copy</button></div>
+      </div>
+      <div class="pane" role="tabpanel" id="pane-lin" aria-labelledby="tab-lin" hidden>
+        <p class="pane-note">A systemd user service. Needs Node.js 18 or newer.</p>
+        <div class="cmd"><pre><code><span class="cl">curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh</span></code></pre><button class="copy" type="button" data-copy="curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh">Copy</button></div>
+      </div>
+      <ol class="then">
+        <li>Open <code>brave://extensions</code> (or <code>chrome://</code>, <code>edge://</code>), turn on Developer mode, choose <b>Load unpacked</b> and pick the <code>browser-extension</code> folder the installer prints.</li>
+        <li>Open your Amazon order history and press <b>Sync Current Page</b> in the extension.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="notes" class="notes" aria-labelledby="notes-h">
+  <div class="wrap notes-grid">
+    <div class="notes-text">
+      <h2 id="notes-h">One file per order</h2>
+      <p>The server files each order as <code>Order-&lt;order&nbsp;number&gt;.md</code> under <code>Orders/&lt;year&gt;/&lt;month&gt;/</code> in your notes folder, which is <code>~/AmazonOrders</code> unless you set <code>notesPath</code>. Product images go in <code>Orders/assets/</code>, named by ASIN.</p>
+      <p>The frontmatter is plain YAML with one array per field, in item order: the second brand, price and ASIN belong to the second item. Each item gets a review section with a <b>Posted to Amazon?</b> box.</p>
+      <p>Syncing an order again rewrites its details and keeps what you wrote: a review typed under the placeholder, a draft you saved, a box you&nbsp;ticked.</p>
+    </div>
+    <figure class="tree" aria-labelledby="tree-cap">
+<!-- files:begin -->
+<ul class="tree-list">
+<li class="tr-root">~/AmazonOrders/Orders/</li>
+<li><span class="tr-d">2026<i>/</i>08-August<i>/</i></span><span class="tr-f"><span>Order-114-6203318-0071592.md</span></span></li>
+<li><span class="tr-d">2026<i>/</i>09-September<i>/</i></span><span class="tr-f"><span>Order-113-0927751-3104428.md</span></span></li>
+<li><span class="tr-d">2026<i>/</i>10-October<i>/</i></span><span class="tr-f"><span>Order-112-4418203-6650917.md</span></span></li>
+<li><span class="tr-d">assets<i>/</i></span><span class="tr-f"><span>B0DCBL6062.jpg</span><span>B0DLMP4207.jpg</span><span>B0DNTB2213.jpg</span><span>B0DSKL1035.jpg</span></span></li>
+</ul>
+<!-- files:end -->
+      <figcaption id="tree-cap">Every file the server wrote for the three made-up orders above (<a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/samples/files.txt">files.txt</a>).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="whats-in-it" class="parts" aria-labelledby="parts-h">
   <div class="wrap">
-    <p class="label">What's in it</p>
-    <h2>Three small parts, all on your computer</h2>
-    <div class="cards">
-      <div class="card"><h3>Local server</h3><p>One Node.js file with no npm dependencies, on <code>127.0.0.1:27483</code>. Writes one note per order under <code>Orders/YYYY/MM-Month/</code>, saves product images next to them, and serves the dashboard.</p></div>
-      <div class="card"><h3>Browser extension</h3><p>Reads your Amazon order pages and sends them to the server. <b>Sync Current Page</b> or <b>Auto-Sync All Pages</b> from its popup. Runs only on Amazon order and review pages.</p></div>
-      <div class="card"><h3>Dashboard</h3><p>Spend by month, every order searchable, price drops on things you bought, repeat purchases, and CSV or JSON export of the lot. Import your full history from Amazon's "Request My Data" export.</p></div>
-      <div class="card"><h3>Headless sync</h3><p>After a one-time login, the server can run your browser headless with the real extension on a schedule. No cookie scraping, and no browser window.</p></div>
-      <div class="card"><h3>Windows tray app</h3><p>Starts the server hidden, shows notifications, and has a menu for sync, login, the notes folder, the config and the logs. Start with Windows is a checkbox. On Linux, a systemd user service does the same job.</p></div>
-      <div class="card"><h3>Review notes</h3><p>Each item has a review section in its note. With an optional Gemini key the server drafts one for you to rewrite in your own words; the extension fills Amazon's form with what you saved, and you post it yourself.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="screens">
-  <div class="wrap">
-    <p class="label">Screens</p>
-    <h2>Every order, grouped by month</h2>
-    <div class="gallery">
-      <figure><img class="shot only-night" src="assets/dashboard-orders-dark.webp" alt="The Orders tab: orders grouped by month with status, ship-to, items and review state" width="1800" height="1140" loading="lazy"><img class="shot only-day" src="assets/dashboard-orders-light.webp" alt="The Orders tab: orders grouped by month with status, ship-to, items and review state" width="1800" height="1140" loading="lazy">
-        <figcaption>Orders: grouped by year and month, with status, items and review state. Press <code>/</code> to search. Screens show made-up orders.</figcaption></figure>
-    </div>
-  </div>
-</section>
-
-<section id="notes">
-  <div class="wrap two">
-    <div>
-      <p class="label">The notes</p>
-      <h2>Plain Markdown you keep</h2>
-      <p class="mute">Readable in any editor or Obsidian vault. Re-syncing never overwrites text you wrote or a box you ticked.</p>
-    </div>
-    <pre><code><span class="c">---</span>
-<span class="a">type</span>: order
-<span class="a">order_id</span>: <span class="s">"112-3000028-4000028"</span>
-<span class="a">date</span>: <span class="s">"Ordered on October 13, 2026"</span>
-<span class="a">total</span>: <span class="s">"$59.00"</span>
-<span class="a">status</span>: <span class="s">"Delivered"</span>
-<span class="a">brand</span>: [<span class="s">"BenQ"</span>]
-<span class="a">asin</span>: [<span class="s">"B0SHOT0280"</span>]
-<span class="a">reviewed</span>: [false]
-<span class="c">---</span>
-<span class="p"># Order 112-3000028-4000028</span>
-
-<span class="p">### LED Desk Lamp with Dimmer</span>
-![image](assets/B0SHOT0280.jpg)
-
-<span class="p">#### My Review</span>
-<span class="c">&gt; *Write your review for this item below...*</span>
-**Rating:**
-**Review:**
-- [ ] Posted to Amazon?</code></pre>
-  </div>
-</section>
-
-<section id="privacy">
-  <div class="wrap two">
-    <div>
-      <p class="label">Privacy</p>
-      <h2>Nothing leaves your machine</h2>
-      <p class="mute">Unless you add a Gemini key. Then, for each draft, it sends that product's name, brand and listing features, up to three public reviews of it, and up to three of your own posted reviews as style samples. Never your order numbers, prices or address.</p>
-    </div>
-    <ul class="plain">
-      <li>The server binds <code>127.0.0.1</code> and refuses any request not addressed to <code>127.0.0.1</code> or <code>localhost</code>, which stops DNS rebinding.</li>
-      <li>It answers only its own dashboard, its own extension (a fixed ID) and local tools. Scripts on Amazon pages and other websites get <code>403</code>.</li>
-      <li>The headless browser profile holds your signed-in Amazon session and never leaves your computer. Delete it to sign out.</li>
-      <li>Product images are fetched over http(s) only, must be real images, and are capped at 5 MB.</li>
-    </ul>
-  </div>
-</section>
-
-<section id="config">
-  <div class="wrap two">
-    <div>
-      <p class="label">Configuration</p>
-      <h2><code>config.json</code></h2>
-      <p class="mute"><code>%APPDATA%\amazon-order-sync\</code> on Windows, <code>~/.config/amazon-order-sync/</code> on Linux. The installer creates it and never overwrites it. Every key is in the <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/guide.md#configuration">guide</a>.</p>
-    </div>
-    <table>
-      <tr><th>Key</th><th>Default</th></tr>
-      <tr><td>notesPath</td><td><code>~/AmazonOrders</code></td></tr>
-      <tr><td>port</td><td><code>27483</code>; the extension expects it</td></tr>
-      <tr><td>autoSyncEnabled</td><td><code>false</code>; headless sync every <code>autoSyncIntervalHours</code> (24)</td></tr>
-      <tr><td>browserPath</td><td>autodetect: Brave, Edge and Chromium before Chrome</td></tr>
-      <tr><td>geminiApiKey</td><td>empty; turns on review drafts</td></tr>
+    <h2 id="parts-h">What’s in it</h2>
+    <p class="lede">Everything runs on your computer. Nothing goes to any other server unless you add a Gemini key for review drafts.</p>
+    <table class="packing">
+      <thead><tr><th scope="col"><span class="sr-only">Number</span></th><th scope="col">Part</th><th scope="col">What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="n">01</td><th scope="row">Local server<span class="where">server/</span></th><td>One Node.js file with no npm dependencies, on <code>127.0.0.1:27483</code>. Writes the notes, caches the images, and serves the dashboard and the <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/api.md">HTTP API</a>.</td></tr>
+        <tr><td class="n">02</td><th scope="row">Browser extension<span class="where">browser-extension/</span></th><td>Reads your Amazon order pages and sends them to the server: <b>Sync Current Page</b>, or <b>Auto-Sync All Pages</b> from its popup. Fills Amazon’s review form from a draft you saved, for you to check and post.</td></tr>
+        <tr><td class="n">03</td><th scope="row">Dashboard<span class="where">127.0.0.1:27483</span></th><td>Spend by month, every order searchable, price drops on things you bought, repeat purchases, review drafts, sync status, CSV and JSON export, and an import for Amazon’s “Request My Data” export.</td></tr>
+        <tr><td class="n">04</td><th scope="row">Headless sync<span class="where">autoSyncEnabled</span></th><td>After a one-time login, the server runs your browser headless with the real extension on a schedule. No cookie scraping and no browser window.</td></tr>
+        <tr><td class="n">05</td><th scope="row">Tray app<span class="where">tray/ · Windows</span></th><td>Starts the server hidden, shows notifications, and has a menu for sync, login, the notes folder, the config and the logs. On Linux a systemd user service does the same job.</td></tr>
+        <tr><td class="n">06</td><th scope="row">Review drafts<span class="where">geminiApiKey</span></th><td>Optional. With a Gemini key, the server drafts a review per item for you to rewrite in your own words. You post it yourself.</td></tr>
+      </tbody>
     </table>
   </div>
 </section>
 
-<section id="tested">
-  <div class="wrap two">
+<section id="screens" class="screens" aria-labelledby="screens-h">
+  <div class="wrap">
+    <h2 id="screens-h">The dashboard</h2>
+    <figure class="shot">
+      <img class="only-night" src="assets/dashboard-overview-dark.webp" alt="The dashboard’s Overview tab: order count, lifetime spend, review counts, a monthly spend chart and recent orders" width="1800" height="1140" loading="lazy">
+      <img class="only-day" src="assets/dashboard-overview-light.webp" alt="The dashboard’s Overview tab: order count, lifetime spend, review counts, a monthly spend chart and recent orders" width="1800" height="1140" loading="lazy">
+      <figcaption><b>Overview.</b> Totals, spend for the last 12 months, and CSV or JSON export of every order.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img class="only-night" src="assets/dashboard-orders-dark.webp" alt="The Orders tab: orders grouped by month with status, ship-to, items and review state" width="1800" height="1140" loading="lazy">
+      <img class="only-day" src="assets/dashboard-orders-light.webp" alt="The Orders tab: orders grouped by month with status, ship-to, items and review state" width="1800" height="1140" loading="lazy">
+      <figcaption><b>Orders.</b> Grouped by year and month, with status, items and review state. Press <kbd>/</kbd> to search.</figcaption>
+    </figure>
+    <p class="note-small">Both screens show made-up orders.</p>
+  </div>
+</section>
+
+<section id="privacy" class="privacy" aria-labelledby="privacy-h">
+  <div class="wrap">
+    <h2 id="privacy-h">What leaves your computer</h2>
+    <div class="privacy-grid">
+      <div class="stays">
+        <h3>Stays here</h3>
+        <p>Your orders, the notes, the images, the config, and the headless browser profile with your signed-in Amazon session. Delete that profile to sign out.</p>
+      </div>
+      <div class="leaves">
+        <h3>Sent to Gemini, only if you add a key</h3>
+        <p>For each draft: the product’s name, brand and listing features, up to three public reviews of it, and up to three of your own posted reviews as style samples. Never your order numbers, prices or address.</p>
+      </div>
+    </div>
+    <ul class="guards">
+      <li>The server binds <code>127.0.0.1</code> and refuses any request not addressed to <code>127.0.0.1</code> or <code>localhost</code> on its port, which stops DNS rebinding.</li>
+      <li>It answers only its own dashboard, its own extension (a fixed ID) and local tools without an Origin. Scripts on Amazon pages and other websites get <code>403</code>.</li>
+      <li>Product images are fetched over http(s) only, must be real image types, and are capped at 5&nbsp;MB.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="config" class="config" aria-labelledby="config-h">
+  <div class="wrap config-grid">
     <div>
-      <p class="label">Tested on</p>
-      <ul class="plain">
-        <li>Windows with Brave and the tray app: my own setup, daily</li>
-        <li>CI on every push: server tests on Ubuntu (Node.js 18 and 22) and Windows (Node.js 22), a tray build, and installer checks</li>
-        <li><em>Not</em> tested: macOS, Firefox, Amazon sites other than amazon.com day to day</li>
+      <h2 id="config-h"><code>config.json</code></h2>
+      <p><code>%APPDATA%\amazon-order-sync\</code> on Windows, <code>~/.config/amazon-order-sync/</code> on Linux, or set <code>AMAZON_SYNC_CONFIG</code>. The installer creates it and never overwrites it. Every key is in the <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/guide.md#configuration">guide</a>.</p>
+    </div>
+    <table class="keys">
+      <thead><tr><th scope="col">Key</th><th scope="col">Default</th></tr></thead>
+      <tbody>
+        <tr><th scope="row"><code>notesPath</code></th><td><code>~/AmazonOrders</code>: the notes and images</td></tr>
+        <tr><th scope="row"><code>port</code></th><td><code>27483</code>. The extension expects it; change both or neither</td></tr>
+        <tr><th scope="row"><code>autoSyncEnabled</code></th><td><code>false</code>. Headless sync every <code>autoSyncIntervalHours</code> (24)</td></tr>
+        <tr><th scope="row"><code>browserPath</code></th><td>Autodetect. Brave, Edge and Chromium are tried before Chrome</td></tr>
+        <tr><th scope="row"><code>geminiApiKey</code></th><td>Empty. A key turns on review drafts; <code>GEMINI_API_KEY</code> also works</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="tested" class="tested" aria-labelledby="tested-h">
+  <div class="wrap tested-grid">
+    <div>
+      <h2 id="tested-h">Tested on</h2>
+      <ul>
+        <li><b>Windows with Brave and the tray app:</b> the maintainer’s own setup, daily.</li>
+        <li><b>CI on every push:</b> server tests on Ubuntu (Node.js 18 and 22) and Windows (Node.js 22), a tray app build, and the installers checked with Windows PowerShell 5.1, PSScriptAnalyzer and shellcheck.</li>
+        <li><b>Not tested:</b> macOS, Firefox, and Amazon sites other than amazon.com in day-to-day use.</li>
       </ul>
     </div>
     <div>
-      <p class="label">Known issues</p>
-      <ul class="plain">
+      <h2>Known issues</h2>
+      <ul>
         <li>Google Chrome ignores <code>--load-extension</code> since version 137, so headless sync needs Brave, Edge or Chromium. Manual sync works in Chrome.</li>
-        <li>When Amazon changes its order or review pages, sync or auto-fill can break until the extension is updated.</li>
-        <li>Don't add a <code>---</code> line inside a review when editing a note by hand; it separates items.</li>
+        <li>The extension reads Amazon’s pages as they are today. When Amazon changes them, sync or auto-fill can break until the extension is updated.</li>
+        <li>Each item in a note ends with a <code>---</code> line. If you edit a note by hand, don’t add one inside a review; the dashboard’s editor writes one as <code>- - -</code>.</li>
       </ul>
     </div>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="wrap">
-    <span>MIT · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/SECURITY.md">Security</a></span>
-    <span><a href="https://real-fruit-snacks.github.io/">RFS</a> · Real tools. No filler. · <a href="https://github.com/Real-Fruit-Snacks/rfs-brand/blob/main/BRAND.md">Brand</a></span>
+    <p>MIT. Not affiliated with Amazon.</p>
+    <p><a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">Real-Fruit-Snacks</a></p>
   </div>
 </footer>
 
-<script src="assets/site.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

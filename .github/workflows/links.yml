@@ -1,0 +1,32 @@
+name: links
+
+# Links in the README, the guides and the project page. Monthly too, because the pages they point
+# at move without this repo changing. Amazon's own pages are skipped: they answer link checkers
+# with errors, and the sample notes link to made-up products.
+on:
+  push:
+    branches: [main]
+    paths: ['**.md', 'docs/**.html']
+  schedule:
+    - cron: '41 6 4 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --max-retries 4 --retry-wait-time 10 --timeout 30
+            --accept 200,206,429 --exclude-loopback --exclude-private
+            --exclude '^https?://([a-z]+\.)?amazon\.'
+            --exclude '^https://github\.com/Real-Fruit-Snacks/amazon-order-sync/(issues/new|security/advisories/new)'
+            README.md CONTRIBUTING.md SECURITY.md docs/guide.md docs/api.md docs/index.html
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

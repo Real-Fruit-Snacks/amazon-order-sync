@@ -16,4 +16,14 @@ shellcheck install.sh
 dotnet build tray -c Release    # Windows, .NET 8 SDK or newer
 ```
 
-Icons and the README cover are generated: `python3 tools/make-icons.py` and `python3 ../rfs-brand/tools/make-cover.py docs/assets/cover.toml`, with Real-Fruit-Snacks/rfs-brand cloned next to this repo.
+The app icons are generated with `python3 tools/make-icons.py`, with Real-Fruit-Snacks/rfs-brand cloned next to this repo.
+
+The README picture and the samples on the project page are generated too, and CI fails if they're out of date. After a change to how notes are written, or to `tools/samples.json`, run:
+
+```sh
+node tools/make-samples.mjs                         # syncs the made-up orders through the real server
+python -m pip install -r tools/requirements-art.txt
+python tools/make-slip.py                           # draws docs/assets/slip-*.svg from the notes it wrote
+```
+
+The page's design decisions are in [docs/DESIGN.md](docs/DESIGN.md).

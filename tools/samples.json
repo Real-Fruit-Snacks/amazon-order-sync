@@ -1,0 +1,84 @@
+{
+  "_comment": "Made-up orders, shaped exactly like the extension's POST /api/sync body. tools/make-samples.mjs syncs them through the real server. {images} becomes a throwaway image server on 127.0.0.1.",
+  "orders": [
+    {
+      "order_id": "112-4418203-6650917",
+      "date": "October 13, 2026",
+      "total": "$58.47",
+      "status": "Delivered October 15",
+      "ship_to": "Robin Park",
+      "items": [
+        {
+          "asin": "B0DLMP4207",
+          "name": "Clamp-On LED Desk Lamp, Dimmable",
+          "link": "https://www.amazon.com/dp/B0DLMP4207",
+          "image": "{images}/B0DLMP4207.jpg",
+          "is_reviewed": false,
+          "brand": "Lumenwell",
+          "current_price": "$41.99",
+          "features": "Clamps to desks up to 2.4 in thick\n- 5 brightness levels, 3 color temperatures\n- USB-C powered",
+          "review_rating": "",
+          "review_title": "",
+          "review_text": ""
+        },
+        {
+          "asin": "B0DCBL6062",
+          "name": "Braided USB-C Cable, 6 ft, 2-Pack",
+          "link": "https://www.amazon.com/dp/B0DCBL6062",
+          "image": "{images}/B0DCBL6062.jpg",
+          "is_reviewed": true,
+          "brand": "Corda",
+          "current_price": "$16.48",
+          "features": "Nylon braid, aluminum ends\n- 60 W charging",
+          "review_rating": "4",
+          "review_title": "Long enough to reach the sofa",
+          "review_text": "Both still work after three months of being stepped on. The ends are a little bulky for my phone case."
+        }
+      ]
+    },
+    {
+      "order_id": "113-0927751-3104428",
+      "date": "September 2, 2026",
+      "total": "$23.99",
+      "status": "Delivered September 4",
+      "ship_to": "Robin Park",
+      "items": [
+        {
+          "asin": "B0DSKL1035",
+          "name": "Pre-Seasoned Cast Iron Skillet, 10 Inch",
+          "link": "https://www.amazon.com/dp/B0DSKL1035",
+          "image": "{images}/B0DSKL1035.jpg",
+          "is_reviewed": false,
+          "brand": "Hearthline",
+          "current_price": "$23.99",
+          "features": "Pre-seasoned with vegetable oil\n- Oven safe",
+          "review_rating": "",
+          "review_title": "",
+          "review_text": ""
+        }
+      ]
+    },
+    {
+      "order_id": "114-6203318-0071592",
+      "date": "August 21, 2026",
+      "total": "$12.99",
+      "status": "Delivered August 23",
+      "ship_to": "Robin Park",
+      "items": [
+        {
+          "asin": "B0DNTB2213",
+          "name": "Dot Grid Notebook, A5, 3-Pack",
+          "link": "https://www.amazon.com/dp/B0DNTB2213",
+          "image": "{images}/B0DNTB2213.jpg",
+          "is_reviewed": false,
+          "brand": "Margin",
+          "current_price": "$12.99",
+          "features": "120 numbered pages each\n- Lay-flat binding",
+          "review_rating": "",
+          "review_title": "",
+          "review_text": ""
+        }
+      ]
+    }
+  ]
+}
