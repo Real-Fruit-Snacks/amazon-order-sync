@@ -13,7 +13,7 @@ body:
     attributes:
       label: Version
       description: Shown next to the title in the dashboard and the extension popup
-      placeholder: "v2.2.0"
+      placeholder: "v2.2.1"
     validations:
       required: true
   - type: input

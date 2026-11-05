@@ -13,7 +13,7 @@ import { execFile, execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import util from 'node:util';
 
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 const DEFAULT_PORT = 27483;
 const DEFAULT_SYNC_REMINDER_DAYS = 7;  // §14.1: sync staleness threshold
 const DEFAULT_AUTOSYNC_INTERVAL_HOURS = 24; // §15.1: headless auto-sync cadence

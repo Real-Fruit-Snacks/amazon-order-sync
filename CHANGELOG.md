@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.1] — 2026-11-05
+
+The app is the same as 2.2.0: nothing changed in the server, the extension, the tray app or the installers. This release adds a project page and a new README, which ships in the downloads. If you run 2.2.0 there is no need to upgrade.
+
+**Documentation**
+
+- A project page: <https://real-fruit-snacks.github.io/amazon-order-sync/>. It has the install lines, dashboard screenshots in both themes, what leaves your computer, and three made-up orders shown as packing slips next to the notes the server wrote for them.
+- The README opens with a picture of one of those orders: its packing slip is scanned field by field while its note prints beside it. It lists every file the server writes for the sample orders, shows one item's section of a note as written, and says what a re-sync keeps: a review typed under the placeholder, a saved draft, a ticked box.
+- The sample notes are the server's own output, unedited, in `docs/samples/`. CI syncs the sample orders through the server on every push and fails if what it writes changes.
+- New known issue: a note links its images as `assets/<ASIN>.jpg`, but they are saved in `Orders/assets/`, not in the note's month folder. The dashboard finds them by ASIN; a Markdown editor that resolves the link from the note's own folder shows a broken image.
+
+**Repository**
+
+- CI: the PSScriptAnalyzer step uses the runner's copy when it has version 1.25.0, and otherwise retries the PowerShell Gallery up to five times. The workflows use the Node.js 24 versions of the GitHub actions.
+- A link check of the README, the guides and the project page, on pushes that change them and once a month.
+- A new social preview and cover. CONTRIBUTING explains how to regenerate the samples and the README picture.
+
 ## [2.2.0] — RFS refactor
 
 The standalone app replaces the Obsidian plugin in this repository (the plugin's last release was 1.0.7; its code stays in the history). The repository is public from this release, and installs come from release assets instead of a copied project folder.
