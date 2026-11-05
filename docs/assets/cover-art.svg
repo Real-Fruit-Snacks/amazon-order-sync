@@ -1,51 +1,34 @@
-<!-- amazon-order-sync cover panel: the dashboard. 480x368, origin = panel top-left.
-     Rendered by Real-Fruit-Snacks/rfs-brand tools/make-cover.py; colours are {tokens}. -->
-<rect width="480" height="368" fill="{bg}"/>
-<!-- top bar -->
-<rect width="480" height="40" fill="{surface}"/><rect y="40" width="480" height="1" fill="{line}"/>
-<rfs-text font="mono-semibold" size="11" x="18" y="24" fill="{text}">Amazon Order Sync</rfs-text>
-<rect x="148" y="12" width="66" height="18" rx="4" fill="{ember}" fill-opacity="0.14"/>
-<rfs-text font="mono-semibold" size="9" x="181" y="24.5" anchor="middle" ls="0.6" fill="{ember}">OVERVIEW</rfs-text>
-<rfs-text font="mono" size="9" x="230" y="24.5" ls="0.6" fill="{mute}">ORDERS</rfs-text>
-<rfs-text font="mono" size="9" x="282" y="24.5" ls="0.6" fill="{mute}">SYNC</rfs-text>
-<rect x="372" y="11" width="92" height="20" rx="4" fill="{raised}" stroke="{line}"/>
-<rfs-text font="mono" size="9" x="381" y="24.5" fill="{mute}">127.0.0.1</rfs-text>
+<!-- amazon-order-sync cover panel (layout v2): the dashboard. 528x448, origin = panel top-left.
+     Rendered by Real-Fruit-Snacks/rfs-brand tools/make-cover.py; colours are {tokens}.
+     Drawn for a 400px card: the order count, lifetime spend and the monthly chart, with
+     only this month in Ember. Figures are the v1 cover's examples. -->
+<rect width="528" height="448" fill="{bg}"/>
+<!-- top bar: the app, served on 127.0.0.1 -->
+<rect width="528" height="56" fill="{surface}"/><rect y="56" width="528" height="1" fill="{line}"/>
+<rfs-text font="mono-semibold" size="20" x="24" y="35" fill="{text}">Amazon Order Sync</rfs-text>
+<rect x="374.5" y="14.5" width="129" height="27" rx="5" fill="{raised}" stroke="{line}"/>
+<rfs-text font="mono" size="16" x="439" y="33" anchor="middle" fill="{mute}">127.0.0.1</rfs-text>
 <!-- stat cards -->
-<rect x="18.5" y="56.5" width="140" height="58" rx="6" fill="{surface}" stroke="{line}"/>
-<rfs-text font="mono-semibold" size="20" x="32" y="86" fill="{text}">412</rfs-text>
-<rfs-text font="mono" size="8" x="32" y="103" ls="0.8" fill="{mute}">TOTAL ORDERS</rfs-text>
-<rect x="170.5" y="56.5" width="140" height="58" rx="6" fill="{surface}" stroke="{line}"/>
-<rfs-text font="mono-semibold" size="20" x="184" y="86" fill="{text}">$8,214</rfs-text>
-<rfs-text font="mono" size="8" x="184" y="103" ls="0.8" fill="{mute}">LIFETIME SPEND</rfs-text>
-<rect x="322.5" y="56.5" width="140" height="58" rx="6" fill="{surface}" stroke="{line}"/>
-<rfs-text font="mono-semibold" size="20" x="336" y="86" fill="{mint}">-$43</rfs-text>
-<rfs-text font="mono" size="8" x="336" y="103" ls="0.8" fill="{mute}">PRICE DROPS</rfs-text>
-<!-- monthly spend chart -->
-<rect x="18.5" y="128.5" width="444" height="150" rx="6" fill="{surface}" stroke="{line}"/>
-<rfs-text font="mono" size="8" x="32" y="148" ls="0.8" fill="{mute}">MONTHLY SPEND</rfs-text>
-<rect x="32" y="256" width="416" height="1" fill="{line}"/>
-<rect x="40" y="214" width="20" height="42" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="74" y="196" width="20" height="60" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="108" y="222" width="20" height="34" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="142" y="176" width="20" height="80" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="176" y="204" width="20" height="52" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="210" y="188" width="20" height="68" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="244" y="230" width="20" height="26" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="278" y="200" width="20" height="56" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="312" y="166" width="20" height="90" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="346" y="210" width="20" height="46" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="380" y="184" width="20" height="72" rx="2" fill="{ember}" fill-opacity="0.55"/>
-<rect x="414" y="160" width="20" height="96" rx="2" fill="{ember}"/>
-<rfs-text font="mono" size="7.5" x="424" y="270" anchor="middle" fill="{text}">OCT</rfs-text>
-<!-- recent order rows -->
-<rfs-text font="mono" size="9" x="20" y="304" fill="{mute}">2d ago</rfs-text>
-<rfs-text font="mono" size="9" x="70" y="304" fill="{text}">USB-C cable, 2 m</rfs-text>
-<rect x="356" y="294" width="56" height="14" rx="3" fill="{mint}" fill-opacity="0.14"/>
-<rfs-text font="mono-semibold" size="7.5" x="384" y="304" anchor="middle" ls="0.5" fill="{mint}">DELIVERED</rfs-text>
-<rfs-text font="mono" size="9" x="460" y="304" anchor="end" fill="{text}">$12.99</rfs-text>
-<rect x="18" y="316" width="444" height="1" fill="{line}"/>
-<rfs-text font="mono" size="9" x="20" y="334" fill="{mute}">5d ago</rfs-text>
-<rfs-text font="mono" size="9" x="70" y="334" fill="{text}">Desk lamp</rfs-text>
-<rect x="356" y="324" width="56" height="14" rx="3" fill="{amber}" fill-opacity="0.14"/>
-<rfs-text font="mono-semibold" size="7.5" x="384" y="334" anchor="middle" ls="0.5" fill="{amber}">SHIPPED</rfs-text>
-<rfs-text font="mono" size="9" x="460" y="334" anchor="end" fill="{text}">$59.00</rfs-text>
+<rect x="24.75" y="76.75" width="230.5" height="98.5" rx="8" fill="{surface}" stroke="{line}" stroke-width="1.5"/>
+<rfs-text font="mono-semibold" size="46" x="44" y="134" fill="{text}">412</rfs-text>
+<rfs-text font="mono" size="15" x="44" y="159" ls="1.2" fill="{mute}">TOTAL ORDERS</rfs-text>
+<rect x="272.75" y="76.75" width="230.5" height="98.5" rx="8" fill="{surface}" stroke="{line}" stroke-width="1.5"/>
+<rfs-text font="mono-semibold" size="46" x="292" y="134" fill="{text}">$8,214</rfs-text>
+<rfs-text font="mono" size="15" x="292" y="159" ls="1.2" fill="{mute}">LIFETIME SPEND</rfs-text>
+<!-- monthly spend: twelve months, this one in Ember -->
+<rect x="24.75" y="192.75" width="478.5" height="230.5" rx="8" fill="{surface}" stroke="{line}" stroke-width="1.5"/>
+<rfs-text font="mono" size="15" x="44" y="222" ls="1.2" fill="{mute}">MONTHLY SPEND</rfs-text>
+<rect x="44" y="384" width="440" height="1.5" fill="{line}"/>
+<rect x="50" y="321" width="25" height="63" rx="3" fill="{line-strong}"/>
+<rect x="87" y="294" width="25" height="90" rx="3" fill="{line-strong}"/>
+<rect x="124" y="333" width="25" height="51" rx="3" fill="{line-strong}"/>
+<rect x="161" y="264" width="25" height="120" rx="3" fill="{line-strong}"/>
+<rect x="198" y="306" width="25" height="78" rx="3" fill="{line-strong}"/>
+<rect x="235" y="282" width="25" height="102" rx="3" fill="{line-strong}"/>
+<rect x="272" y="345" width="25" height="39" rx="3" fill="{line-strong}"/>
+<rect x="309" y="300" width="25" height="84" rx="3" fill="{line-strong}"/>
+<rect x="346" y="249" width="25" height="135" rx="3" fill="{line-strong}"/>
+<rect x="383" y="315" width="25" height="69" rx="3" fill="{line-strong}"/>
+<rect x="420" y="276" width="25" height="108" rx="3" fill="{line-strong}"/>
+<rect x="457" y="240" width="25" height="144" rx="3" fill="{ember}"/>
+<rfs-text font="mono-semibold" size="15" x="469.5" y="408" anchor="middle" fill="{text}">OCT</rfs-text>
