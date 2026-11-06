@@ -3,6 +3,26 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.3.0] — 2026-11-05
+
+The Windows zip now has Node.js in it, so it installs and runs on a computer with no network, and each release has a dev kit for building and testing with no network. The server, the extension and what the tray app does are unchanged.
+
+**Install**
+
+- `amazon-order-sync-windows.zip` carries Node.js 22.23.4: `node\node.exe` and Node's `LICENSE`, checked against nodejs.org's `SHASUMS256.txt` when the release is built. npm, npx and corepack are left out, because the server has no npm packages. The tray app and `install.ps1` use this Node.js first and fall back to an installed one, so a computer without Node.js no longer needs winget or a download. `node.exe` adds about 33 MB to the zip.
+- If the tray app finds no Node.js at all, its message names the missing `node\node.exe`.
+- The Linux tarball is unchanged and still needs Node.js 18 or newer installed.
+
+**Developing offline**
+
+- A new download, `amazon-order-sync-2.3.0-dev-windows-x64.zip`: the source at this tag and every package the checks need, with their licences. That is the tray app's NuGet packages (the .NET 8.0.33 runtime packs for its self-contained build), the wheels for the README picture and PSScriptAnalyzer 1.25.0. Its `offline\setup.ps1` sets it up without a network, and its `offline\README.md` lists the toolchains it leaves out (.NET SDK 8.0.427, Node.js 22, Python 3.13) with their installers. CONTRIBUTING has a new "Developing offline" section.
+- `SHA256SUMS.txt` lists the SHA-256 of every download.
+
+**Repository**
+
+- Toolchain versions are pinned in `tools/versions.json`, which CI, the release workflow and the dev kit read: Node.js 22.23.4, .NET SDK 8.0.427, Python 3.13.17, PSScriptAnalyzer 1.25.0 and ShellCheck 0.9.0. CI used to build the tray app with the newest SDK on the runner and lint with the runner's ShellCheck.
+- Before publishing, the release workflow installs the Windows zip and sets up the dev kit on a fresh Windows runner with the internet and the package registries cut off, then runs the tests, the tray app build, the lint and the sample check from the kit. It can also be run by hand to check without publishing. The release is created as a draft and published once every download and `SHA256SUMS.txt` are attached.
+
 ## [2.2.1] — 2026-11-05
 
 The app is the same as 2.2.0: nothing changed in the server, the extension, the tray app or the installers. This release adds a project page and a new README, which ships in the downloads. If you run 2.2.0 there is no need to upgrade.

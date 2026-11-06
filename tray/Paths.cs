@@ -11,7 +11,7 @@ internal static class Paths
     public const string AppName = "amazon-order-sync";
 
     public static string Version =>
-        Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.2.1";
+        Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.3.0";
 
     public static string ExeDir =>
         AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);

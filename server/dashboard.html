@@ -919,7 +919,7 @@
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">Amazon Order Sync<span class="ver" id="ver">v2.2.1</span></div>
+    <div class="brand">Amazon Order Sync<span class="ver" id="ver">v2.3.0</span></div>
     <nav class="tabs" id="tabs">
       <button type="button" class="tab active" data-tab="overview">Overview</button>
       <button type="button" class="tab" data-tab="orders">Orders</button>
@@ -2935,7 +2935,7 @@ function renderAll() {
   // v1.8.7 (§25.2): every full render (tab/search/data change) resets
   // the Needs Review batch window; LOAD MORE bypasses renderAll entirely.
   state.reviewLimit = REVIEW_BATCH;
-  document.getElementById('ver').textContent = 'v' + (state.data.version || "2.2.1");
+  document.getElementById('ver').textContent = 'v' + (state.data.version || "2.3.0");
   renderSyncFreshness();
 
   // v1.8.0 (§21.1): flagged reviewMissing items count toward the tab badge —

@@ -1,6 +1,6 @@
 {
   "name": "amazon-order-sync-server",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Local server for Amazon Order Sync: writes your Amazon orders as Markdown notes and serves the dashboard.",
   "type": "module",
   "main": "server.js",
