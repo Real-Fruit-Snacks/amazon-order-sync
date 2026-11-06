@@ -14,6 +14,7 @@ AmazonOrderSync.exe.sha256
 tray/bin/
 tray/obj/
 tray/publish/
+.venv/
 
 # --- runtime state ---------------------------------------------------------
 .daemon.lock

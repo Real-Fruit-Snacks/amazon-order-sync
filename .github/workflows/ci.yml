@@ -5,21 +5,29 @@ on:
   pull_request:
 permissions:
   contents: read
+# Toolchain and package versions live in tools/versions.json (and tools/requirements-art.txt);
+# the release workflow and the dev kit read the same files.
 jobs:
   server:
     strategy:
       fail-fast: false
       matrix:
         include:
+          # "pinned" is the Node.js in tools/versions.json, the one the Windows zip carries;
+          # 18 is the oldest the server supports.
           - { os: ubuntu-latest, node: "18" }
-          - { os: ubuntu-latest, node: "22" }
-          - { os: windows-latest, node: "22" }
+          - { os: ubuntu-latest, node: pinned }
+          - { os: windows-latest, node: pinned }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+      - name: Pinned versions
+        id: pins
+        shell: bash
+        run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v5
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ matrix.node == 'pinned' && steps.pins.outputs.node || matrix.node }}
       - name: Syntax
         run: |
           node --check server/server.js
@@ -33,9 +41,19 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Pinned versions
+        id: pins
+        shell: bash
+        run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: ${{ steps.pins.outputs.dotnetSdk }}
+      - name: Use that SDK
+        # The runner has newer SDKs too, and dotnet picks the newest unless global.json says otherwise.
+        shell: bash
+        run: |
+          echo '{ "sdk": { "version": "${{ steps.pins.outputs.dotnetSdk }}", "rollForward": "disable" } }' > global.json
+          dotnet --version
       - name: Build
         run: dotnet build tray -c Release -warnaserror
   powershell:
@@ -46,7 +64,7 @@ jobs:
         shell: powershell
         run: |
           $bad = 0
-          foreach ($f in 'install.ps1', 'import-old-notes.ps1') {
+          foreach ($f in 'install.ps1', 'import-old-notes.ps1', 'tools/build-dev-kit.ps1', 'tools/dev-kit/setup.ps1') {
             $errs = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$null, [ref]$errs) | Out-Null
             if ($errs) { $errs | ForEach-Object { Write-Host "${f}: $($_.Message)" }; $bad++ }
@@ -59,8 +77,9 @@ jobs:
           # isn't registered at all because the gallery was unreachable when PowerShellGet first
           # loaded. Use the module if the runner image already has that version; otherwise
           # re-register the gallery if needed and install, 5 tries, 15/30/45/60 s apart.
+          $pins = Get-Content tools/versions.json -Raw | ConvertFrom-Json
           $modules = @(
-            @{ Name = 'PSScriptAnalyzer'; Version = '1.25.0' }
+            @{ Name = 'PSScriptAnalyzer'; Version = $pins.PSScriptAnalyzer }
           )
           foreach ($m in $modules) {
             if (Get-Module -ListAvailable $m.Name | Where-Object { $_.Version -eq [version]$m.Version }) {
@@ -83,14 +102,20 @@ jobs:
               }
             }
           }
-          $r = foreach ($f in 'install.ps1', 'import-old-notes.ps1') { Invoke-ScriptAnalyzer -Path $f -Settings ./PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }
+          $r = foreach ($f in 'install.ps1', 'import-old-notes.ps1', 'tools/build-dev-kit.ps1', 'tools/dev-kit/setup.ps1') { Invoke-ScriptAnalyzer -Path $f -Settings ./PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }
           $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
           if ($r) { exit 1 }
   shell:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: shellcheck install.sh
+      - name: ShellCheck
+        # The version in tools/versions.json, from its GitHub release, not whatever the image has.
+        run: |
+          v=$(jq -r .shellcheck tools/versions.json)
+          curl -fsSL --retry 3 "https://github.com/koalaman/shellcheck/releases/download/v$v/shellcheck-v$v.linux.x86_64.tar.xz" | tar -xJ
+          "./shellcheck-v$v/shellcheck" --version
+          "./shellcheck-v$v/shellcheck" install.sh
   art:
     # The README picture and the samples on the project page are generated. make-samples.mjs syncs
     # the made-up orders in tools/samples.json through the real server; make-slip.py draws the
@@ -98,12 +123,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Pinned versions
+        id: pins
+        shell: bash
+        run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: ${{ steps.pins.outputs.node }}
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ steps.pins.outputs.python }}
       - name: Regenerate the samples and the README picture
         run: |
           python -m pip install --quiet -r tools/requirements-art.txt

@@ -26,6 +26,8 @@ Linux (systemd user service, Node.js 18 or newer):
 curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz && ./amazon-order-sync/install.sh
 ```
 
+With no network: the Windows zip carries its own Node.js, so copy it over, expand it and run `install.ps1` from that folder; nothing is downloaded. The Linux tarball needs Node.js 18 or newer already installed.
+
 Then load the extension: open `brave://extensions` (or `chrome://extensions`, `edge://extensions`), turn on Developer mode, choose **Load unpacked** and pick the `browser-extension` folder the installer prints. Open your Amazon order history and press **Sync Current Page**.
 
 ## Where the notes go

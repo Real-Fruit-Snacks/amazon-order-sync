@@ -61,7 +61,7 @@ internal sealed class ServerProcess : IDisposable
         var node = Paths.FindNode();
         if (node is null)
         {
-            LastStartError = "Node.js was not found. Install it (winget install OpenJS.NodeJS.LTS) and restart the tray app.";
+            LastStartError = $"Node.js was not found: {Paths.BundledNode} is missing and no installed Node.js was found. Expand the release zip again, or install Node.js 18 or newer (winget install OpenJS.NodeJS.LTS), and restart the tray app.";
             Log.Write(LastStartError);
             return false;
         }

@@ -27,3 +27,15 @@ python tools/make-slip.py                           # draws docs/assets/slip-*.s
 ```
 
 The page's design decisions are in [docs/DESIGN.md](docs/DESIGN.md).
+
+## Developing offline
+
+Each release has a dev kit, `amazon-order-sync-<version>-dev-windows-x64.zip`: the source at that tag and an `offline\` folder with every package the checks above need, with their licences. That is the tray app's NuGet packages (the .NET runtime packs for its self-contained build included), the Python wheels for the README picture, and PSScriptAnalyzer. The server and the tests have no npm packages. The kit leaves out the toolchains: the .NET SDK (exactly the version in `tools/versions.json`), Node.js and Python, plus Git, PowerShell 7 and ShellCheck, which are optional. Its `offline\README.md` lists each with its version and installer. Unzip the kit, install those, then run this in the kit's folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File offline\setup.ps1
+```
+
+It needs no network. It checks the toolchains and says what's missing, restores and installs from `offline\` only, and prints the commands that test and build. `tools/build-dev-kit.ps1` builds the kit; `tools/dev-kit/` holds its `setup.ps1` and README. Before it publishes, the release workflow unzips the kit on a fresh Windows runner with the network cut off, runs `setup.ps1` and then these checks; run the workflow by hand (Actions, release, Run workflow) to check without publishing.
+
+Versions are pinned in `tools/versions.json` (Node.js, the .NET SDK, Python, PSScriptAnalyzer, ShellCheck) and `tools/requirements-art.txt` (the wheels). CI, the release and the dev kit read those files, so change a version there and nowhere else.

@@ -49,9 +49,14 @@ internal static class Paths
         return null;
     }
 
-    /// <summary>node.exe: PATH first, then the standard installer locations.</summary>
+    /// <summary>The Node.js the release zip carries: node\node.exe next to the exe.</summary>
+    public static string BundledNode => Path.Combine(ExeDir, "node", "node.exe");
+
+    /// <summary>node.exe: the bundled copy first, then PATH, then the standard
+    /// installer locations (a build from source has no node\ folder).</summary>
     public static string? FindNode()
     {
+        if (File.Exists(BundledNode)) return BundledNode;
         var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
         foreach (var dir in pathEnv.Split(';', StringSplitOptions.RemoveEmptyEntries))
         {

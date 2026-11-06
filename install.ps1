@@ -4,8 +4,10 @@
 
 .DESCRIPTION
   Run from the folder the release zip was expanded into (the one containing
-  server\, browser-extension\ and AmazonOrderSync.exe). It:
-    1. Makes sure Node.js >= 18 is installed (offers winget if not).
+  server\, browser-extension\, node\ and AmazonOrderSync.exe). It:
+    1. Uses the Node.js in node\, which comes with the release zip, so nothing
+       is downloaded. Without node\ (a source checkout) it needs an installed
+       Node.js >= 18 and offers winget if there is none.
     2. Creates %APPDATA%\amazon-order-sync\config.json on first run
        (never overwrites an existing config).
     3. Registers the tray app to start with Windows (HKCU Run key).
@@ -86,15 +88,24 @@ foreach ($p in @($Exe, (Join-Path $Root 'server\server.js'), (Join-Path $Root 'b
 }
 
 # --- 1. Node.js ----------------------------------------------------------------
-function Get-NodeMajor {
+# The same order the tray app uses: the bundled node\node.exe, then PATH, then
+# the standard install folders.
+$BundledNode = Join-Path $Root 'node\node.exe'
+
+function Find-Node {
+    if (Test-Path $BundledNode) { return $BundledNode }
     $node = Get-Command node.exe -ErrorAction SilentlyContinue
-    if (-not $node) {
-        foreach ($c in @("$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe", "$env:LOCALAPPDATA\Programs\nodejs\node.exe")) {
-            if (Test-Path $c) { $node = Get-Command $c; break }
-        }
+    if ($node) { return $node.Source }
+    foreach ($c in @("$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe", "$env:LOCALAPPDATA\Programs\nodejs\node.exe")) {
+        if (Test-Path $c) { return $c }
     }
+    return $null
+}
+
+function Get-NodeMajor {
+    $node = Find-Node
     if (-not $node) { return $null }
-    $v = & $node.Source -e "process.stdout.write(process.versions.node.split('.')[0])"
+    $v = & $node -e "process.stdout.write(process.versions.node.split('.')[0])"
     return [int]$v
 }
 
@@ -113,7 +124,8 @@ if (-not $major) {
     if (-not $major) { throw "Node.js >= 18 is required. Install it from https://nodejs.org/ and rerun this script." }
 }
 if ($major -lt 18) { throw "Node.js >= 18 is required (found major version $major). Upgrade with: winget upgrade OpenJS.NodeJS.LTS" }
-Write-Host "Node.js: v$major OK"
+if ((Find-Node) -eq $BundledNode) { Write-Host "Node.js: v$major OK (bundled, $BundledNode)" }
+else { Write-Host "Node.js: v$major OK ($(Find-Node))" }
 
 # --- 2. config -----------------------------------------------------------------
 if (-not (Test-Path $Config)) {

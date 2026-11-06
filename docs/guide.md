@@ -6,7 +6,7 @@ Everything the README leaves out: configuration, the dashboard, headless sync, r
 
 | Linux                                   | Windows                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
-| `systemctl --user` service              | Tray app starts/stops `node server\server.js` (hidden window)  |
+| `systemctl --user` service              | Tray app starts/stops `node\node.exe server\server.js` (hidden window) |
 | `notify-send` toasts                    | Server queues toasts at `/api/notifications`; tray shows them  |
 | `~/.config/amazon-order-sync/config.json` | `%APPDATA%\amazon-order-sync\config.json`                    |
 | `~/.local/share/amazon-order-sync/`     | `%LOCALAPPDATA%\amazon-order-sync\` (browser profile, logs)    |
@@ -19,7 +19,7 @@ The README has the install commands. What the installers do:
 
 **Windows, `install.ps1`** (Windows PowerShell 5.1 or PowerShell 7, run from the folder the release zip was expanded into):
 
-1. Checks for Node.js 18 or newer and offers to install the LTS with winget.
+1. Uses the Node.js that comes in the zip, `node\node.exe`, so nothing is downloaded. Without that folder (a source checkout) it checks for an installed Node.js 18 or newer and offers to install the LTS with winget.
 2. Creates `%APPDATA%\amazon-order-sync\config.json` on first run, with notes in `%USERPROFILE%\AmazonOrders`. An existing config is never changed.
 3. Registers `AmazonOrderSync.exe` to start with Windows (the `AmazonOrderSync` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) and puts a shortcut on the desktop.
 4. Stops any running server and tray app, starts the new tray app and waits for `/api/health`.
@@ -38,7 +38,7 @@ The server and extension need no build. The tray app needs the .NET 8 SDK or new
 dotnet publish tray -c Release -o .
 ```
 
-That writes `AmazonOrderSync.exe` to the repo root, next to `server\` and `browser-extension\`, which is where it looks for them (or set `AOS_SERVER_DIR`). Tests: `node --test tests/server.test.js`. Icons: `python3 tools/make-icons.py`, with a clone of Real-Fruit-Snacks/rfs-brand next to this repo.
+That writes `AmazonOrderSync.exe` to the repo root, next to `server\` and `browser-extension\`, which is where it looks for them (or set `AOS_SERVER_DIR`). It runs the server with `node\node.exe` next to it if there is one, as in the release zip, and otherwise with Node.js from `PATH` or its standard install folders. Tests: `node --test tests/server.test.js`. Icons: `python3 tools/make-icons.py`, with a clone of Real-Fruit-Snacks/rfs-brand next to this repo. To build and test with no network, use the dev kit attached to each release: [Developing offline](../CONTRIBUTING.md#developing-offline).
 
 ## Configuration
 
@@ -400,8 +400,9 @@ shows a notification and leaves it stopped until you fix the cause (see
 
 ## Troubleshooting on Windows
 
-- **"Node.js was not found"** — install it (`winget install OpenJS.NodeJS.LTS`),
-  then **Restart server** from the tray.
+- **"Node.js was not found"** — the release zip has Node.js in `node\`; expand
+  the zip again if that folder is missing, or install Node.js
+  (`winget install OpenJS.NodeJS.LTS`), then **Restart server** from the tray.
 - **Server exits immediately** — read `server.log`. Usually the port is in use
   or `config.json` has a typo.
 - **"No browser found" toast** — Brave/Edge/Chromium isn't in a standard place;

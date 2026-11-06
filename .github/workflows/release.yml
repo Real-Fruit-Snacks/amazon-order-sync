@@ -1,10 +1,14 @@
-# Push a tag vX.Y.Z (matching the top of CHANGELOG.md) to publish a release.
-# No artifacts between jobs (they count against the account's Actions
-# storage): the Windows job creates the release, the Linux job adds to it.
+# Push a tag vX.Y.Z (matching server/package.json and the top of CHANGELOG.md) to publish a
+# release. Run it by hand (workflow_dispatch) to build and check every download without publishing.
+# No artifacts between jobs (they count against the account's Actions storage): the Windows job
+# builds the Windows zip and the dev kit, checks both with the network cut off and creates a draft
+# release; the Linux job adds the tarball and SHA256SUMS.txt and publishes it.
+# Versions come from tools/versions.json, the file ci.yml and the dev kit read.
 name: release
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -12,48 +16,250 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Pinned versions
+        id: pins
+        run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v5
         with:
-          node-version: "22"
+          node-version: ${{ steps.pins.outputs.node }}
       - run: node --test tests/server.test.js
   windows:
     needs: test
     runs-on: windows-latest
+    timeout-minutes: 45
+    outputs:
+      sums: ${{ steps.sums.outputs.sums }}
     steps:
       - uses: actions/checkout@v5
+      - name: Versions
+        id: pins
+        shell: bash
+        run: |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
+          v=$(jq -r .version server/package.json | tr -d '\r')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          grep -q "^## \[${v}\]" CHANGELOG.md || { echo "CHANGELOG.md has no [${v}] section"; exit 1; }
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$v" ]]; then
+            echo "The tag is $GITHUB_REF_NAME but server/package.json says $v"; exit 1
+          fi
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: ${{ steps.pins.outputs.dotnetSdk }}
+      - name: Use that SDK
+        # The runner has newer SDKs too, and dotnet picks the newest unless global.json says otherwise.
+        shell: bash
+        run: |
+          echo '{ "sdk": { "version": "${{ steps.pins.outputs.dotnetSdk }}", "rollForward": "disable" } }' > global.json
+          dotnet --version
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ steps.pins.outputs.node }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ steps.pins.outputs.python }}
       - name: Build the tray app
         run: dotnet publish tray -c Release -o publish
+      - name: Node.js for the zip
+        # So the zip installs and runs with no network. node.exe and its LICENSE only: the server
+        # has no npm packages, so npm, npx and corepack stay out.
+        shell: pwsh
+        run: |
+          $v = '${{ steps.pins.outputs.node }}'
+          $name = "node-v$v-win-x64"
+          New-Item -ItemType Directory -Force node-dl, bundle/node | Out-Null
+          Invoke-WebRequest "https://nodejs.org/dist/v$v/$name.zip" -OutFile "node-dl/$name.zip"
+          Invoke-WebRequest "https://nodejs.org/dist/v$v/SHASUMS256.txt" -OutFile node-dl/SHASUMS256.txt
+          $line = Select-String -Path node-dl/SHASUMS256.txt -Pattern "^([0-9a-f]{64})  $([regex]::Escape("$name.zip"))$"
+          if (-not $line) { throw "SHASUMS256.txt has no line for $name.zip" }
+          $want = $line.Matches[0].Groups[1].Value
+          $got = (Get-FileHash "node-dl/$name.zip" -Algorithm SHA256).Hash.ToLower()
+          if ($got -ne $want) { throw "$name.zip has SHA-256 $got; nodejs.org's SHASUMS256.txt says $want" }
+          Write-Host "$name.zip matches nodejs.org's SHASUMS256.txt: $got"
+          Expand-Archive "node-dl/$name.zip" node-dl
+          Copy-Item "node-dl/$name/node.exe", "node-dl/$name/LICENSE" bundle/node
+          & bundle/node/node.exe --version
       - name: Package
         shell: pwsh
         run: |
           $d = 'dist/amazon-order-sync'
           New-Item -ItemType Directory -Force $d | Out-Null
           Copy-Item publish/AmazonOrderSync.exe $d
-          Copy-Item -Recurse server, browser-extension $d
+          Copy-Item -Recurse server, browser-extension, bundle/node $d
           Copy-Item install.ps1, import-old-notes.ps1, config.example.json, LICENSE, README.md, CHANGELOG.md $d
           Compress-Archive -Path "$d/*" -DestinationPath amazon-order-sync-windows.zip
-      - name: Release notes and publish
+          Write-Host ("amazon-order-sync-windows.zip: {0:N1} MB" -f ((Get-Item amazon-order-sync-windows.zip).Length / 1MB))
+      - name: Build the dev kit
+        shell: pwsh
+        run: ./tools/build-dev-kit.ps1 -Version ${{ steps.pins.outputs.version }} -OutDir .
+      - name: "Offline check: the Windows zip installs and runs"
+        # A fresh folder, no Node.js on PATH but the bundled one, and the internet and the package
+        # registries cut off. install.ps1 runs as the README says, without the startup entry; the
+        # tray app it starts must run the server with node\node.exe, and /api/health must answer.
+        shell: powershell
+        env:
+          HTTP_PROXY: http://127.0.0.1:9
+          HTTPS_PROXY: http://127.0.0.1:9
+          ALL_PROXY: http://127.0.0.1:9
+          NO_PROXY: localhost,127.0.0.1
+          NODE_USE_ENV_PROXY: "1"
+          npm_config_registry: http://127.0.0.1:9/
+          PIP_INDEX_URL: http://127.0.0.1:9/simple
+          PIP_NO_INDEX: "1"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Windows PowerShell's web cmdlets use the .NET default proxy, not HTTP_PROXY.
+          [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy('http://127.0.0.1:9', $true)
+          $app = Join-Path $env:RUNNER_TEMP 'aos-windows'
+          Expand-Archive amazon-order-sync-windows.zip $app
+          $node = Join-Path $app 'node\node.exe'
+          $env:PATH = (($env:PATH -split ';') | Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'node.exe')) }) -join ';'
+          if (Get-Command node.exe -ErrorAction SilentlyContinue) { throw 'A node.exe is still on PATH.' }
+          $reached = $true
+          try { Invoke-WebRequest https://nodejs.org/ -UseBasicParsing -TimeoutSec 15 | Out-Null } catch { $reached = $false }
+          if ($reached) { throw 'The cut-off failed: Windows PowerShell reached nodejs.org.' }
+          & $node -e "fetch('https://nodejs.org/').then(() => process.exit(1), () => process.exit(0))"
+          if ($LASTEXITCODE) { throw 'The cut-off failed: node.exe reached nodejs.org.' }
+          Write-Host 'The internet is cut off for this step.'
+          $logs = Join-Path $env:LOCALAPPDATA 'amazon-order-sync'
+          try {
+              $out = & (Join-Path $app 'install.ps1') -NotesPath (Join-Path $env:RUNNER_TEMP 'aos-notes') -NoAutostart 6>&1 | ForEach-Object { "$_" }
+              $out | ForEach-Object { Write-Host $_ }
+              if (-not ($out -match '^Node\.js: v\d+ OK \(bundled')) { throw 'install.ps1 did not use the bundled Node.js.' }
+              $h = Invoke-RestMethod http://127.0.0.1:27483/api/health -TimeoutSec 10
+              if (-not $h.ok -or $h.version -ne '${{ steps.pins.outputs.version }}') { throw "/api/health: $($h | ConvertTo-Json -Compress)" }
+              $server = Get-CimInstance Win32_Process -Filter "ProcessId = $($h.pid)"
+              if ($server.ExecutablePath -ne $node) { throw "The server runs $($server.ExecutablePath), not $node." }
+              $tray = Get-Process AmazonOrderSync -ErrorAction Stop
+              Write-Host "OK: server $($h.version) answers /api/health, pid $($h.pid), running $($server.ExecutablePath), started by the tray app (pid $($tray.Id))."
+          } catch {
+              foreach ($f in 'tray.log', 'server.log') { if (Test-Path "$logs\$f") { Write-Host "--- $f"; Get-Content "$logs\$f" -Tail 40 } }
+              throw
+          } finally {
+              # Leave nothing behind: the tray, the server, the config, the shortcut, the logs.
+              & (Join-Path $app 'install.ps1') -Uninstall
+              Remove-Item -Recurse -Force (Join-Path $env:APPDATA 'amazon-order-sync'), $logs -ErrorAction SilentlyContinue
+              Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Amazon Order Sync.lnk') -ErrorAction SilentlyContinue
+          }
+          Start-Sleep -Seconds 2
+          if (Get-Process AmazonOrderSync -ErrorAction SilentlyContinue) { throw 'The tray app is still running after -Uninstall.' }
+          if (Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" | Where-Object { $_.ExecutablePath -eq $node }) { throw 'The server is still running after -Uninstall.' }
+      - name: "Offline check: the dev kit sets up, tests and builds"
+        # A fresh folder, the internet cut off, every registry dead, fresh caches so the runner's
+        # can't help, and no package source but the kit's. Then offline\setup.ps1 (in Windows
+        # PowerShell 5.1, then PowerShell 7) and the checks ci.yml runs, from the unzipped kit.
+        shell: pwsh
+        env:
+          HTTP_PROXY: http://127.0.0.1:9
+          HTTPS_PROXY: http://127.0.0.1:9
+          ALL_PROXY: http://127.0.0.1:9
+          NO_PROXY: localhost,127.0.0.1
+          NODE_USE_ENV_PROXY: "1"
+          npm_config_registry: http://127.0.0.1:9/
+          npm_config_cache: ${{ runner.temp }}\kit-cache\npm
+          PIP_INDEX_URL: http://127.0.0.1:9/simple
+          PIP_NO_INDEX: "1"
+          PIP_CACHE_DIR: ${{ runner.temp }}\kit-cache\pip
+          NUGET_PACKAGES: ${{ runner.temp }}\kit-cache\nuget-packages
+          NUGET_HTTP_CACHE_PATH: ${{ runner.temp }}\kit-cache\nuget-http
+          NUGET_PLUGINS_CACHE_PATH: ${{ runner.temp }}\kit-cache\nuget-plugins
+          DOTNET_CLI_HOME: ${{ runner.temp }}\kit-cache\dotnet-home
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $v = '${{ steps.pins.outputs.version }}'
+          Expand-Archive "amazon-order-sync-$v-dev-windows-x64.zip" (Join-Path $env:RUNNER_TEMP 'kit')
+          $kit = Join-Path $env:RUNNER_TEMP "kit\amazon-order-sync-$v-dev"
+          # No package source anywhere but the kit's: NuGet's user config lists none, and the
+          # PowerShell Gallery is unregistered.
+          New-Item -ItemType Directory -Force (Join-Path $env:APPDATA 'NuGet') | Out-Null
+          Set-Content (Join-Path $env:APPDATA 'NuGet\NuGet.Config') '<?xml version="1.0" encoding="utf-8"?><configuration><packageSources><clear /></packageSources></configuration>'
+          Unregister-PSRepository -Name PSGallery -ErrorAction SilentlyContinue
+          if (Get-Command Unregister-PSResourceRepository -ErrorAction SilentlyContinue) { Unregister-PSResourceRepository -Name PSGallery -ErrorAction SilentlyContinue }
+          $reached = $true
+          try { Invoke-WebRequest https://api.nuget.org/v3/index.json -TimeoutSec 15 | Out-Null } catch { $reached = $false }
+          if ($reached) { throw 'The cut-off failed: PowerShell reached api.nuget.org.' }
+          node -e "fetch('https://registry.npmjs.org/').then(() => process.exit(1), () => process.exit(0))"
+          Write-Host 'The internet is cut off for this step.'
+          # A baseline, to see what the sample generators change.
+          git -C $kit init -q
+          git -C $kit -c core.autocrlf=false -c core.eol=lf -c core.safecrlf=false add -A
+          git -C $kit -c user.name=ci -c user.email=ci@localhost commit -q -m kit
+          powershell -NoProfile -ExecutionPolicy Bypass -File "$kit\offline\setup.ps1"
+          & "$kit\offline\setup.ps1"
+          if ($LASTEXITCODE) { throw "setup.ps1 failed in PowerShell 7 (exit $LASTEXITCODE)" }
+          Set-Location $kit
+          $pssa = (Get-Content tools/versions.json -Raw | ConvertFrom-Json).PSScriptAnalyzer
+          $m = @(Get-Module PSScriptAnalyzer)
+          if ($m.Count -ne 1 -or $m[0].Version -ne [version]$pssa -or -not $m[0].ModuleBase.StartsWith("$kit\offline\powershell\")) { throw "PSScriptAnalyzer: $($m.Version) from $($m.ModuleBase)" }
+          Write-Host "PSScriptAnalyzer $($m[0].Version) from $($m[0].ModuleBase)"
+          node --check server/server.js
+          node --check browser-extension/content.js
+          node --check browser-extension/popup.js
+          node --test --test-force-exit tests/server.test.js
+          dotnet build tray -c Release -warnaserror --no-restore
+          dotnet publish tray -c Release -o publish --no-restore
+          $r = foreach ($f in 'install.ps1', 'import-old-notes.ps1', 'tools/build-dev-kit.ps1', 'tools/dev-kit/setup.ps1') { Invoke-ScriptAnalyzer -Path $f -Settings ./PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }
+          $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+          if ($r) { throw 'PSScriptAnalyzer found problems.' }
+          node tools/make-samples.mjs
+          .venv\Scripts\python.exe tools/make-slip.py
+          git -c core.autocrlf=false -c core.eol=lf diff --exit-code -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html README.md
+          if (git status --porcelain -- docs/samples) { throw 'make-samples.mjs wrote files the kit does not have.' }
+          Write-Host 'The dev kit set up, tested, built and linted with no network.'
+      - name: "Offline check: the dev kit's scripts parse in Windows PowerShell 5.1"
+        shell: powershell
+        working-directory: ${{ runner.temp }}\kit\amazon-order-sync-${{ steps.pins.outputs.version }}-dev
+        run: |
+          $bad = 0
+          foreach ($f in 'install.ps1', 'import-old-notes.ps1', 'tools\build-dev-kit.ps1', 'tools\dev-kit\setup.ps1', 'offline\setup.ps1') {
+            $errs = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $f), [ref]$null, [ref]$errs) | Out-Null
+            if ($errs) { $errs | ForEach-Object { Write-Host "${f}: $($_.Message)" }; $bad++ }
+          }
+          if ($bad) { exit 1 }
+      - name: SHA-256
+        id: sums
+        shell: pwsh
+        run: |
+          $lines = foreach ($f in 'amazon-order-sync-windows.zip', 'amazon-order-sync-${{ steps.pins.outputs.version }}-dev-windows-x64.zip') {
+            '{0}  {1}' -f (Get-FileHash $f -Algorithm SHA256).Hash.ToLower(), $f
+            Write-Host ('{0}: {1:N1} MB' -f $f, ((Get-Item $f).Length / 1MB))
+          }
+          $lines | Write-Host
+          Add-Content $env:GITHUB_OUTPUT "sums<<SUMS_END"
+          Add-Content $env:GITHUB_OUTPUT $lines
+          Add-Content $env:GITHUB_OUTPUT "SUMS_END"
+      - name: Release notes and draft release
+        if: github.event_name == 'push'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          v="${GITHUB_REF_NAME#v}"
-          grep -q "^## \[${v}\]" CHANGELOG.md || { echo "CHANGELOG.md has no [${v}] section"; exit 1; }
+          v="${{ steps.pins.outputs.version }}"
           awk -v v="$v" 'index($0, "## [" v "]") == 1 {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md amazon-order-sync-windows.zip
+          gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file notes.md \
+            amazon-order-sync-windows.zip "amazon-order-sync-$v-dev-windows-x64.zip"
   linux:
     needs: windows
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Package and upload
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Package
         run: |
           mkdir -p dist/amazon-order-sync
           cp -r server browser-extension install.sh amazon-order-sync.service config.example.json LICENSE README.md CHANGELOG.md dist/amazon-order-sync/
           tar czf amazon-order-sync-linux.tar.gz -C dist amazon-order-sync
-          gh release upload "$GITHUB_REF_NAME" amazon-order-sync-linux.tar.gz
+      - name: SHA256SUMS.txt
+        env:
+          WINDOWS_SUMS: ${{ needs.windows.outputs.sums }}
+        run: |
+          { printf '%s\n' "$WINDOWS_SUMS" | tr -d '\r'; sha256sum amazon-order-sync-linux.tar.gz; } | sort -k 2 > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          test "$(wc -l < SHA256SUMS.txt)" -eq 3
+      - name: Upload and publish
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" amazon-order-sync-linux.tar.gz SHA256SUMS.txt
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
