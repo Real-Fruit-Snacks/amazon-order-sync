@@ -273,13 +273,14 @@ jobs:
           v=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
           app="$RUNNER_TEMP/aos-linux"; mkdir -p "$app" && tar xzf amazon-order-sync-linux.tar.gz -C "$app"
           printf '{ "notesPath": "%s", "geminiApiKey": "", "port": 27483 }\n' "$RUNNER_TEMP/aos-notes" > "$RUNNER_TEMP/aos-config.json"
-          sudo unshare --net sh -c '
+          sudo unshare --net sh -ec '
             ip link set lo up
             if curl -s --max-time 5 https://www.amazon.com/ >/dev/null; then echo "the cut-off failed"; exit 1; fi
             AMAZON_SYNC_CONFIG="$1" "$2/amazon-order-sync/amazon-order-sync" serve > "$3/serve.log" 2>&1 &
+            pid=$!
             for i in $(seq 1 50); do curl -sf http://127.0.0.1:27483/api/health > "$3/health.json" && break; sleep 0.2; done
             curl -sf http://127.0.0.1:27483/ | grep -q "Amazon Order Sync"
-            kill %1
+            kill "$pid"
           ' sh "$RUNNER_TEMP/aos-config.json" "$app" "$RUNNER_TEMP" || { echo "--- serve.log"; sudo cat "$RUNNER_TEMP/serve.log"; exit 1; }
           cat "$RUNNER_TEMP/health.json"; echo
           test "$(jq -r .version "$RUNNER_TEMP/health.json")" = "$v"
