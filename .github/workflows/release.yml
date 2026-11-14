@@ -1,8 +1,9 @@
-# Push a tag vX.Y.Z (matching server/package.json and the top of CHANGELOG.md) to publish a
-# release. Run it by hand (workflow_dispatch) to build and check every download without publishing.
+# Push a tag vX.Y.Z (matching Cargo.toml and the top of CHANGELOG.md) to publish a release. Run it
+# by hand (workflow_dispatch) to build and check every download without publishing.
 # No artifacts between jobs (they count against the account's Actions storage): the Windows job
 # builds the Windows zip and the dev kit, checks both with the network cut off and creates a draft
-# release; the Linux job adds the tarball and SHA256SUMS.txt and publishes it.
+# release; the Linux job builds the tarball, checks it with the network cut off, adds it and
+# SHA256SUMS.txt and publishes the release.
 # Versions come from tools/versions.json, the file ci.yml and the dev kit read.
 name: release
 on:
@@ -11,22 +12,40 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+env:
+  # cargo-about writes THIRD-PARTY-LICENSES.txt. Pinned, with the checksums of its
+  # release archives from github.com/EmbarkStudios/cargo-about/releases.
+  CARGO_ABOUT_VERSION: 0.9.3
+  CARGO_ABOUT_SHA256_LINUX: 3ad1e94ea1e63d69d1961f4fb15ccbbe9575d906111f96d2cb4dce6df48f71b4
+  CARGO_ABOUT_SHA256_WINDOWS: 9e2942533ef1c592c4a70bdb384cae1550a3f5fc9ae40379b6662e3d2f16fe02
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Pinned versions
         id: pins
         run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pins.outputs.rust }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ steps.pins.outputs.node }}
-      - run: node --test tests/server.test.js
+      - run: cargo test --locked
+      - run: cargo build --release --locked && cargo build --locked --examples
+      - run: node --test --test-force-exit tests/server.test.js
+      - name: Parity with the Node.js server (v2.3.0)
+        env:
+          AOS_SERVER_BIN: target/release/amazon-order-sync
+          AOS_FAKE_BROWSER_BIN: target/debug/examples/fake_browser
+        run: node --test --test-concurrency=1 --test-force-exit tests/parity.test.js
   windows:
     needs: test
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     outputs:
       sums: ${{ steps.sums.outputs.sums }}
     steps:
@@ -36,113 +55,93 @@ jobs:
         shell: bash
         run: |
           jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
-          v=$(jq -r .version server/package.json | tr -d '\r')
+          v=$(sed -n 's/^version = "\(.*\)"\r\{0,1\}$/\1/p' Cargo.toml | head -n 1)
           echo "version=$v" >> "$GITHUB_OUTPUT"
           grep -q "^## \[${v}\]" CHANGELOG.md || { echo "CHANGELOG.md has no [${v}] section"; exit 1; }
           if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$v" ]]; then
-            echo "The tag is $GITHUB_REF_NAME but server/package.json says $v"; exit 1
+            echo "The tag is $GITHUB_REF_NAME but Cargo.toml says $v"; exit 1
           fi
-      - uses: actions/setup-dotnet@v5
+      - uses: dtolnay/rust-toolchain@master
         with:
-          dotnet-version: ${{ steps.pins.outputs.dotnetSdk }}
-      - name: Use that SDK
-        # The runner has newer SDKs too, and dotnet picks the newest unless global.json says otherwise.
-        shell: bash
-        run: |
-          echo '{ "sdk": { "version": "${{ steps.pins.outputs.dotnetSdk }}", "rollForward": "disable" } }' > global.json
-          dotnet --version
+          toolchain: ${{ steps.pins.outputs.rust }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ steps.pins.outputs.node }}
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ steps.pins.outputs.python }}
-      - name: Build the tray app
-        run: dotnet publish tray -c Release -o publish
-      - name: Node.js for the zip
-        # So the zip installs and runs with no network. node.exe and its LICENSE only: the server
-        # has no npm packages, so npm, npx and corepack stay out.
-        shell: pwsh
+      - name: Build
+        shell: bash
         run: |
-          $v = '${{ steps.pins.outputs.node }}'
-          $name = "node-v$v-win-x64"
-          New-Item -ItemType Directory -Force node-dl, bundle/node | Out-Null
-          Invoke-WebRequest "https://nodejs.org/dist/v$v/$name.zip" -OutFile "node-dl/$name.zip"
-          Invoke-WebRequest "https://nodejs.org/dist/v$v/SHASUMS256.txt" -OutFile node-dl/SHASUMS256.txt
-          $line = Select-String -Path node-dl/SHASUMS256.txt -Pattern "^([0-9a-f]{64})  $([regex]::Escape("$name.zip"))$"
-          if (-not $line) { throw "SHASUMS256.txt has no line for $name.zip" }
-          $want = $line.Matches[0].Groups[1].Value
-          $got = (Get-FileHash "node-dl/$name.zip" -Algorithm SHA256).Hash.ToLower()
-          if ($got -ne $want) { throw "$name.zip has SHA-256 $got; nodejs.org's SHASUMS256.txt says $want" }
-          Write-Host "$name.zip matches nodejs.org's SHASUMS256.txt: $got"
-          Expand-Archive "node-dl/$name.zip" node-dl
-          Copy-Item "node-dl/$name/node.exe", "node-dl/$name/LICENSE" bundle/node
-          & bundle/node/node.exe --version
+          cargo build --release --locked
+          if grep -qai 'vcruntime140' target/release/amazon-order-sync.exe; then
+            echo "::error::The exe imports VCRUNTIME140.dll. The C runtime should be linked in (.cargo/config.toml)."; exit 1
+          fi
+      - name: Third-party licences
+        shell: bash
+        run: |
+          name="cargo-about-$CARGO_ABOUT_VERSION-x86_64-pc-windows-msvc"
+          curl -sSfL -o about.tar.gz "https://github.com/EmbarkStudios/cargo-about/releases/download/$CARGO_ABOUT_VERSION/$name.tar.gz"
+          echo "$CARGO_ABOUT_SHA256_WINDOWS *about.tar.gz" | sha256sum -c -
+          mkdir -p ../about-tool && tar -xzf about.tar.gz -C ../about-tool && rm about.tar.gz
+          "../about-tool/$name/cargo-about.exe" generate --locked --fail about.hbs -o THIRD-PARTY-LICENSES.txt
       - name: Package
         shell: pwsh
         run: |
           $d = 'dist/amazon-order-sync'
           New-Item -ItemType Directory -Force $d | Out-Null
-          Copy-Item publish/AmazonOrderSync.exe $d
-          Copy-Item -Recurse server, browser-extension, bundle/node $d
-          Copy-Item install.ps1, import-old-notes.ps1, config.example.json, LICENSE, README.md, CHANGELOG.md $d
+          Copy-Item target/release/amazon-order-sync.exe (Join-Path $d 'AmazonOrderSync.exe')
+          Copy-Item -Recurse browser-extension $d
+          Copy-Item install.ps1, import-old-notes.ps1, config.example.json, LICENSE, THIRD-PARTY-LICENSES.txt, README.md, CHANGELOG.md $d
           Compress-Archive -Path "$d/*" -DestinationPath amazon-order-sync-windows.zip
           Write-Host ("amazon-order-sync-windows.zip: {0:N1} MB" -f ((Get-Item amazon-order-sync-windows.zip).Length / 1MB))
       - name: Build the dev kit
         shell: pwsh
         run: ./tools/build-dev-kit.ps1 -Version ${{ steps.pins.outputs.version }} -OutDir .
       - name: "Offline check: the Windows zip installs and runs"
-        # A fresh folder, no Node.js on PATH but the bundled one, and the internet and the package
-        # registries cut off. install.ps1 runs as the README says, without the startup entry; the
-        # tray app it starts must run the server with node\node.exe, and /api/health must answer.
+        # A fresh folder and the internet and the package registries cut off. install.ps1 runs as
+        # the README says, without the startup entry; the tray app it starts must run the server
+        # itself (one process), and /api/health must answer with this version.
         shell: powershell
         env:
           HTTP_PROXY: http://127.0.0.1:9
           HTTPS_PROXY: http://127.0.0.1:9
           ALL_PROXY: http://127.0.0.1:9
           NO_PROXY: localhost,127.0.0.1
-          NODE_USE_ENV_PROXY: "1"
-          npm_config_registry: http://127.0.0.1:9/
-          PIP_INDEX_URL: http://127.0.0.1:9/simple
-          PIP_NO_INDEX: "1"
         run: |
           $ErrorActionPreference = 'Stop'
           # Windows PowerShell's web cmdlets use the .NET default proxy, not HTTP_PROXY.
           [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy('http://127.0.0.1:9', $true)
           $app = Join-Path $env:RUNNER_TEMP 'aos-windows'
           Expand-Archive amazon-order-sync-windows.zip $app
-          $node = Join-Path $app 'node\node.exe'
-          $env:PATH = (($env:PATH -split ';') | Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'node.exe')) }) -join ';'
-          if (Get-Command node.exe -ErrorAction SilentlyContinue) { throw 'A node.exe is still on PATH.' }
+          $exe = Join-Path $app 'AmazonOrderSync.exe'
           $reached = $true
-          try { Invoke-WebRequest https://nodejs.org/ -UseBasicParsing -TimeoutSec 15 | Out-Null } catch { $reached = $false }
-          if ($reached) { throw 'The cut-off failed: Windows PowerShell reached nodejs.org.' }
-          & $node -e "fetch('https://nodejs.org/').then(() => process.exit(1), () => process.exit(0))"
-          if ($LASTEXITCODE) { throw 'The cut-off failed: node.exe reached nodejs.org.' }
+          try { Invoke-WebRequest https://www.amazon.com/ -UseBasicParsing -TimeoutSec 15 | Out-Null } catch { $reached = $false }
+          if ($reached) { throw 'The cut-off failed: Windows PowerShell reached the internet.' }
           Write-Host 'The internet is cut off for this step.'
           $logs = Join-Path $env:LOCALAPPDATA 'amazon-order-sync'
           try {
-              $out = & (Join-Path $app 'install.ps1') -NotesPath (Join-Path $env:RUNNER_TEMP 'aos-notes') -NoAutostart 6>&1 | ForEach-Object { "$_" }
-              $out | ForEach-Object { Write-Host $_ }
-              if (-not ($out -match '^Node\.js: v\d+ OK \(bundled')) { throw 'install.ps1 did not use the bundled Node.js.' }
+              & (Join-Path $app 'install.ps1') -NotesPath (Join-Path $env:RUNNER_TEMP 'aos-notes') -NoAutostart
               $h = Invoke-RestMethod http://127.0.0.1:27483/api/health -TimeoutSec 10
               if (-not $h.ok -or $h.version -ne '${{ steps.pins.outputs.version }}') { throw "/api/health: $($h | ConvertTo-Json -Compress)" }
               $server = Get-CimInstance Win32_Process -Filter "ProcessId = $($h.pid)"
-              if ($server.ExecutablePath -ne $node) { throw "The server runs $($server.ExecutablePath), not $node." }
-              $tray = Get-Process AmazonOrderSync -ErrorAction Stop
-              Write-Host "OK: server $($h.version) answers /api/health, pid $($h.pid), running $($server.ExecutablePath), started by the tray app (pid $($tray.Id))."
+              if ($server.ExecutablePath -ne $exe) { throw "The server runs in $($server.ExecutablePath), not $exe." }
+              $o = Invoke-RestMethod http://127.0.0.1:27483/api/orders -TimeoutSec 10
+              if ($o.version -ne '${{ steps.pins.outputs.version }}') { throw "/api/orders: $($o | ConvertTo-Json -Compress -Depth 2)" }
+              $dash = Invoke-WebRequest http://127.0.0.1:27483/ -UseBasicParsing -TimeoutSec 10
+              if ($dash.Content -notmatch 'Amazon Order Sync') { throw 'The dashboard did not load.' }
+              Write-Host "OK: AmazonOrderSync.exe $($h.version) (pid $($h.pid)) is the tray and the server, and answers /api/health, /api/orders and /."
           } catch {
               foreach ($f in 'tray.log', 'server.log') { if (Test-Path "$logs\$f") { Write-Host "--- $f"; Get-Content "$logs\$f" -Tail 40 } }
               throw
           } finally {
-              # Leave nothing behind: the tray, the server, the config, the shortcut, the logs.
+              # Leave nothing behind: the tray and its server, the config, the shortcut, the logs.
               & (Join-Path $app 'install.ps1') -Uninstall
               Remove-Item -Recurse -Force (Join-Path $env:APPDATA 'amazon-order-sync'), $logs -ErrorAction SilentlyContinue
               Remove-Item (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Amazon Order Sync.lnk') -ErrorAction SilentlyContinue
           }
           Start-Sleep -Seconds 2
           if (Get-Process AmazonOrderSync -ErrorAction SilentlyContinue) { throw 'The tray app is still running after -Uninstall.' }
-          if (Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" | Where-Object { $_.ExecutablePath -eq $node }) { throw 'The server is still running after -Uninstall.' }
       - name: "Offline check: the dev kit sets up, tests and builds"
         # A fresh folder, the internet cut off, every registry dead, fresh caches so the runner's
         # can't help, and no package source but the kit's. Then offline\setup.ps1 (in Windows
@@ -154,31 +153,24 @@ jobs:
           ALL_PROXY: http://127.0.0.1:9
           NO_PROXY: localhost,127.0.0.1
           NODE_USE_ENV_PROXY: "1"
-          npm_config_registry: http://127.0.0.1:9/
-          npm_config_cache: ${{ runner.temp }}\kit-cache\npm
+          CARGO_HOME: ${{ runner.temp }}\kit-cache\cargo-home
+          CARGO_NET_OFFLINE: "true"
           PIP_INDEX_URL: http://127.0.0.1:9/simple
           PIP_NO_INDEX: "1"
           PIP_CACHE_DIR: ${{ runner.temp }}\kit-cache\pip
-          NUGET_PACKAGES: ${{ runner.temp }}\kit-cache\nuget-packages
-          NUGET_HTTP_CACHE_PATH: ${{ runner.temp }}\kit-cache\nuget-http
-          NUGET_PLUGINS_CACHE_PATH: ${{ runner.temp }}\kit-cache\nuget-plugins
-          DOTNET_CLI_HOME: ${{ runner.temp }}\kit-cache\dotnet-home
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $v = '${{ steps.pins.outputs.version }}'
           Expand-Archive "amazon-order-sync-$v-dev-windows-x64.zip" (Join-Path $env:RUNNER_TEMP 'kit')
           $kit = Join-Path $env:RUNNER_TEMP "kit\amazon-order-sync-$v-dev"
-          # No package source anywhere but the kit's: NuGet's user config lists none, and the
-          # PowerShell Gallery is unregistered.
-          New-Item -ItemType Directory -Force (Join-Path $env:APPDATA 'NuGet') | Out-Null
-          Set-Content (Join-Path $env:APPDATA 'NuGet\NuGet.Config') '<?xml version="1.0" encoding="utf-8"?><configuration><packageSources><clear /></packageSources></configuration>'
+          # An empty CARGO_HOME: no registry cache from the runner. rustup's toolchain stays (RUSTUP_HOME).
+          New-Item -ItemType Directory -Force $env:CARGO_HOME | Out-Null
           Unregister-PSRepository -Name PSGallery -ErrorAction SilentlyContinue
           if (Get-Command Unregister-PSResourceRepository -ErrorAction SilentlyContinue) { Unregister-PSResourceRepository -Name PSGallery -ErrorAction SilentlyContinue }
           $reached = $true
-          try { Invoke-WebRequest https://api.nuget.org/v3/index.json -TimeoutSec 15 | Out-Null } catch { $reached = $false }
-          if ($reached) { throw 'The cut-off failed: PowerShell reached api.nuget.org.' }
-          node -e "fetch('https://registry.npmjs.org/').then(() => process.exit(1), () => process.exit(0))"
+          try { Invoke-WebRequest https://index.crates.io/config.json -TimeoutSec 15 | Out-Null } catch { $reached = $false }
+          if ($reached) { throw 'The cut-off failed: PowerShell reached crates.io.' }
           Write-Host 'The internet is cut off for this step.'
           # A baseline, to see what the sample generators change.
           git -C $kit init -q
@@ -192,12 +184,12 @@ jobs:
           $m = @(Get-Module PSScriptAnalyzer)
           if ($m.Count -ne 1 -or $m[0].Version -ne [version]$pssa -or -not $m[0].ModuleBase.StartsWith("$kit\offline\powershell\")) { throw "PSScriptAnalyzer: $($m.Version) from $($m.ModuleBase)" }
           Write-Host "PSScriptAnalyzer $($m[0].Version) from $($m[0].ModuleBase)"
-          node --check server/server.js
+          cargo test --offline --locked
+          cargo build --release --offline --locked
+          node --check browser-extension/background.js
           node --check browser-extension/content.js
           node --check browser-extension/popup.js
           node --test --test-force-exit tests/server.test.js
-          dotnet build tray -c Release -warnaserror --no-restore
-          dotnet publish tray -c Release -o publish --no-restore
           $r = foreach ($f in 'install.ps1', 'import-old-notes.ps1', 'tools/build-dev-kit.ps1', 'tools/dev-kit/setup.ps1') { Invoke-ScriptAnalyzer -Path $f -Settings ./PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }
           $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
           if ($r) { throw 'PSScriptAnalyzer found problems.' }
@@ -244,11 +236,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Pinned versions
+        id: pins
+        run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pins.outputs.rust }}
+          targets: x86_64-unknown-linux-musl
+      - name: Build (static, musl)
+        # One file with no shared-library needs, so it runs on any x86-64 Linux.
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq musl-tools
+          cargo build --release --locked --target x86_64-unknown-linux-musl
+          file target/x86_64-unknown-linux-musl/release/amazon-order-sync
+          if ldd target/x86_64-unknown-linux-musl/release/amazon-order-sync 2>/dev/null | grep -q '=>'; then
+            echo "::error::The Linux program links shared libraries."; exit 1
+          fi
+      - name: Third-party licences
+        run: |
+          name="cargo-about-$CARGO_ABOUT_VERSION-x86_64-unknown-linux-musl"
+          curl -sSfL -o about.tar.gz "https://github.com/EmbarkStudios/cargo-about/releases/download/$CARGO_ABOUT_VERSION/$name.tar.gz"
+          echo "$CARGO_ABOUT_SHA256_LINUX *about.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/about" && tar -xzf about.tar.gz -C "$RUNNER_TEMP/about" && rm about.tar.gz
+          "$RUNNER_TEMP/about/$name/cargo-about" generate --locked --fail about.hbs -o THIRD-PARTY-LICENSES.txt
       - name: Package
         run: |
           mkdir -p dist/amazon-order-sync
-          cp -r server browser-extension install.sh amazon-order-sync.service config.example.json LICENSE README.md CHANGELOG.md dist/amazon-order-sync/
+          cp target/x86_64-unknown-linux-musl/release/amazon-order-sync dist/amazon-order-sync/
+          cp -r browser-extension install.sh amazon-order-sync.service config.example.json LICENSE THIRD-PARTY-LICENSES.txt README.md CHANGELOG.md dist/amazon-order-sync/
           tar czf amazon-order-sync-linux.tar.gz -C dist amazon-order-sync
+          ls -l amazon-order-sync-linux.tar.gz
+      - name: "Offline check: the Linux program runs"
+        # Unpacked in a fresh folder, then started with no network (a new network namespace with
+        # only loopback): it must answer /api/health with this version and serve the dashboard.
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+          app="$RUNNER_TEMP/aos-linux"; mkdir -p "$app" && tar xzf amazon-order-sync-linux.tar.gz -C "$app"
+          printf '{ "notesPath": "%s", "geminiApiKey": "", "port": 27483 }\n' "$RUNNER_TEMP/aos-notes" > "$RUNNER_TEMP/aos-config.json"
+          sudo unshare --net sh -c '
+            ip link set lo up
+            if curl -s --max-time 5 https://www.amazon.com/ >/dev/null; then echo "the cut-off failed"; exit 1; fi
+            AMAZON_SYNC_CONFIG="$1" "$2/amazon-order-sync/amazon-order-sync" serve > "$3/serve.log" 2>&1 &
+            for i in $(seq 1 50); do curl -sf http://127.0.0.1:27483/api/health > "$3/health.json" && break; sleep 0.2; done
+            curl -sf http://127.0.0.1:27483/ | grep -q "Amazon Order Sync"
+            kill %1
+          ' sh "$RUNNER_TEMP/aos-config.json" "$app" "$RUNNER_TEMP"
+          cat "$RUNNER_TEMP/health.json"; echo
+          test "$(jq -r .version "$RUNNER_TEMP/health.json")" = "$v"
+          test "$(jq -r .platform "$RUNNER_TEMP/health.json")" = "linux"
       - name: SHA256SUMS.txt
         env:
           WINDOWS_SUMS: ${{ needs.windows.outputs.sums }}

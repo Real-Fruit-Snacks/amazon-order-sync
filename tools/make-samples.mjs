@@ -2,7 +2,8 @@
 // Run the real server on made-up orders and keep exactly what it writes.
 //
 // tools/samples.json holds three orders shaped like the extension's POST /api/sync body. This
-// starts server/server.js against a temporary notes folder, with no Gemini key and no network
+// starts the server (the built program: target/release or target/debug, or AOS_SERVER_BIN)
+// against a temporary notes folder, with no Gemini key and no network
 // (product images come from a throwaway image server on 127.0.0.1), posts the orders, and copies
 // the notes it wrote to docs/samples/. Then it writes the project page's slips and notes between
 // the <!-- samples:begin --> and <!-- samples:end --> markers in docs/index.html, so the page
@@ -12,6 +13,7 @@
 //
 // CI runs it and fails if docs/samples/ or docs/index.html changed.
 import { spawn } from 'node:child_process';
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import net from 'node:net';
@@ -20,7 +22,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SERVER = path.join(ROOT, 'server', 'server.js');
+const EXE = process.platform === 'win32' ? '.exe' : '';
+// The newer of the release and debug builds, unless AOS_SERVER_BIN names one.
+const SERVER = process.env.AOS_SERVER_BIN || ['release', 'debug']
+    .map((p) => path.join(ROOT, 'target', p, `amazon-order-sync${EXE}`))
+    .filter((p) => fsSync.existsSync(p))
+    .sort((a, b) => fsSync.statSync(b).mtimeMs - fsSync.statSync(a).mtimeMs)[0];
+if (!SERVER) throw new Error('Build the server first (cargo build --release), or set AOS_SERVER_BIN.');
 const OUT = path.join(ROOT, 'docs', 'samples');
 const PAGE = path.join(ROOT, 'docs', 'index.html');
 
@@ -70,7 +78,7 @@ const port = await freePort();
 const config = path.join(tmp, 'config.json');
 await fs.writeFile(config, JSON.stringify({ notesPath: notes, geminiApiKey: '', port, notificationsEnabled: false }));
 const env = { ...process.env, AMAZON_SYNC_CONFIG: config, GEMINI_API_KEY: '' };
-const child = spawn(process.execPath, [SERVER], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+const child = spawn(SERVER, ['serve'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
 let log = '';
 child.stdout.on('data', (d) => { log += d; });
 child.stderr.on('data', (d) => { log += d; });

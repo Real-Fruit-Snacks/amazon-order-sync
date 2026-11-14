@@ -7,7 +7,7 @@ Syncs your Amazon orders into local Markdown notes.
   <img alt="A packing slip for a made-up order, 113-0927751-3104428, is scanned top to bottom. As each field lights up, the matching frontmatter line prints in the note beside it: order_id, date, total, status, ship_to, then brand, price, asin, url, reviewed and rating. The note is saved as Orders/2026/09-September/Order-113-0927751-3104428.md, and the October order comes back the same way." src="docs/assets/slip-light.svg" width="100%">
 </picture>
 
-Amazon's order history is a slow, paged website. This keeps a copy of it on your computer: one Markdown file per order, filed by month, with the product images saved next to them. A browser extension reads your order pages and hands them to a small Node.js server on `127.0.0.1`, which writes the notes and serves a dashboard; on Windows a tray app keeps it running. Nothing goes to any other server unless you add a Gemini key for review drafts.
+Amazon's order history is a slow, paged website. This keeps a copy of it on your computer: one Markdown file per order, filed by month, with the product images saved next to them. A browser extension reads your order pages and hands them to a small server on `127.0.0.1`, which writes the notes and serves a dashboard; on Windows it lives in the tray. The whole app is one program, written in Rust, with nothing else to install. Nothing goes to any other server unless you add a Gemini key for review drafts.
 
 The orders above are made up. The notes are what the server wrote for them, unedited, in [docs/samples](docs/samples); CI runs the server on those orders again on every push and fails if its output changes.
 
@@ -20,13 +20,13 @@ Expand-Archive $zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force
 Set-ExecutionPolicy -Scope Process Bypass; & "$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1"
 ```
 
-Linux (systemd user service, Node.js 18 or newer):
+Linux (x86-64, systemd user service):
 
 ```sh
 curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz && ./amazon-order-sync/install.sh
 ```
 
-With no network: the Windows zip carries its own Node.js, so copy it over, expand it and run `install.ps1` from that folder; nothing is downloaded. The Linux tarball needs Node.js 18 or newer already installed.
+With no network: copy the zip or the tarball over, expand it and run `install.ps1` or `install.sh` from that folder; nothing is downloaded and nothing else needs to be installed. The Linux program is static, so it runs on any x86-64 distribution.
 
 Then load the extension: open `brave://extensions` (or `chrome://extensions`, `edge://extensions`), turn on Developer mode, choose **Load unpacked** and pick the `browser-extension` folder the installer prints. Open your Amazon order history and press **Sync Current Page**.
 
@@ -75,10 +75,9 @@ Syncing an order again rewrites its details and keeps what you wrote: a review t
 
 | Part | Does |
 |---|---|
-| `server/` | Node.js server, no npm dependencies. Writes the notes, caches images, serves the dashboard and the API at `http://127.0.0.1:27483` |
-| `server/dashboard.html` | Dashboard: spend by month, orders, price drops, repeat purchases, review drafts, sync status, CSV/JSON export, backfill import |
+| `src/` | The program, in Rust: the server (writes the notes, caches images, serves the dashboard and the API at `http://127.0.0.1:27483`) and, on Windows, the tray app around it (notifications, menu for sync, login, notes and logs) |
+| `server/dashboard.html` | Dashboard: spend by month, orders, price drops, repeat purchases, review drafts, sync status, CSV/JSON export, backfill import. Built into the program, with its fonts and icons |
 | `browser-extension/` | Reads your Amazon order pages and sends them to the server; fills Amazon's review form from a saved draft for you to edit and post |
-| `tray/` | Windows tray app (C#, .NET 8): starts the server hidden, shows notifications, menu for sync, login, notes and logs |
 | `install.ps1`, `install.sh` | Installers for Windows (tray app, start with Windows) and Linux (systemd user service) |
 | Headless sync | On a schedule the server runs your browser headless with the extension, after a one-time login |
 | Review drafts | Optional. With a Gemini key, a draft review per item that you rewrite in your own words before posting |
@@ -88,7 +87,7 @@ The full guide, with configuration, the dashboard tabs, headless sync and troubl
 ## Tested on
 
 - Windows with Brave and the tray app: my own setup, daily
-- CI on every push: server tests on Ubuntu (Node.js 18 and 22) and Windows (Node.js 22; the headless-run tests need a POSIX shell and are skipped there), a tray app build on Windows, the installers checked with Windows PowerShell 5.1, PSScriptAnalyzer and shellcheck, and the sample orders above synced through the real server
+- CI on every push, on Ubuntu and Windows: the Rust tests, the HTTP tests against the built program (the headless-run ones need a POSIX shell and are skipped on Windows), and a parity test that sends the same requests to this program and to the last Node.js server (2.3.0) and checks every response, note and Gemini prompt match. Also the installers checked with Windows PowerShell 5.1, PSScriptAnalyzer and shellcheck, and the sample orders above synced through the real server
 - *Not* tested: macOS, Firefox, Amazon sites other than amazon.com in day-to-day use
 
 ## Known issues

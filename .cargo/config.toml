@@ -1,0 +1,6 @@
+# Windows (MSVC): link the C runtime into AmazonOrderSync.exe, so it starts on a PC
+# that has no Visual C++ Redistributable (VCRUNTIME140.dll), including one with no
+# internet. The release workflow fails if the built exe still imports VCRUNTIME140.dll.
+# Note: a RUSTFLAGS environment variable replaces this setting entirely.
+[target.'cfg(all(target_os = "windows", target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]

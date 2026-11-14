@@ -3,6 +3,28 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.0] — 2026-11-13
+
+The server and the Windows tray app are now one program, written in Rust. Nothing changes in what it does: the notes, the sidecar files, the API, the dashboard and the extension are the same, byte for byte, and existing notes, configs and browser logins carry over as they are.
+
+**Install**
+
+- The Windows zip holds `AmazonOrderSync.exe` (about 4 MB), the extension and the scripts: about 2 MB to download, down from 91 MB. It no longer carries Node.js or a .NET runtime, and needs neither. Expand it over the old folder and rerun `install.ps1`; the `node\` and `server\` folders an older version left there are no longer used, and the installer says you can delete them.
+- The Linux tarball holds one static `amazon-order-sync` program for any x86-64 distribution. Node.js is no longer needed. The systemd unit runs `amazon-order-sync serve`; rerun `install.sh` to upgrade, and it removes the old `server/` folder.
+- `amazon-order-sync --setup-headless` replaces `node server.js --setup-headless`. New: `amazon-order-sync serve` runs the server in the foreground on any OS, and `amazon-order-sync config` prints the config path, notes folder and port in use.
+- Each download has `THIRD-PARTY-LICENSES.txt`, the licences of the Rust crates built into the program.
+
+**Windows tray app**
+
+- The server runs inside the tray app, so there is no child process to start, watch or restart, and no "Node.js was not found". The menu, the notifications, **Start with Windows** and the logs (`tray.log`, `server.log`) are as before. **Restart server** restarts the server inside the tray. A server already answering on the port (from an older install) is still used rather than started twice, and taken over if it goes away.
+- The tray icon comes back after Explorer restarts.
+
+**Repository**
+
+- `src/` is the program; `server/server.js`, `server/package.json` and the C# project in `tray/` are gone (they are in git history up to v2.3.0). `server/` keeps the dashboard, its fonts and its icons, which are built into the program.
+- The tests: `cargo test` covers the internals (the in-process tests of `server.js`, ported), and `tests/server.test.js` runs the HTTP tests against the built program. A new parity test, `tests/parity.test.js`, sends the same requests to this program and to the v2.3.0 Node.js server read from git, and checks every response, note, sidecar file and Gemini prompt match. CI runs all three on Ubuntu and Windows.
+- `tools/versions.json` pins Rust in place of the .NET SDK. The dev kit carries every Rust crate (`cargo vendor`) in place of NuGet packages, and the release workflow checks it builds and tests with the network cut off and an empty cargo cache.
+
 ## [2.3.0] — 2026-11-05
 
 The Windows zip now has Node.js in it, so it installs and runs on a computer with no network, and each release has a dev kit for building and testing with no network. The server, the extension and what the tray app does are unchanged.

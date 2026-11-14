@@ -5,17 +5,19 @@
 .DESCRIPTION
   The zip holds one folder, amazon-order-sync-<version>-dev\: the source at -Ref
   (git archive, no .git) plus offline\ with
-    nuget\       the tray app's NuGet packages, runtime packs included
-    python\      wheels for tools\requirements-art.txt, CPython on win_amd64
-    powershell\  PSScriptAnalyzer
-    licences\    the licence and notices of each of those
-    setup.ps1    from tools\dev-kit\setup.ps1
-    README.md    from tools\dev-kit\README.md, with the versions filled in
+    cargo\vendor\  every Rust crate Cargo.lock names (cargo vendor), each with
+                   its own licence files
+    cargo\config.toml  the cargo settings that build from cargo\vendor only
+    python\        wheels for tools\requirements-art.txt, CPython on win_amd64
+    powershell\    PSScriptAnalyzer
+    licences\      the licence and notices of the wheels and the module
+    setup.ps1      from tools\dev-kit\setup.ps1
+    README.md      from tools\dev-kit\README.md, with the versions filled in
   Versions come from tools\versions.json and tools\requirements-art.txt at -Ref,
   the files CI reads.
 
-  Needs the network, git, the .NET SDK named in tools\versions.json and Python
-  with pip. The release workflow runs it on windows-latest:
+  Needs the network, git, cargo and Python with pip. The release workflow runs
+  it on windows-latest:
       ./tools/build-dev-kit.ps1 -OutDir .
 #>
 [CmdletBinding()]
@@ -57,7 +59,7 @@ function Test-Url([string]$Url) {
     return $false
 }
 
-# Copy the licence and notice files out of a zip (nupkg or wheel).
+# Copy the licence and notice files out of a zip (a wheel).
 function Export-LicenceFile([string]$Archive, [string]$Pattern, [string]$Dest) {
     $files = @()
     $z = [System.IO.Compression.ZipFile]::OpenRead($Archive)
@@ -83,9 +85,23 @@ function Read-ZipText([string]$Archive, [string]$Pattern) {
     } finally { $z.Dispose() }
 }
 
+# The [package] name, version and licence of a vendored crate's Cargo.toml.
+function Read-CrateManifest([string]$Path) {
+    $name = $ver = $lic = ''
+    $inPackage = $false
+    foreach ($line in [System.IO.File]::ReadAllLines($Path)) {
+        if ($line -match '^\s*\[(.+)\]\s*$') { $inPackage = ($Matches[1] -eq 'package'); continue }
+        if (-not $inPackage) { continue }
+        if ($line -match '^\s*name\s*=\s*"(.*)"') { $name = $Matches[1] }
+        elseif ($line -match '^\s*version\s*=\s*"(.*)"') { $ver = $Matches[1] }
+        elseif ($line -match '^\s*license\s*=\s*"(.*)"') { $lic = $Matches[1] }
+        elseif ($line -match '^\s*license-file\s*=\s*"(.*)"' -and -not $lic) { $lic = "see $($Matches[1])" }
+    }
+    return [pscustomobject]@{ Name = $name; Version = $ver; Licence = $lic }
+}
+
 $Work = Join-Path ([System.IO.Path]::GetTempPath()) ('aos-dev-kit-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force $Work | Out-Null
-$savedNugetPackages = $env:NUGET_PACKAGES
 try {
     # --- the source ---------------------------------------------------------------
     # LF line endings, as committed, whatever this machine's git does on checkout.
@@ -93,7 +109,9 @@ try {
     $sha = Get-Output 'git' @('-C', $Root, 'rev-parse', $Ref)
     if (-not $sha) { throw "git can't resolve $Ref in $Root." }
     if (-not $Version) {
-        $Version = ((& git -C $Root show "${sha}:server/package.json") -join "`n" | ConvertFrom-Json).version
+        $manifest = (& git -C $Root show "${sha}:Cargo.toml") -join "`n"
+        if ($manifest -notmatch '(?m)^version\s*=\s*"([^"]+)"') { throw "Cargo.toml at $Ref has no version." }
+        $Version = $Matches[1]
     }
     $Name = "amazon-order-sync-$Version-dev"
     $Stage = Join-Path $Work $Name
@@ -103,89 +121,35 @@ try {
     [System.IO.Compression.ZipFile]::ExtractToDirectory($srcZip, $Work)
     Remove-Item $srcZip
     $Pins = Get-Content (Join-Path $Stage 'tools\versions.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    foreach ($d in 'nuget', 'python', 'powershell', 'licences') { New-Item -ItemType Directory -Force (Join-Path $Offline $d) | Out-Null }
+    foreach ($d in 'cargo', 'python', 'powershell', 'licences') { New-Item -ItemType Directory -Force (Join-Path $Offline $d) | Out-Null }
     $packages = New-Object System.Collections.Generic.List[object]
 
-    # --- NuGet: what a self-contained win-x64 restore of the tray app downloads ---------
-    $sdk = $Pins.dotnetSdk
-    # global.json in $Work, above the kit: it selects the SDK without being part of the kit.
-    [System.IO.File]::WriteAllText((Join-Path $Work 'global.json'), '{ "sdk": { "version": "' + $sdk + '", "rollForward": "disable" } }')
-    $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
-    $env:DOTNET_NOLOGO = '1'
+    # --- Rust crates: everything Cargo.lock names, for every platform ------------------
+    $rust = $Pins.rust
+    $have = Get-Output 'rustc' @('--version')
+    if ($have -notmatch "^rustc $([regex]::Escape($rust))\b") { Write-Warning "tools\versions.json pins Rust $rust; this machine runs '$have'." }
     Push-Location $Stage
     try {
-        $have = Get-Output 'dotnet' @('--version')
-        if ($have -ne $sdk) { throw ".NET SDK $sdk is needed (tools\versions.json); dotnet runs '$have'. Install $sdk." }
-        $env:NUGET_PACKAGES = Join-Path $Work 'packages'
-        $nugetOrg = Join-Path $Work 'nuget.org.config'
-        [System.IO.File]::WriteAllText($nugetOrg, '<?xml version="1.0" encoding="utf-8"?><configuration><packageSources><clear /><add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" /></packageSources></configuration>')
-        Invoke-Native 'dotnet restore' { dotnet restore tray\AmazonOrderSync.Tray.csproj -r win-x64 --configfile $nugetOrg }
-    } finally {
-        Pop-Location
-        $env:NUGET_PACKAGES = $savedNugetPackages
+        Invoke-Native 'cargo vendor' { cargo vendor --locked --versioned-dirs (Join-Path 'offline' 'cargo\vendor') | Out-Null }
+    } finally { Pop-Location }
+    [System.IO.File]::WriteAllText((Join-Path $Offline 'cargo\config.toml'), @'
+# Build from the crates in offline\cargo\vendor only. offline\setup.ps1 adds
+# this to .cargo\config.toml; the path is relative to the kit's root.
+[source.crates-io]
+replace-with = "dev-kit"
+
+[source.dev-kit]
+directory = "offline/cargo/vendor"
+
+[net]
+offline = true
+'@.Replace("`r`n", "`n"))
+    foreach ($c in Get-ChildItem (Join-Path $Offline 'cargo\vendor') -Directory | Sort-Object Name) {
+        $m = Read-CrateManifest (Join-Path $c.FullName 'Cargo.toml')
+        $files = @(Get-ChildItem $c.FullName -File | Where-Object { $_.Name -match '^(?i)(LICEN[CS]E|COPYING|NOTICE|COPYRIGHT|UNLICENSE)' } | ForEach-Object Name)
+        $licence = if ($m.Licence) { $m.Licence } else { 'see files' }
+        $packages.Add([pscustomobject]@{ Kind = 'Rust crate'; Name = $m.Name; Version = $m.Version; Licence = $licence; Dir = "cargo\vendor\$($c.Name)\"; Files = $files })
     }
-    Remove-Item -Recurse -Force (Join-Path $Stage 'tray\obj'), (Join-Path $Stage 'tray\bin') -ErrorAction SilentlyContinue
-    foreach ($p in Get-ChildItem (Join-Path $Work 'packages') -Recurse -Filter *.nupkg | Sort-Object Name) {
-        Copy-Item $p.FullName (Join-Path $Offline 'nuget')
-        $nuspec = [xml](Read-ZipText $p.FullName '^[^/]+\.nuspec$')
-        $id = $nuspec.package.metadata.id
-        $ver = $nuspec.package.metadata.version
-        $lic = $nuspec.package.metadata.license
-        $licence = if ($lic -and $lic.type -eq 'expression') { $lic.'#text' } elseif ($nuspec.package.metadata.licenseUrl) { $nuspec.package.metadata.licenseUrl } else { 'see files' }
-        $licDir = Join-Path $Offline "licences\nuget\$id.$ver"
-        $files = Export-LicenceFile $p.FullName '^(LICEN[CS]E|THIRD-PARTY-NOTICES|THIRDPARTYNOTICES|NOTICE)[^/]*$' $licDir
-        if (-not ($files -match '^LICEN[CS]E')) {
-            # Some packages give only an SPDX expression. For MIT, write the text out.
-            if ($licence -ne 'MIT' -or $id -notlike 'Microsoft.*') { throw "$($p.Name) has no licence file, and its licence is '$licence'." }
-            New-Item -ItemType Directory -Force $licDir | Out-Null
-            $copyright = "$($nuspec.package.metadata.copyright)".Trim()
-            $mit = @"
-$id $ver has no licence file in the package. Its .nuspec gives
-the licence as the SPDX expression "MIT" and the copyright as "$copyright".
-Below is the MIT License as the .NET repositories (github.com/dotnet) state it.
-
-MIT License
-
-Copyright (c) .NET Foundation and Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"@
-            [System.IO.File]::WriteAllText((Join-Path $licDir 'LICENSE.txt'), ($mit -replace "`r`n", "`n"))
-            $files = @('LICENSE.txt') + $files
-        }
-        $packages.Add([pscustomobject]@{ Kind = 'NuGet'; Name = $id; Version = $ver; Licence = $licence; Dir = "licences\nuget\$id.$ver\"; Files = $files })
-    }
-    $runtime = ($packages | Where-Object { $_.Name -eq 'Microsoft.NETCore.App.Runtime.win-x64' }).Version
-    if (-not $runtime) { throw 'The restore brought no Microsoft.NETCore.App.Runtime.win-x64 runtime pack.' }
-    [System.IO.File]::WriteAllText((Join-Path $Offline 'nuget.config'), @'
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Restore only from the packages in this kit (offline\nuget). -->
-<configuration>
-  <packageSources>
-    <clear />
-    <add key="dev-kit" value="nuget" />
-  </packageSources>
-  <fallbackPackageFolders>
-    <clear />
-  </fallbackPackageFolders>
-</configuration>
-'@)
 
     # --- Python wheels: CPython <major.minor> on win_amd64, whatever runs this --------
     $pyMinor = ($Pins.python -split '\.')[0..1] -join '.'
@@ -250,12 +214,14 @@ SOFTWARE.
     $py = $Pins.python
     $sc = $Pins.shellcheck
     $urls = [ordered]@{
-        DOTNET_URL     = "https://builds.dotnet.microsoft.com/dotnet/Sdk/$sdk/dotnet-sdk-$sdk-win-x64.exe"
+        RUST_URL       = "https://static.rust-lang.org/dist/rust-$rust-x86_64-pc-windows-msvc.msi"
         NODE_URL       = "https://nodejs.org/dist/v$node/node-v$node-x64.msi"
         PYTHON_URL     = "https://www.python.org/ftp/python/$py/python-$py-amd64.exe"
         SHELLCHECK_URL = "https://github.com/koalaman/shellcheck/releases/download/v$sc/shellcheck-v$sc.zip"
     }
     foreach ($k in @($urls.Keys)) { if (-not (Test-Url $urls[$k])) { throw "$($urls[$k]) does not answer: check tools\versions.json." } }
+    # The Visual Studio Build Tools aren't pinned: any 2019 or newer with the C++ workload links.
+    $urls.MSVC_URL = 'https://visualstudio.microsoft.com/visual-cpp-build-tools/'
 
     # Git and PowerShell 7 aren't pinned: CI uses the runner's. Name the ones here.
     $gitVer = (Get-Output 'git' @('--version')) -replace '^git version\s*', ''
@@ -273,13 +239,14 @@ SOFTWARE.
     } else { $pwshVer = '7' }
     if (-not $gitVer) { $gitVer = 'any' }
 
-    $rows = @('| Package | Version | Kind | Licence | Licence files, in `offline\licences\` |', '|---|---|---|---|---|')
+    $rows = @('| Package | Version | Kind | Licence | Licence files, in `offline\` |', '|---|---|---|---|---|')
     foreach ($p in $packages) {
-        $files = ($p.Files | ForEach-Object { '`' + $p.Dir.Substring('licences\'.Length) + $_ + '`' }) -join '<br>'
+        $files = if ($p.Files.Count) { ($p.Files | ForEach-Object { '`' + $p.Dir + $_ + '`' }) -join '<br>' } else { 'none in the package; the licence is its manifest''s expression' }
         $rows += "| $($p.Name) | $($p.Version) | $($p.Kind) | $($p.Licence) | $files |"
     }
+    $crates = @($packages | Where-Object Kind -eq 'Rust crate').Count
     $tokens = @{
-        VERSION = $Version; DOTNET_SDK = $sdk; DOTNET_RUNTIME = $runtime; NODE = $node; PYTHON = $py; PYTHON_MINOR = $pyMinor
+        VERSION = $Version; RUST = $rust; CRATES = $crates; NODE = $node; PYTHON = $py; PYTHON_MINOR = $pyMinor
         PSSA = $Pins.PSScriptAnalyzer; SHELLCHECK = $sc; GIT = $gitVer; PWSH = $pwshVer; PACKAGES = ($rows -join "`n")
     }
     foreach ($k in $urls.Keys) { $tokens[$k] = $urls[$k] }
@@ -307,8 +274,8 @@ SOFTWARE.
     Write-Host ""
     Write-Host "$zip ($mb MB)"
     Write-Host "SHA-256 $((Get-FileHash $zip -Algorithm SHA256).Hash.ToLower())"
-    $packages | Format-Table Kind, Name, Version, Licence -AutoSize | Out-String -Width 200 | Write-Host
+    Write-Host "$crates Rust crates, $(@($packages | Where-Object Kind -ne 'Rust crate').Count) other packages"
+    $packages | Where-Object Kind -ne 'Rust crate' | Format-Table Kind, Name, Version, Licence -AutoSize | Out-String -Width 200 | Write-Host
 } finally {
-    $env:NUGET_PACKAGES = $savedNugetPackages
     Remove-Item -Recurse -Force $Work -ErrorAction SilentlyContinue
 }

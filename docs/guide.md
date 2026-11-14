@@ -6,7 +6,7 @@ Everything the README leaves out: configuration, the dashboard, headless sync, r
 
 | Linux                                   | Windows                                                        |
 | --------------------------------------- | -------------------------------------------------------------- |
-| `systemctl --user` service              | Tray app starts/stops `node\node.exe server\server.js` (hidden window) |
+| `systemctl --user` service running `amazon-order-sync serve` | `AmazonOrderSync.exe` in the tray: the tray and the server are one program |
 | `notify-send` toasts                    | Server queues toasts at `/api/notifications`; tray shows them  |
 | `~/.config/amazon-order-sync/config.json` | `%APPDATA%\amazon-order-sync\config.json`                    |
 | `~/.local/share/amazon-order-sync/`     | `%LOCALAPPDATA%\amazon-order-sync\` (browser profile, logs)    |
@@ -19,26 +19,26 @@ The README has the install commands. What the installers do:
 
 **Windows, `install.ps1`** (Windows PowerShell 5.1 or PowerShell 7, run from the folder the release zip was expanded into):
 
-1. Uses the Node.js that comes in the zip, `node\node.exe`, so nothing is downloaded. Without that folder (a source checkout) it checks for an installed Node.js 18 or newer and offers to install the LTS with winget.
+1. Checks the folder has `AmazonOrderSync.exe` and `browser-extension\`. That is the whole app: nothing is downloaded and nothing else is installed. (It says so if a `node\` or `server\` folder from 2.3.0 or older is still there; nothing uses them now.)
 2. Creates `%APPDATA%\amazon-order-sync\config.json` on first run, with notes in `%USERPROFILE%\AmazonOrders`. An existing config is never changed.
 3. Registers `AmazonOrderSync.exe` to start with Windows (the `AmazonOrderSync` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) and puts a shortcut on the desktop.
 4. Stops any running server and tray app, starts the new tray app and waits for `/api/health`.
 
 Options: `-NotesPath D:\Somewhere` (new configs only), `-NoAutostart`, `-Uninstall`. Rerun it after expanding a newer release over the same folder.
 
-**Linux, `install.sh`**: copies `server/` and `browser-extension/` to `~/.local/share/amazon-order-sync/`, installs and starts the systemd user service `amazon-order-sync.service`, creates `~/.config/amazon-order-sync/config.json` (mode 0600) if missing, and checks `/api/health`. It is idempotent; rerun it to upgrade. Load the extension from `~/.local/share/amazon-order-sync/browser-extension/` so upgrades reach it.
+**Linux, `install.sh`**: copies the `amazon-order-sync` program and `browser-extension/` to `~/.local/share/amazon-order-sync/` (from a source checkout with Rust installed it builds the program first), installs and starts the systemd user service `amazon-order-sync.service`, creates `~/.config/amazon-order-sync/config.json` (mode 0600) if missing, and checks `/api/health`. It is idempotent; rerun it to upgrade. Load the extension from `~/.local/share/amazon-order-sync/browser-extension/` so upgrades reach it.
 
 **The extension** has a fixed ID, `cikcnmangaegpkglmcfgbfbmknjmdifh`, set by the `key` in its manifest: the server accepts requests only from that ID. Load it unpacked, and press its reload button on the extensions page after an upgrade.
 
 ### Building from source
 
-The server and extension need no build. The tray app needs the .NET 8 SDK or newer:
+The program needs Rust (the version in `tools/versions.json`; on Windows the MSVC toolchain, with the Visual Studio Build Tools). The extension needs no build.
 
-```powershell
-dotnet publish tray -c Release -o .
+```sh
+cargo build --release
 ```
 
-That writes `AmazonOrderSync.exe` to the repo root, next to `server\` and `browser-extension\`, which is where it looks for them (or set `AOS_SERVER_DIR`). It runs the server with `node\node.exe` next to it if there is one, as in the release zip, and otherwise with Node.js from `PATH` or its standard install folders. Tests: `node --test tests/server.test.js`. Icons: `python3 tools/make-icons.py`, with a clone of Real-Fruit-Snacks/rfs-brand next to this repo. To build and test with no network, use the dev kit attached to each release: [Developing offline](../CONTRIBUTING.md#developing-offline).
+That writes `target/release/amazon-order-sync` (`.exe` on Windows; the release zip names it `AmazonOrderSync.exe`). It finds the extension in a `browser-extension` folder next to it or in a folder above it, which in a checkout is the repo's own (or set `AOS_EXTENSION_DIR`). Run `amazon-order-sync serve` for the server alone, in the foreground, on any OS; on Windows the program with no arguments is the tray app. Tests: `cargo test` for the internals, then `node --test tests/server.test.js` for the HTTP API against the built program. Icons: `python3 tools/make-icons.py`, with a clone of Real-Fruit-Snacks/rfs-brand next to this repo. To build and test with no network, use the dev kit attached to each release: [Developing offline](../CONTRIBUTING.md#developing-offline).
 
 ## Configuration
 
@@ -186,7 +186,7 @@ How it works:
 Setup:
 
 1. Install a browser (`sudo pacman -S chromium`, or set `browserPath`).
-2. Run `node ~/.local/share/amazon-order-sync/server/server.js --setup-headless`
+2. Run `~/.local/share/amazon-order-sync/amazon-order-sync --setup-headless`
    (or press **SETUP LOGIN** in the dashboard when offered) and log into
    Amazon in the window that opens, then close it.
 3. Set `"autoSyncEnabled": true` in the config and restart the service
@@ -380,31 +380,29 @@ it on Amazon yourself.
 
 ## Windows tray menu
 
-- **Open dashboard** (also double-click the icon) — `http://127.0.0.1:27483/`
+- **Open dashboard** — `http://127.0.0.1:27483/`
 - **Sync now** — headless run; completion/failure arrives as a toast
-- **Review your purchases on Amazon** — Amazon's review page, where the extension fills in your saved drafts
+- **Review your purchases on Amazon** (also double-click the icon, or click a notification) — Amazon's review page, where the extension fills in your saved drafts
 - **Set up Amazon login…** — visible browser window on the dedicated profile
 - **Open notes folder / Edit config.json / View server log**
 - **Open browser-extension folder** — for *Load unpacked*
 - **Start with Windows** — toggles the `HKCU\…\Run` entry
-- **Restart server** — after editing `config.json`
-- **Quit** — asks the server to shut down cleanly (`POST /api/shutdown`),
-  which also kills any headless browser and releases the `.daemon.lock`
+- **Restart server** — after editing `config.json`: stops the server and starts it
+  again with the new settings, without quitting the tray
+- **Quit** — stops the server cleanly, which also kills any headless browser and
+  releases the `.daemon.lock`, and removes the icon
 
-If the tray app starts and a server is already answering on the port (say an
-orphan from a crashed tray) it attaches to it instead of starting a second
-daemon on the same notes folder; **Quit** stops that server too. If the server
-crashes, the tray restarts it, at most twice in five minutes; after that it
-shows a notification and leaves it stopped until you fix the cause (see
-`server.log`) and use **Restart server**.
+The server runs inside the tray app, so there is no separate process to watch or
+restart; its output goes to `server.log`. If the tray app starts and a server is
+already answering on the port (say one from an older install) it uses that one
+instead of starting a second on the same notes folder, and takes over if it goes
+away; **Quit** stops that server too.
 
 ## Troubleshooting on Windows
 
-- **"Node.js was not found"** — the release zip has Node.js in `node\`; expand
-  the zip again if that folder is missing, or install Node.js
-  (`winget install OpenJS.NodeJS.LTS`), then **Restart server** from the tray.
-- **Server exits immediately** — read `server.log`. Usually the port is in use
-  or `config.json` has a typo.
+- **"could not start" toast** — read `server.log` and `tray.log`. Usually the port
+  is in use (another program, or another copy serving the same notes folder) or
+  `config.json` has a typo; fix it, then **Restart server**.
 - **"No browser found" toast** — Brave/Edge/Chromium isn't in a standard place;
   set `"browserPath": "C:\\Users\\<you>\\AppData\\Local\\BraveSoftware\\Brave-Browser\\Application\\brave.exe"`.
 - **Headless sync stalls / login errors** — tray → **Set up Amazon login…**

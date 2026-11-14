@@ -1,0 +1,26 @@
+# cargo-about settings. The release workflow uses this file and about.hbs to write
+# THIRD-PARTY-LICENSES.txt, which ships inside every release download.
+# Run it yourself with: cargo about generate about.hbs -o THIRD-PARTY-LICENSES.txt
+#
+# A crate under a licence missing from this list fails the release, on purpose:
+# check the licence before adding it here. For a crate offered under several
+# licences ("MIT OR Apache-2.0"), the first one listed here is the one used.
+accepted = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "Zlib",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "BSL-1.0",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+    "OpenSSL",
+]
+
+# Only the crates that end up in the programs this project ships.
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-musl"]
+ignore-dev-dependencies = true
+ignore-build-dependencies = true

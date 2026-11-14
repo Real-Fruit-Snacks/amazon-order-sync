@@ -9,53 +9,55 @@ permissions:
 # the release workflow and the dev kit read the same files.
 jobs:
   server:
+    # The program (server and, on Windows, the tray), its Rust tests, the HTTP tests against the
+    # built program, and the parity test against the last Node.js server (v2.3.0, from git).
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # "pinned" is the Node.js in tools/versions.json, the one the Windows zip carries;
-          # 18 is the oldest the server supports.
-          - { os: ubuntu-latest, node: "18" }
-          - { os: ubuntu-latest, node: pinned }
-          - { os: windows-latest, node: pinned }
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The parity test reads server/ at the v2.3.0 tag.
+          fetch-depth: 0
       - name: Pinned versions
         id: pins
         shell: bash
         run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pins.outputs.rust }}
+          components: clippy, rustfmt
       - uses: actions/setup-node@v5
         with:
-          node-version: ${{ matrix.node == 'pinned' && steps.pins.outputs.node || matrix.node }}
-      - name: Syntax
+          node-version: ${{ steps.pins.outputs.node }}
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Rust tests
+        run: cargo test --locked
+      - name: Build
         run: |
-          node --check server/server.js
+          cargo build --release --locked
+          cargo build --locked --examples
+      - name: Extension syntax
+        run: |
+          node --check browser-extension/background.js
           node --check browser-extension/content.js
           node --check browser-extension/popup.js
-      - name: Tests
-        # --test-force-exit: on Windows a spawned server can outlive the run
-        # (Node 20+). The headless-run tests skip themselves on Windows.
-        run: node --test ${{ matrix.node != '18' && '--test-force-exit' || '' }} tests/server.test.js
-  tray:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: Pinned versions
-        id: pins
+      - name: HTTP tests against the program
+        # --test-force-exit: on Windows a spawned server can outlive the run. The headless-run
+        # tests need POSIX fixtures (a shell-script browser, ps, notify-send) and skip on Windows.
+        run: node --test --test-force-exit tests/server.test.js
+      - name: Parity with the Node.js server (v2.3.0)
         shell: bash
-        run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: ${{ steps.pins.outputs.dotnetSdk }}
-      - name: Use that SDK
-        # The runner has newer SDKs too, and dotnet picks the newest unless global.json says otherwise.
-        shell: bash
-        run: |
-          echo '{ "sdk": { "version": "${{ steps.pins.outputs.dotnetSdk }}", "rollForward": "disable" } }' > global.json
-          dotnet --version
-      - name: Build
-        run: dotnet build tray -c Release -warnaserror
+        env:
+          AOS_SERVER_BIN: target/release/amazon-order-sync${{ runner.os == 'Windows' && '.exe' || '' }}
+          AOS_FAKE_BROWSER_BIN: target/debug/examples/fake_browser${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: node --test --test-concurrency=1 --test-force-exit tests/parity.test.js
   powershell:
     runs-on: windows-latest
     steps:
@@ -127,6 +129,9 @@ jobs:
         id: pins
         shell: bash
         run: jq -r 'to_entries[] | "\(.key)=\(.value)"' tools/versions.json | tr -d '\r' >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pins.outputs.rust }}
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ steps.pins.outputs.node }}
@@ -135,6 +140,7 @@ jobs:
           python-version: ${{ steps.pins.outputs.python }}
       - name: Regenerate the samples and the README picture
         run: |
+          cargo build --release --locked
           python -m pip install --quiet -r tools/requirements-art.txt
           node tools/make-samples.mjs
           python tools/make-slip.py

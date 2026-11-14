@@ -266,7 +266,7 @@
         <div class="cmd"><pre><code><span class="cl">$zip = "$env:TEMP\amazon-order-sync-windows.zip"</span><span class="cl">Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip</span><span class="cl">Expand-Archive $zip "$env:LOCALAPPDATA\Programs\amazon-order-sync" -Force</span><span class="cl">Set-ExecutionPolicy -Scope Process Bypass; &amp; "$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1"</span></code></pre><button class="copy" type="button" data-copy="$zip = &quot;$env:TEMP\amazon-order-sync-windows.zip&quot;&#10;Invoke-WebRequest https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-windows.zip -OutFile $zip&#10;Expand-Archive $zip &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync&quot; -Force&#10;Set-ExecutionPolicy -Scope Process Bypass; &amp; &quot;$env:LOCALAPPDATA\Programs\amazon-order-sync\install.ps1&quot;">Copy</button></div>
       </div>
       <div class="pane" role="tabpanel" id="pane-lin" aria-labelledby="tab-lin" hidden>
-        <p class="pane-note">A systemd user service. Needs Node.js 18 or newer.</p>
+        <p class="pane-note">A systemd user service. One static program for any x86-64 Linux; nothing else to install.</p>
         <div class="cmd"><pre><code><span class="cl">curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh</span></code></pre><button class="copy" type="button" data-copy="curl -fsSL https://github.com/Real-Fruit-Snacks/amazon-order-sync/releases/latest/download/amazon-order-sync-linux.tar.gz | tar xz &amp;&amp; ./amazon-order-sync/install.sh">Copy</button></div>
       </div>
       <ol class="then">
@@ -307,11 +307,11 @@
     <table class="packing">
       <thead><tr><th scope="col"><span class="sr-only">Number</span></th><th scope="col">Part</th><th scope="col">What it does</th></tr></thead>
       <tbody>
-        <tr><td class="n">01</td><th scope="row">Local server<span class="where">server/</span></th><td>One Node.js file with no npm dependencies, on <code>127.0.0.1:27483</code>. Writes the notes, caches the images, and serves the dashboard and the <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/api.md">HTTP API</a>.</td></tr>
+        <tr><td class="n">01</td><th scope="row">Local server<span class="where">src/</span></th><td>One small Rust program with nothing else to install, on <code>127.0.0.1:27483</code>. Writes the notes, caches the images, and serves the dashboard and the <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/api.md">HTTP API</a>.</td></tr>
         <tr><td class="n">02</td><th scope="row">Browser extension<span class="where">browser-extension/</span></th><td>Reads your Amazon order pages and sends them to the server: <b>Sync Current Page</b>, or <b>Auto-Sync All Pages</b> from its popup. Fills Amazon’s review form from a draft you saved, for you to check and post.</td></tr>
         <tr><td class="n">03</td><th scope="row">Dashboard<span class="where">127.0.0.1:27483</span></th><td>Spend by month, every order searchable, price drops on things you bought, repeat purchases, review drafts, sync status, CSV and JSON export, and an import for Amazon’s “Request My Data” export.</td></tr>
         <tr><td class="n">04</td><th scope="row">Headless sync<span class="where">autoSyncEnabled</span></th><td>After a one-time login, the server runs your browser headless with the real extension on a schedule. No cookie scraping and no browser window.</td></tr>
-        <tr><td class="n">05</td><th scope="row">Tray app<span class="where">tray/ · Windows</span></th><td>Starts the server hidden, shows notifications, and has a menu for sync, login, the notes folder, the config and the logs. On Linux a systemd user service does the same job.</td></tr>
+        <tr><td class="n">05</td><th scope="row">Tray app<span class="where">Windows</span></th><td>The same program, in the tray: runs the server, shows notifications, and has a menu for sync, login, the notes folder, the config and the logs. On Linux a systemd user service does the same job.</td></tr>
         <tr><td class="n">06</td><th scope="row">Review drafts<span class="where">geminiApiKey</span></th><td>Optional. With a Gemini key, the server drafts a review per item for you to rewrite in your own words. You post it yourself.</td></tr>
       </tbody>
     </table>
@@ -381,7 +381,7 @@
       <h2 id="tested-h">Tested on</h2>
       <ul>
         <li><b>Windows with Brave and the tray app:</b> the maintainer’s own setup, daily.</li>
-        <li><b>CI on every push:</b> server tests on Ubuntu (Node.js 18 and 22) and Windows (Node.js 22), a tray app build, and the installers checked with Windows PowerShell 5.1, PSScriptAnalyzer and shellcheck.</li>
+        <li><b>CI on every push:</b> the Rust tests and the HTTP tests on Ubuntu and Windows, a parity test against the last Node.js server (2.3.0) that checks every response, note and Gemini prompt match, and the installers checked with Windows PowerShell 5.1, PSScriptAnalyzer and shellcheck.</li>
         <li><b>Not tested:</b> macOS, Firefox, and Amazon sites other than amazon.com in day-to-day use.</li>
       </ul>
     </div>

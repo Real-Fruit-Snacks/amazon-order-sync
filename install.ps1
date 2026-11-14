@@ -4,14 +4,13 @@
 
 .DESCRIPTION
   Run from the folder the release zip was expanded into (the one containing
-  server\, browser-extension\, node\ and AmazonOrderSync.exe). It:
-    1. Uses the Node.js in node\, which comes with the release zip, so nothing
-       is downloaded. Without node\ (a source checkout) it needs an installed
-       Node.js >= 18 and offers winget if there is none.
-    2. Creates %APPDATA%\amazon-order-sync\config.json on first run
+  AmazonOrderSync.exe and browser-extension\). AmazonOrderSync.exe is the
+  whole app, the tray and the server in one program, so nothing else is
+  needed and nothing is downloaded. It:
+    1. Creates %APPDATA%\amazon-order-sync\config.json on first run
        (never overwrites an existing config).
-    3. Registers the tray app to start with Windows (HKCU Run key).
-    4. Starts the tray app and waits for the server to answer.
+    2. Registers the tray app to start with Windows (HKCU Run key).
+    3. Starts the tray app and waits for the server to answer.
 
   Idempotent - rerun after expanding a newer release over the same folder. Use -Uninstall to remove
   the Run entry and stop the tray (notes, config and browser profile are kept).
@@ -83,51 +82,18 @@ if ($Uninstall) {
 }
 
 # --- 0. sanity ---------------------------------------------------------------
-foreach ($p in @($Exe, (Join-Path $Root 'server\server.js'), (Join-Path $Root 'browser-extension\manifest.json'))) {
+foreach ($p in @($Exe, (Join-Path $Root 'browser-extension\manifest.json'))) {
     if (-not (Test-Path $p)) { throw "Missing $p - run install.ps1 from the folder the release zip was expanded into." }
 }
-
-# --- 1. Node.js ----------------------------------------------------------------
-# The same order the tray app uses: the bundled node\node.exe, then PATH, then
-# the standard install folders.
-$BundledNode = Join-Path $Root 'node\node.exe'
-
-function Find-Node {
-    if (Test-Path $BundledNode) { return $BundledNode }
-    $node = Get-Command node.exe -ErrorAction SilentlyContinue
-    if ($node) { return $node.Source }
-    foreach ($c in @("$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe", "$env:LOCALAPPDATA\Programs\nodejs\node.exe")) {
-        if (Test-Path $c) { return $c }
+# 2.3.0 and older shipped node\ and server\ next to the exe; nothing uses them now.
+foreach ($old in @('node\node.exe', 'server\server.js')) {
+    $leftover = Join-Path $Root $old
+    if (Test-Path $leftover) {
+        Write-Host "Note: $(Split-Path $leftover) is left over from an older version and is no longer used; you can delete it."
     }
-    return $null
 }
 
-function Get-NodeMajor {
-    $node = Find-Node
-    if (-not $node) { return $null }
-    $v = & $node -e "process.stdout.write(process.versions.node.split('.')[0])"
-    return [int]$v
-}
-
-$major = Get-NodeMajor
-if (-not $major) {
-    Write-Host "Node.js is not installed." -ForegroundColor Yellow
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        $ans = Read-Host "Install Node.js LTS with winget now? [Y/n]"
-        if ($ans -eq '' -or $ans -match '^[Yy]') {
-            winget install --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
-            # winget updates the machine PATH; refresh this session's copy.
-            $env:PATH = [Environment]::GetEnvironmentVariable('PATH', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('PATH', 'User')
-            $major = Get-NodeMajor
-        }
-    }
-    if (-not $major) { throw "Node.js >= 18 is required. Install it from https://nodejs.org/ and rerun this script." }
-}
-if ($major -lt 18) { throw "Node.js >= 18 is required (found major version $major). Upgrade with: winget upgrade OpenJS.NodeJS.LTS" }
-if ((Find-Node) -eq $BundledNode) { Write-Host "Node.js: v$major OK (bundled, $BundledNode)" }
-else { Write-Host "Node.js: v$major OK ($(Find-Node))" }
-
-# --- 2. config -----------------------------------------------------------------
+# --- 1. config -----------------------------------------------------------------
 if (-not (Test-Path $Config)) {
     New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
     $NotesPath = [System.IO.Path]::GetFullPath($NotesPath)
@@ -146,7 +112,7 @@ if (-not (Test-Path $Config)) {
     Write-Host "Config exists: $Config (left as is)"
 }
 
-# --- 3. autostart --------------------------------------------------------------
+# --- 2. autostart --------------------------------------------------------------
 if (-not $NoAutostart) {
     # Never New-Item -Force here: on an existing registry key that recreates
     # it and deletes every other startup entry. The Run key always exists.
@@ -155,7 +121,7 @@ if (-not $NoAutostart) {
     Write-Host "Registered to start with Windows."
 }
 
-# --- 3b. desktop shortcut (created by Windows itself, so it is always valid) ----
+# --- 2b. desktop shortcut (created by Windows itself, so it is always valid) ----
 try {
     $desktop = [Environment]::GetFolderPath('Desktop')
     $lnk = Join-Path $desktop 'Amazon Order Sync.lnk'
@@ -169,7 +135,7 @@ try {
     Write-Host "Desktop shortcut: $lnk"
 } catch { Write-Host "Could not create the desktop shortcut: $($_.Exception.Message)" -ForegroundColor Yellow }
 
-# --- 4. (re)start the tray ------------------------------------------------------
+# --- 3. (re)start the tray ------------------------------------------------------
 Stop-Tray
 Write-Host "Starting tray app..."
 Start-Process -FilePath $Exe -WorkingDirectory $Root

@@ -3,7 +3,7 @@ Description=Amazon Order Sync local server
 After=default.target
 
 [Service]
-ExecStart=/usr/bin/env node %h/.local/share/amazon-order-sync/server/server.js
+ExecStart=%h/.local/share/amazon-order-sync/amazon-order-sync serve
 Restart=on-failure
 RestartSec=3
 

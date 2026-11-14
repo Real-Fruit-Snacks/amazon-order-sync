@@ -8,9 +8,12 @@ config.json
 !config.example.json
 
 # --- build output / binaries (publish as release assets instead) ----------
+/target/
 AmazonOrderSync.exe
 AmazonOrderSync.exe.*.part
 AmazonOrderSync.exe.sha256
+THIRD-PARTY-LICENSES.txt
+# build output of the C# tray app (2.3.0 and older)
 tray/bin/
 tray/obj/
 tray/publish/

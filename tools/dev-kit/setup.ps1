@@ -6,12 +6,12 @@
   Run it from the unzipped kit:
       powershell -ExecutionPolicy Bypass -File offline\setup.ps1
   It:
-    1. Checks the toolchains the kit leaves out (the .NET SDK, Node.js and
-       Python; Git, PowerShell 7 and ShellCheck are optional) and says what
-       is missing.
+    1. Checks the toolchains the kit leaves out (Rust, Node.js and Python;
+       Git, PowerShell 7 and ShellCheck are optional) and says what is
+       missing.
     2. Loads PSScriptAnalyzer from offline\powershell and checks its version.
-    3. Writes global.json so dotnet uses the SDK the kit's packages are for,
-       and restores the tray app from offline\nuget only.
+    3. Points cargo at offline\cargo\vendor (.cargo\config.toml) and checks
+       that every crate in Cargo.lock resolves from it.
     4. Makes .venv and installs the art scripts' wheels from offline\python.
     5. Prints the commands that test and build.
   Safe to rerun. Works in Windows PowerShell 5.1 and PowerShell 7.
@@ -29,15 +29,13 @@ $Pins = Get-Content (Join-Path $Kit 'tools\versions.json') -Raw -Encoding UTF8 |
 $Missing = New-Object System.Collections.Generic.List[string]
 
 # Nothing below may reach the network, and nothing should try.
-$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
-$env:DOTNET_NOLOGO = '1'
-$env:DOTNET_CLI_WORKLOAD_UPDATE_NOTIFY_DISABLE = '1'
+$env:CARGO_NET_OFFLINE = 'true'
 $env:PIP_NO_INDEX = '1'
 $env:PIP_DISABLE_PIP_VERSION_CHECK = '1'
 
 # Run a program, return its exit code and what it wrote to stdout. stderr is
-# dropped: a warning there (Node.js prints some) must not be read as a version.
-# Windows PowerShell 5.1 turns redirected stderr into errors, so relax that here.
+# dropped: a warning there must not be read as a version. Windows PowerShell
+# 5.1 turns redirected stderr into errors, so relax that here.
 function Invoke-Tool([string]$File, [string[]]$Arguments) {
     $eap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
@@ -64,21 +62,20 @@ Write-Host "amazon-order-sync dev kit: $Kit"
 Write-Host ""
 
 # --- 1. toolchains --------------------------------------------------------------
-$sdk = $Pins.dotnetSdk
-$sdkUrl = "https://builds.dotnet.microsoft.com/dotnet/Sdk/$sdk/dotnet-sdk-$sdk-win-x64.exe"
-$dotnet = Find-Exe 'dotnet.exe'
-$dotnetOk = $false
-if (-not $dotnet) {
-    $Missing.Add(".NET SDK $sdk is not installed (no dotnet.exe on PATH). Install it from $sdkUrl")
+$rustPin = $Pins.rust
+$rustUrl = "https://static.rust-lang.org/dist/rust-$rustPin-x86_64-pc-windows-msvc.msi"
+$cargo = Find-Exe 'cargo.exe'
+$rustc = Find-Exe 'rustc.exe'
+$cargoOk = $false
+if (-not $cargo -or -not $rustc) {
+    $Missing.Add("Rust is not installed (no cargo.exe/rustc.exe on PATH). CI uses $rustPin. Install it from $rustUrl, and the Visual Studio Build Tools with the C++ workload for the linker.")
 } else {
-    $have = @((Invoke-Tool $dotnet @('--list-sdks')).Out | ForEach-Object { ($_ -split ' ')[0] } | Where-Object { $_ -match '^\d+\.\d+\.\d+' })
-    if ($have -contains $sdk) {
-        $dotnetOk = $true
-        Write-Ok ".NET SDK $sdk"
-    } else {
-        $found = if ($have) { $have -join ', ' } else { 'none' }
-        $Missing.Add(".NET SDK $sdk is not installed (found: $found). The packages in offline\nuget are the ones that SDK restores, so it has to be this version; it installs alongside others. Install it from $sdkUrl")
-    }
+    $rv = "$((Invoke-Tool $rustc @('--version')).Out | Select-Object -First 1)".Trim()
+    $host_ = "$((Invoke-Tool $rustc @('-vV')).Out | Where-Object { $_ -like 'host:*' } | Select-Object -First 1)" -replace '^host:\s*', ''
+    $cargoOk = $true
+    if ($rv -match "^rustc $([regex]::Escape($rustPin))\b") { Write-Ok "$rv ($host_)" }
+    else { Write-Ok "$rv ($host_; CI uses $rustPin)" }
+    if ($host_ -notlike '*-msvc') { Write-Note "Rust's host is $host_; the release is built for x86_64-pc-windows-msvc." }
 }
 
 $nodePin = $Pins.node
@@ -86,12 +83,12 @@ $nodeUrl = "https://nodejs.org/dist/v$nodePin/node-v$nodePin-x64.msi"
 $node = Find-Exe 'node.exe'
 $nodeMajor = 0
 if (-not $node) {
-    $Missing.Add("Node.js is not installed (no node.exe on PATH). CI uses $nodePin; any 18 or newer runs the server and the tests. Install it from $nodeUrl")
+    $Missing.Add("Node.js is not installed (no node.exe on PATH). CI uses $nodePin; any 18 or newer runs the tests. Install it from $nodeUrl")
 } else {
     $nv = "$((Invoke-Tool $node @('-p', 'process.versions.node')).Out | Select-Object -First 1)".Trim()
     if ($nv -match '^(\d+)\.') { $nodeMajor = [int]$Matches[1] }
     if ($nodeMajor -lt 18) {
-        $Missing.Add("Node.js $nv is too old: the server needs 18 or newer, and CI uses $nodePin. Install it from $nodeUrl")
+        $Missing.Add("Node.js $nv is too old: the tests need 18 or newer, and CI uses $nodePin. Install it from $nodeUrl")
     } elseif ($nv -ne $nodePin) {
         Write-Ok "Node.js $nv ($node; CI uses $nodePin)"
     } else {
@@ -143,15 +140,13 @@ if ($shellcheck) { Write-Ok "ShellCheck $(((Invoke-Tool $shellcheck @('--version
 else { Write-Note "ShellCheck is not installed (optional): CI lints install.sh with ShellCheck $($Pins.shellcheck)." }
 
 # npm: nothing to install. Say so if that ever stops being true.
-foreach ($pj in @('server\package.json', 'tests\package.json')) {
-    $j = Get-Content (Join-Path $Kit $pj) -Raw -Encoding UTF8 | ConvertFrom-Json
-    foreach ($k in @('dependencies', 'devDependencies', 'optionalDependencies')) {
-        if ($j.PSObject.Properties[$k] -and @($j.$k.PSObject.Properties).Count) {
-            $Missing.Add("$pj lists npm packages under $k, and this kit has no npm cache for them.")
-        }
+$j = Get-Content (Join-Path $Kit 'tests\package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+foreach ($k in @('dependencies', 'devDependencies', 'optionalDependencies')) {
+    if ($j.PSObject.Properties[$k] -and @($j.$k.PSObject.Properties).Count) {
+        $Missing.Add("tests\package.json lists npm packages under $k, and this kit has no npm cache for them.")
     }
 }
-Write-Ok "npm: nothing to install (server\ and tests\ use only Node.js built-ins)"
+Write-Ok "npm: nothing to install (tests\ uses only Node.js built-ins)"
 Write-Host ""
 
 # --- 2. PowerShell modules ------------------------------------------------------
@@ -170,26 +165,27 @@ foreach ($name in @('PSScriptAnalyzer')) {
     Write-Ok "$name $ver loaded from $($m[0].ModuleBase)"
 }
 
-# --- 3. NuGet ----------------------------------------------------------------------
-if ($dotnetOk) {
-    # dotnet picks the newest SDK unless global.json says otherwise, and another SDK
-    # would ask for runtime packs this kit doesn't have.
-    $globalJson = Join-Path $Kit 'global.json'
-    $want = '{ "sdk": { "version": "' + $sdk + '", "rollForward": "disable" } }'
-    if ((Test-Path $globalJson) -and ((Get-Content $globalJson -Raw).Trim() -ne $want)) {
-        Write-Note "$globalJson exists and was not written by this script; left as it is."
-    } else {
-        [System.IO.File]::WriteAllText($globalJson, $want + "`r`n", (New-Object System.Text.UTF8Encoding $false))
-        Write-Ok "global.json selects .NET SDK $sdk"
-    }
+# --- 3. cargo ------------------------------------------------------------------------
+# The source has .cargo\config.toml (it links the C runtime in); add the kit's crate
+# source to it once.
+$cargoDir = Join-Path $Kit '.cargo'
+$cargoConfig = Join-Path $cargoDir 'config.toml'
+$kitConfig = (Get-Content (Join-Path $Offline 'cargo\config.toml') -Raw -Encoding UTF8) -replace "`r`n", "`n"
+New-Item -ItemType Directory -Force $cargoDir | Out-Null
+$current = if (Test-Path $cargoConfig) { (Get-Content $cargoConfig -Raw -Encoding UTF8) -replace "`r`n", "`n" } else { '' }
+if ($current -match '\[source\.dev-kit\]') {
+    Write-Ok ".cargo\config.toml already builds from offline\cargo\vendor"
+} else {
+    $sep = if ($current -and -not $current.EndsWith("`n")) { "`n`n" } elseif ($current) { "`n" } else { '' }
+    [System.IO.File]::WriteAllText($cargoConfig, $current + $sep + $kitConfig, (New-Object System.Text.UTF8Encoding $false))
+    Write-Ok ".cargo\config.toml now builds from offline\cargo\vendor"
+}
+if ($cargoOk) {
     Push-Location $Kit
     try {
-        $v = "$((Invoke-Tool $dotnet @('--version')).Out | Select-Object -First 1)".Trim()
-        if ($v -ne $sdk) { throw "dotnet in $Kit runs SDK $v, not $sdk. Check $globalJson." }
-        & $dotnet restore (Join-Path $Kit 'tray\AmazonOrderSync.Tray.csproj') -r win-x64 `
-            --configfile (Join-Path $Offline 'nuget.config') --source (Join-Path $Offline 'nuget') -p:NuGetAudit=false
-        if ($LASTEXITCODE) { throw "dotnet restore from offline\nuget failed (exit $LASTEXITCODE)." }
-        Write-Ok "tray app restored from offline\nuget"
+        $r = Invoke-Tool $cargo @('metadata', '--offline', '--locked', '--format-version', '1')
+        if ($r.Code) { throw "cargo metadata --offline failed (exit $($r.Code)): a crate in Cargo.lock is not in offline\cargo\vendor." }
+        Write-Ok "every crate in Cargo.lock resolves from offline\cargo\vendor"
     } finally {
         Pop-Location
     }
@@ -229,15 +225,15 @@ $pssa = $Pins.PSScriptAnalyzer
 Write-Host "Ready. From $Kit, in PowerShell:" -ForegroundColor Green
 Write-Host @"
 
-  # server and extension: syntax and tests
-  node --check server\server.js
+  # the program: Rust tests, then the build (target\release\amazon-order-sync.exe)
+  cargo test --offline --locked
+  cargo build --release --offline --locked
+
+  # the extension's syntax, and the HTTP tests against the built program
+  node --check browser-extension\background.js
   node --check browser-extension\content.js
   node --check browser-extension\popup.js
   node --test$forceExit tests\server.test.js
-
-  # tray app (-o . puts AmazonOrderSync.exe next to server\, where it looks)
-  dotnet build tray -c Release -warnaserror --no-restore
-  dotnet publish tray -c Release -o . --no-restore
 
   # PowerShell lint, with the kit's PSScriptAnalyzer
   Import-Module .\offline\powershell\PSScriptAnalyzer\$pssa\PSScriptAnalyzer.psd1
