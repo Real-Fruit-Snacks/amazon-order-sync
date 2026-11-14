@@ -4,3 +4,5 @@ amazon-order-sync.service text eol=lf
 *.png binary
 *.ico binary
 *.woff2 binary
+# Built into the program: the same bytes on every OS, whatever the checkout does.
+server/dashboard.html text eol=lf
