@@ -24,6 +24,7 @@ static NOTES: Mutex<Ring> = Mutex::new(Ring { items: VecDeque::new(), index: 0 }
 type Sink = Box<dyn Fn(&str) + Send>;
 static SINK: Mutex<Option<Sink>> = Mutex::new(None);
 
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn set_sink(f: Option<Sink>) {
     *SINK.lock().unwrap() = f;
 }

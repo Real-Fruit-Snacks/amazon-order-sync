@@ -65,6 +65,8 @@ pub fn release_instance_lock(notes_path: &Path) {
     }
 }
 
+// Only the Windows tray stops the server in-process; `serve` exits the process instead.
+#[cfg_attr(not(windows), allow(dead_code))]
 pub struct Running {
     pub app: Arc<App>,
     pub cfg: Config,
@@ -209,6 +211,7 @@ fn scheduler_tick(app: &Arc<App>, review_interval_days: i64) {
 
 impl Running {
     /// Kill the active run's browser, release the lock, stop listening.
+    #[cfg_attr(not(windows), allow(dead_code))]
     pub fn stop(&self) {
         if self.stopped.swap(true, Ordering::SeqCst) {
             return;
