@@ -280,7 +280,7 @@ jobs:
             for i in $(seq 1 50); do curl -sf http://127.0.0.1:27483/api/health > "$3/health.json" && break; sleep 0.2; done
             curl -sf http://127.0.0.1:27483/ | grep -q "Amazon Order Sync"
             kill %1
-          ' sh "$RUNNER_TEMP/aos-config.json" "$app" "$RUNNER_TEMP"
+          ' sh "$RUNNER_TEMP/aos-config.json" "$app" "$RUNNER_TEMP" || { echo "--- serve.log"; sudo cat "$RUNNER_TEMP/serve.log"; exit 1; }
           cat "$RUNNER_TEMP/health.json"; echo
           test "$(jq -r .version "$RUNNER_TEMP/health.json")" = "$v"
           test "$(jq -r .platform "$RUNNER_TEMP/health.json")" = "linux"
