@@ -933,10 +933,17 @@ fn t53_stale_profile_locks_removed() {
     let h = Headless::new_for_tests(t.path().join("notes"), true, &fake, false, profile.clone());
     let c = log_cursor();
     let th = start_run(&h);
+    // The run is marked in progress before its thread clears the locks and spawns the browser
+    // (Node did both in one synchronous call); wait for the log line that follows the clearing.
+    let removed = || logs_since(c).into_iter().filter(|l| l.contains("Removed stale browser profile lock(s)")).collect::<Vec<String>>();
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while removed().is_empty() && std::time::Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(10));
+    }
     for n in ["SingletonLock", "SingletonSocket", "SingletonCookie"] {
         assert!(std::fs::symlink_metadata(profile.join(n)).is_err(), "{} removed before the spawn", n);
     }
-    let lines: Vec<String> = logs_since(c).into_iter().filter(|l| l.contains("Removed stale browser profile lock(s)")).collect();
+    let lines = removed();
     assert_eq!(lines.len(), 1);
     assert!(lines[0].contains("SingletonLock") && lines[0].contains("SingletonSocket") && lines[0].contains("SingletonCookie"));
     assert!(h.complete(&json!({ "ok": true, "processed": 0 })));
