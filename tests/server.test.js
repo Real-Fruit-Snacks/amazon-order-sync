@@ -185,11 +185,11 @@ after(async () => {
 test('3. sync -> orders -> get-review -> mark-posted roundtrip', async () => {
     const health = await api('/api/health');
     assert.equal(health.body.ok, true);
-    assert.equal(health.body.version, '3.0.0');
+    assert.equal(health.body.version, '3.0.1');
 
     const ordersRes = await api('/api/orders');
     assert.equal(ordersRes.status, 200);
-    assert.equal(ordersRes.body.version, '3.0.0');
+    assert.equal(ordersRes.body.version, '3.0.1');
     assert.equal(ordersRes.body.orders.length, 1);
     const order = ordersRes.body.orders[0];
     assert.equal(order.orderId, ORDER_ID);
@@ -313,7 +313,7 @@ test('6. export.csv and export.json', async () => {
         json.headers.get('content-disposition'),
         /^attachment; filename="amazon-orders-\d{4}-\d{2}-\d{2}\.json"$/
     );
-    assert.equal(json.body.version, '3.0.0');
+    assert.equal(json.body.version, '3.0.1');
     assert.ok(json.body.exported_at);
     const exported = json.body.orders[0].items.find(i => i.asin === ASIN_A);
     assert.equal(exported.name, 'USB-C Cable 2m');
@@ -2824,7 +2824,7 @@ test('77. legacy vine config keys boot clean; no vine shape anywhere', async (t)
     await waitForServer(base77); // boots clean with the legacy keys present
     const health = await fetch(`${base77}/api/health`).then(r => r.json());
     assert.equal(health.ok, true);
-    assert.equal(health.version, '3.0.0');
+    assert.equal(health.version, '3.0.1');
 
     // Seed one order with a $0.00 item — just a price now, never a flag.
     const sync = await fetch(`${base77}/api/sync`, postJson({

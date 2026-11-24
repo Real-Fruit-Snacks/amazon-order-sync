@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.1] — 2026-11-24
+
+Visual refresh to the Cyclorama Dawn `v2.1.0` palette. Sync behaviour, notes, sidecar files, API endpoints, and existing configs are unchanged.
+
+- Local web dashboard, self-hosted variable fonts (Big Shoulders Stencil, Albert Sans, Azeret Mono), server/tray icons (`app.ico`), and browser extension popup updated to Cyclorama Dawn `v2.1.0` (`LX 263` Matte Dark default + `LX 512` Alabaster Day light toggle, Signal Crimson faults).
+- Project page, README art, and install snippets updated to Cyclorama Dawn `v2.1.0` with a below-header scroll shell and `.rfs-code-card` blocks.
+
 ## [3.0.0] — 2026-11-13
 
 The server and the Windows tray app are now one program, written in Rust. Nothing changes in what it does: the notes, the sidecar files, the API, the dashboard and the extension are the same, byte for byte, and existing notes, configs and browser logins carry over as they are.
