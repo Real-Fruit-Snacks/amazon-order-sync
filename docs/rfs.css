@@ -1,0 +1,305 @@
+/* RFS Cyclorama Dawn tokens — Steel & Beacon Orange.
+   Dark mode (LX 263 Beacon Horizon) is the canonical default across all RFS pages;
+   switch to Light (LX 512 Alabaster Day) via <meta name="color-scheme" content="light">
+   or data-theme="light" (and legacy dayshift). */
+:root {
+  color-scheme: dark;
+
+  --rfs-in-oklab: ;
+  --rfs-in-oklch: ;
+
+  /* Physical Cyclorama stops */
+  --rfs-steel: #1f547a;
+  --rfs-steel-fill: #18496b;
+  --rfs-beacon: #f06e2b;
+  --rfs-beacon-wash: #cc5016;
+  --rfs-on-steel: #ffffff;
+
+  /* Dark mode raw palette (Matte Cyclorama Black / LX 263 Beacon Horizon) */
+  --rfs-bg-dark: #050507;
+  --rfs-rail-dark: #070709;
+  --rfs-surface-dark: #0c0c10;
+  --rfs-raised-dark: #14141a;
+  --rfs-line-dark: rgba(255, 255, 255, 0.14);
+  --rfs-line-strong-dark: #62646d;
+  --rfs-text-dark: #f4f5f8;
+  --rfs-mute-dark: #b3b5c0;
+  --rfs-steel-ink-dark: #74b8e8;
+  --rfs-beacon-ink-dark: #ff9254;
+  --rfs-primary-dark: #f06e2b;
+  --rfs-primary-hover-dark: #ff8442;
+  --rfs-primary-press-dark: #ffa06b;
+  --rfs-on-primary-dark: #050507;
+  --rfs-accent-dark: #ffc247;
+  --rfs-signal-dark: #3ddc97;
+  --rfs-fault-dark: #ff5c6c;
+  --rfs-fault-fill-dark: #c92438;
+  --rfs-fault-fill-hover-dark: #e02e44;
+  --rfs-on-fault-dark: #ffffff;
+  --rfs-code-bg-dark: #08080b;
+  --rfs-focus-dark: #ff9254;
+
+  /* Light mode raw palette (Alabaster Day / LX 512) */
+  --rfs-bg-light: #f5f7f9;
+  --rfs-rail-light: #eaeef2;
+  --rfs-surface-light: #ffffff;
+  --rfs-raised-light: #e3e8ee;
+  --rfs-line-light: rgba(13, 16, 22, 0.16);
+  --rfs-line-strong-light: #6e7682;
+  --rfs-text-light: #0d1016;
+  --rfs-mute-light: #474d59;
+  --rfs-steel-ink-light: #164669;
+  --rfs-beacon-ink-light: #ad3d0a;
+  --rfs-primary-light: #ad3d0a;
+  --rfs-primary-hover-light: #943207;
+  --rfs-primary-press-light: #7b2905;
+  --rfs-on-primary-light: #ffffff;
+  --rfs-accent-light: #885800;
+  --rfs-signal-light: #127247;
+  --rfs-fault-light: #b91c2e;
+  --rfs-fault-fill-light: #b91c2e;
+  --rfs-fault-fill-hover-light: #991525;
+  --rfs-on-fault-light: #ffffff;
+  --rfs-code-bg-light: #eef2f5;
+  --rfs-focus-light: #ad3d0a;
+
+  /* Resolved tokens — Dark (LX 263 Beacon Horizon) is the default */
+  --rfs-bg: var(--rfs-bg-dark);
+  --rfs-rail: var(--rfs-rail-dark);
+  --rfs-surface: var(--rfs-surface-dark);
+  --rfs-raised: var(--rfs-raised-dark);
+  --rfs-line: var(--rfs-line-dark);
+  --rfs-line-strong: var(--rfs-line-strong-dark);
+  --rfs-text: var(--rfs-text-dark);
+  --rfs-mute: var(--rfs-mute-dark);
+  --rfs-steel-ink: var(--rfs-steel-ink-dark);
+  --rfs-beacon-ink: var(--rfs-beacon-ink-dark);
+  --rfs-primary: var(--rfs-primary-dark);
+  --rfs-primary-hover: var(--rfs-primary-hover-dark);
+  --rfs-primary-press: var(--rfs-primary-press-dark);
+  --rfs-on-primary: var(--rfs-on-primary-dark);
+  --rfs-accent: var(--rfs-accent-dark);
+  --rfs-signal: var(--rfs-signal-dark);
+  --rfs-fault: var(--rfs-fault-dark);
+  --rfs-fault-fill: var(--rfs-fault-fill-dark);
+  --rfs-fault-fill-hover: var(--rfs-fault-fill-hover-dark);
+  --rfs-on-fault: var(--rfs-on-fault-dark);
+  --rfs-code-bg: var(--rfs-code-bg-dark);
+  --rfs-focus: var(--rfs-focus-dark);
+
+  /* Typography */
+  --rfs-font-display: "Big Shoulders Stencil", "Arial Narrow", sans-serif;
+  --rfs-font-sans: "Albert Sans", system-ui, -apple-system, sans-serif;
+  --rfs-font-mono: "Azeret Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* Code blocks wrap by default (opt into scroll via .rfs-code-scroll / [data-code-scroll]) */
+  --rfs-code-wrap: pre-wrap;
+  --rfs-code-overflow-wrap: anywhere;
+  --rfs-code-tab-size: 2;
+
+  /* Motion */
+  --rfs-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --rfs-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --rfs-ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --rfs-ease-linear: linear;
+  --rfs-dur-fast: 150ms;
+  --rfs-dur-base: 250ms;
+  --rfs-dur-slow: 520ms;
+  --rfs-type-rate: 45ms;
+
+  /* Spacing & shape */
+  --rfs-space-1: 4px;
+  --rfs-space-2: 8px;
+  --rfs-space-3: 12px;
+  --rfs-space-4: 16px;
+  --rfs-space-5: 24px;
+  --rfs-space-6: 32px;
+  --rfs-space-7: 48px;
+  --rfs-space-8: 64px;
+  --rfs-space-9: 96px;
+  --rfs-radius-sm: 6px;
+  --rfs-radius-md: 10px;
+
+  /* Breakpoints (reference constants) & Z-index layer scale */
+  --rfs-bp-sm: 36em;
+  --rfs-bp-md: 56em;
+  --rfs-bp-lg: 72em;
+  --rfs-z-base: 0;
+  --rfs-z-sticky: 20;
+  --rfs-z-nav: 40;
+  --rfs-z-popover: 60;
+  --rfs-z-modal: 80;
+  --rfs-z-toast: 100;
+
+  /* Syntax highlighting roles (derived from WCAG-calibrated semantic inks) */
+  --rfs-syn-kw: var(--rfs-steel-ink);
+  --rfs-syn-fn: var(--rfs-beacon-ink);
+  --rfs-syn-str: var(--rfs-accent);
+  --rfs-syn-num: var(--rfs-signal);
+  --rfs-syn-com: var(--rfs-mute);
+  --rfs-syn-add: var(--rfs-signal);
+  --rfs-syn-del: var(--rfs-fault);
+
+  --rfs-horizon-gradient: linear-gradient(125deg var(--rfs-in-oklab), var(--rfs-steel-fill) 0%, var(--rfs-steel) 42%, #8a3e20 74%, #bd4811 100%);
+  --rfs-horizon-rule: linear-gradient(90deg var(--rfs-in-oklab), var(--rfs-steel-ink) 0%, var(--rfs-steel) 48%, var(--rfs-beacon) 100%);
+  --rfs-sb-thumb: var(--rfs-line-strong);
+  --rfs-sb-track: var(--rfs-bg);
+  accent-color: var(--rfs-steel-fill);
+  scrollbar-color: var(--rfs-sb-thumb) var(--rfs-sb-track);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --rfs-sb-thumb: var(--rfs-text);
+    --rfs-sb-track: var(--rfs-bg);
+  }
+}
+
+@supports (background: linear-gradient(in oklab, white, black)) {
+  :root {
+    --rfs-in-oklab: in oklab;
+    --rfs-in-oklch: in oklch;
+  }
+}
+
+/* Reflect explicit <meta name="color-scheme"> or data-theme overrides */
+:root:where(
+  :has(> head > meta[name="color-scheme"][content="dark"]),
+  [data-theme="dark"],
+  [data-theme="nightshift"]
+) {
+  color-scheme: dark;
+  --rfs-bg: var(--rfs-bg-dark);
+  --rfs-rail: var(--rfs-rail-dark);
+  --rfs-surface: var(--rfs-surface-dark);
+  --rfs-raised: var(--rfs-raised-dark);
+  --rfs-line: var(--rfs-line-dark);
+  --rfs-line-strong: var(--rfs-line-strong-dark);
+  --rfs-text: var(--rfs-text-dark);
+  --rfs-mute: var(--rfs-mute-dark);
+  --rfs-steel-ink: var(--rfs-steel-ink-dark);
+  --rfs-beacon-ink: var(--rfs-beacon-ink-dark);
+  --rfs-primary: var(--rfs-primary-dark);
+  --rfs-primary-hover: var(--rfs-primary-hover-dark);
+  --rfs-primary-press: var(--rfs-primary-press-dark);
+  --rfs-on-primary: var(--rfs-on-primary-dark);
+  --rfs-accent: var(--rfs-accent-dark);
+  --rfs-signal: var(--rfs-signal-dark);
+  --rfs-fault: var(--rfs-fault-dark);
+  --rfs-fault-fill: var(--rfs-fault-fill-dark);
+  --rfs-fault-fill-hover: var(--rfs-fault-fill-hover-dark);
+  --rfs-on-fault: var(--rfs-on-fault-dark);
+  --rfs-code-bg: var(--rfs-code-bg-dark);
+  --rfs-focus: var(--rfs-focus-dark);
+}
+
+/* Explicit light mode override via <meta name="color-scheme" content="light"> or data-theme="light" */
+:root:where(
+  :has(> head > meta[name="color-scheme"][content="light"]),
+  [data-theme="light"],
+  [data-theme="dayshift"]
+) {
+  color-scheme: light;
+  --rfs-bg: var(--rfs-bg-light);
+  --rfs-rail: var(--rfs-rail-light);
+  --rfs-surface: var(--rfs-surface-light);
+  --rfs-raised: var(--rfs-raised-light);
+  --rfs-line: var(--rfs-line-light);
+  --rfs-line-strong: var(--rfs-line-strong-light);
+  --rfs-text: var(--rfs-text-light);
+  --rfs-mute: var(--rfs-mute-light);
+  --rfs-steel-ink: var(--rfs-steel-ink-light);
+  --rfs-beacon-ink: var(--rfs-beacon-ink-light);
+  --rfs-primary: var(--rfs-primary-light);
+  --rfs-primary-hover: var(--rfs-primary-hover-light);
+  --rfs-primary-press: var(--rfs-primary-press-light);
+  --rfs-on-primary: var(--rfs-on-primary-light);
+  --rfs-accent: var(--rfs-accent-light);
+  --rfs-signal: var(--rfs-signal-light);
+  --rfs-fault: var(--rfs-fault-light);
+  --rfs-fault-fill: var(--rfs-fault-fill-light);
+  --rfs-fault-fill-hover: var(--rfs-fault-fill-hover-light);
+  --rfs-on-fault: var(--rfs-on-fault-light);
+  --rfs-code-bg: var(--rfs-code-bg-light);
+  --rfs-focus: var(--rfs-focus-light);
+}
+
+@media (forced-colors: active) {
+  :root {
+    --rfs-bg: Canvas;
+    --rfs-rail: Canvas;
+    --rfs-surface: Canvas;
+    --rfs-raised: Canvas;
+    --rfs-line: CanvasText;
+    --rfs-line-strong: CanvasText;
+    --rfs-text: CanvasText;
+    --rfs-mute: GrayText;
+    --rfs-steel-ink: LinkText;
+    --rfs-beacon-ink: Highlight;
+    --rfs-primary: Highlight;
+    --rfs-on-primary: HighlightText;
+    --rfs-fault: Highlight;
+    --rfs-fault-fill: Highlight;
+    --rfs-fault-fill-hover: Highlight;
+    --rfs-on-fault: HighlightText;
+    --rfs-code-bg: Canvas;
+    --rfs-focus: Highlight;
+  }
+}
+
+/* RFS Default Code Block Wrapping (WCAG 1.4.10 Reflow, zero specificity via :where) */
+:where(pre, pre code, .rfs-code-block) {
+  white-space: var(--rfs-code-wrap);
+  overflow-wrap: var(--rfs-code-overflow-wrap);
+  word-break: normal;
+  tab-size: var(--rfs-code-tab-size);
+}
+
+/* Explicit opt-out for strict column-aligned logs or ASCII diagrams */
+:where(.rfs-code-scroll, [data-code-scroll]) {
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+/* Reduced transparency: remove glass/blur translucency */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --rfs-glass-opacity: 1;
+  }
+  :where(header, nav, .site-header, .rfs-surface-glass) {
+    backdrop-filter: none !important;
+    background-color: var(--rfs-rail) !important;
+  }
+}
+
+/* Print stylesheet defaults: clean paper ground, sharp dark ink, wrapped code */
+@media print {
+  :root {
+    color-scheme: light;
+    --rfs-bg: #ffffff;
+    --rfs-rail: #ffffff;
+    --rfs-surface: #ffffff;
+    --rfs-raised: #f5f7f9;
+    --rfs-code-bg: #f5f7f9;
+    --rfs-text: #0d1016;
+    --rfs-mute: #474d59;
+    --rfs-line: #cfd5dc;
+    --rfs-line-strong: #6e7682;
+  }
+  :where(body) {
+    background: #ffffff !important;
+    color: #0d1016 !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  :where(.rfs-shell, .rfs-scroll-region, .page-scroll) {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  :where(pre, code, blockquote, figure, table) {
+    break-inside: avoid;
+  }
+}

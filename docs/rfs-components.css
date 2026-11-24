@@ -1,0 +1,1132 @@
+/* RFS Cyclorama Dawn Drop-In Component Kit (load after rfs.css).
+   Provides reusable buttons, D · Terminal Token badges, underlines, highlights,
+   keycaps, callouts, inputs, syntax roles, stroke icons, native <progress>, and UI states. */
+
+/* ---- Focus & Selection ---- */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--rfs-focus);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--rfs-beacon) 32%, transparent);
+  color: var(--rfs-text);
+}
+
+/* ---- Buttons (zero gradient border bleed) ---- */
+.rfs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-block-size: 2.65rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--rfs-radius-sm);
+  border: 1px solid var(--rfs-line-strong);
+  background: var(--rfs-surface);
+  color: var(--rfs-text);
+  font: 600 0.86rem/1.2 var(--rfs-font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--rfs-dur-fast) var(--rfs-ease),
+              border-color var(--rfs-dur-fast) var(--rfs-ease),
+              background-color var(--rfs-dur-fast) var(--rfs-ease),
+              filter var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+.rfs-btn-sm {
+  min-block-size: 2.15rem;
+  padding: 0.35rem 0.78rem;
+  font-size: 0.78rem;
+}
+
+.rfs-btn:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.rfs-btn-horizon {
+  border: 0;
+  background-image: var(--rfs-horizon-gradient);
+  background-origin: border-box;
+  background-clip: border-box;
+  color: #ffffff;
+}
+
+.rfs-btn-beacon {
+  background: var(--rfs-primary);
+  border-color: var(--rfs-primary);
+  color: var(--rfs-on-primary);
+}
+
+.rfs-btn-steel {
+  background: var(--rfs-steel-fill);
+  border-color: var(--rfs-steel-fill);
+  color: var(--rfs-on-steel);
+}
+
+.rfs-btn-fault {
+  background: var(--rfs-fault-fill);
+  border-color: var(--rfs-fault-fill);
+  color: var(--rfs-on-fault);
+}
+
+.rfs-btn-fault-soft {
+  background: color-mix(in oklab, var(--rfs-fault-fill) 18%, var(--rfs-surface));
+  border-color: color-mix(in oklab, var(--rfs-fault) 52%, var(--rfs-line));
+  color: var(--rfs-fault);
+}
+
+.rfs-btn-fault-outline {
+  background: transparent;
+  border-color: var(--rfs-fault);
+  color: var(--rfs-fault);
+}
+
+.rfs-btn-outline {
+  background: transparent;
+  border-color: var(--rfs-line-strong);
+  color: var(--rfs-text);
+}
+
+.rfs-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--rfs-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rfs-btn:not(:disabled):hover { transform: translateY(-1px); }
+  .rfs-btn-horizon:not(:disabled):hover { filter: brightness(1.07); }
+  .rfs-btn-beacon:not(:disabled):hover { background: var(--rfs-primary-hover); border-color: var(--rfs-primary-hover); }
+  .rfs-btn-steel:not(:disabled):hover { filter: brightness(1.1); }
+  .rfs-btn-fault:not(:disabled):hover { background: var(--rfs-fault-fill-hover); border-color: var(--rfs-fault-fill-hover); }
+  .rfs-btn-fault-soft:not(:disabled):hover { background: color-mix(in oklab, var(--rfs-fault-fill) 26%, var(--rfs-surface)); border-color: var(--rfs-fault); }
+  .rfs-btn-fault-outline:not(:disabled):hover { background: color-mix(in oklab, var(--rfs-fault-fill) 16%, transparent); }
+  .rfs-btn-outline:not(:disabled):hover { border-color: var(--rfs-beacon-ink); }
+  .rfs-btn-ghost:not(:disabled):hover { background: var(--rfs-raised); }
+}
+
+.rfs-btn:not(:disabled):active { transform: translateY(0); }
+
+/* ---- D · Terminal Token Badges ---- */
+.rfs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.28rem 0.56rem;
+  border-radius: 4px;
+  border: 1px solid var(--rfs-line);
+  background: var(--rfs-code-bg);
+  color: var(--rfs-text);
+  font: 500 0.74rem/1.15 var(--rfs-font-mono);
+  letter-spacing: 0.02em;
+}
+
+.rfs-badge .k {
+  font-weight: 700;
+  color: var(--badge-tone, var(--rfs-text));
+}
+
+.rfs-badge.b-ok { --badge-tone: var(--rfs-signal); }
+.rfs-badge.b-warn { --badge-tone: var(--rfs-accent); }
+.rfs-badge.b-fail { --badge-tone: var(--rfs-fault); }
+.rfs-badge.b-steel { --badge-tone: var(--rfs-steel-ink); }
+.rfs-badge.b-beacon { --badge-tone: var(--rfs-beacon-ink); }
+
+/* ---- Underlines, Highlights, Keycaps & Dividers ---- */
+.rfs-link-prose {
+  color: var(--rfs-text);
+  text-decoration: underline;
+  text-decoration-color: var(--rfs-steel-ink);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-skip-ink: auto;
+  transition: text-decoration-color var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+.rfs-link-prose:hover,
+.rfs-link-prose:focus-visible {
+  text-decoration-color: var(--rfs-beacon-ink);
+  text-decoration-thickness: 2px;
+}
+
+.rfs-link-sweep {
+  display: inline;
+  color: var(--rfs-text);
+  font-weight: 600;
+  text-decoration: none;
+  padding-bottom: 3px;
+  background-image: var(--rfs-horizon-rule);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 28% 2.5px;
+  transition: background-size var(--rfs-dur-base) var(--rfs-ease), color var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+.rfs-link-sweep:hover,
+.rfs-link-sweep:focus-visible {
+  background-size: 100% 2.5px;
+  color: var(--rfs-beacon-ink);
+}
+
+.rfs-abbr {
+  text-decoration: underline dotted var(--rfs-steel-ink);
+  text-underline-offset: 4px;
+  cursor: help;
+}
+
+.rfs-mark-beacon,
+.rfs-mark-steel {
+  padding: 0.06em 0.34em;
+  border-radius: 3px;
+  color: var(--rfs-text);
+}
+
+.rfs-mark-beacon {
+  background: color-mix(in oklab, var(--rfs-beacon) 22%, transparent);
+  border-bottom: 2px solid var(--rfs-beacon-ink);
+}
+
+.rfs-mark-steel {
+  background: color-mix(in oklab, var(--rfs-steel) 24%, transparent);
+  border-bottom: 2px solid var(--rfs-steel-ink);
+}
+
+.rfs-kbd {
+  display: inline-block;
+  padding: 0.14em 0.45em;
+  border-radius: 4px;
+  border: 1px solid var(--rfs-line-strong);
+  border-bottom-width: 2.5px;
+  background: var(--rfs-surface);
+  color: var(--rfs-text);
+  font: 500 0.78rem/1.2 var(--rfs-font-mono);
+}
+
+.rfs-divider-hairline {
+  height: 1px;
+  border: 0;
+  margin: 0;
+  background: var(--rfs-line);
+}
+
+.rfs-divider-horizon {
+  height: 3px;
+  border: 0;
+  border-radius: 99px;
+  margin: 0;
+  background: var(--rfs-horizon-rule);
+}
+
+/* ---- Callouts & Blockquotes ---- */
+.rfs-callout {
+  padding: 0.85rem 1rem;
+  border-radius: var(--rfs-radius-sm);
+  border: 1px solid var(--rfs-line);
+  border-inline-start-width: 3.5px;
+  background: var(--rfs-bg);
+  font-size: 0.9rem;
+}
+
+.rfs-callout > strong:first-child {
+  font: 600 0.76rem/1 var(--rfs-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-inline-end: 0.5rem;
+}
+
+.rfs-callout.is-note { border-inline-start-color: var(--rfs-steel-ink); }
+.rfs-callout.is-note > strong:first-child { color: var(--rfs-steel-ink); }
+.rfs-callout.is-tip { border-inline-start-color: var(--rfs-beacon-ink); }
+.rfs-callout.is-tip > strong:first-child { color: var(--rfs-beacon-ink); }
+.rfs-callout.is-warn { border-inline-start-color: var(--rfs-accent); }
+.rfs-callout.is-warn > strong:first-child { color: var(--rfs-accent); }
+.rfs-callout.is-fail { border-inline-start-color: var(--rfs-fault); }
+.rfs-callout.is-fail > strong:first-child { color: var(--rfs-fault); }
+
+.rfs-quote {
+  margin: 0;
+  padding: 0.95rem 1.15rem;
+  border-radius: var(--rfs-radius-sm);
+  background: var(--rfs-bg);
+  position: relative;
+  font-size: 0.96rem;
+  color: var(--rfs-text);
+}
+
+.rfs-quote::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3.5px;
+  border-radius: 3px 0 0 3px;
+  background: linear-gradient(180deg var(--rfs-in-oklab), var(--rfs-steel-ink), var(--rfs-beacon));
+}
+
+/* ---- Inputs, Code Blocks & Responsive Tables ---- */
+.rfs-input {
+  width: 100%;
+  min-block-size: 2.6rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--rfs-radius-sm);
+  border: 1.5px solid var(--rfs-line-strong);
+  background: var(--rfs-bg);
+  color: var(--rfs-text);
+  font: 400 0.92rem/1.4 var(--rfs-font-sans);
+}
+
+.rfs-input:not([type="range"]):not([type="search"]):user-invalid { border-color: var(--rfs-fault); }
+.rfs-input:not([type="range"]):not([type="search"]):user-valid { border-color: var(--rfs-signal); }
+
+.rfs-code-block {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  padding: 1.05rem 1.2rem;
+  border-radius: var(--rfs-radius-md);
+  border: 1px solid var(--rfs-line);
+  background: var(--rfs-code-bg);
+  font: 400 0.82rem/1.68 var(--rfs-font-mono);
+  color: var(--rfs-text);
+}
+
+/* Framed Code Block with Mandatory Language Header & Syntax Coloring */
+.rfs-code-card {
+  min-width: 0;
+  max-width: 100%;
+  border-radius: var(--rfs-radius-md);
+  border: 1px solid var(--rfs-line);
+  background: var(--rfs-code-bg);
+  overflow: hidden;
+}
+
+.rfs-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--rfs-surface);
+  border-bottom: 1px solid var(--rfs-line);
+}
+
+.rfs-code-head-meta {
+  font: 500 0.7rem/1 var(--rfs-font-mono);
+  letter-spacing: 0.06em;
+  color: var(--rfs-mute);
+}
+
+.rfs-code-card > pre,
+.rfs-code-card > .rfs-code-block {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.rfs-table-wrap {
+  overflow-x: auto;
+  max-inline-size: 100%;
+  border-radius: var(--rfs-radius-md);
+  border: 1px solid var(--rfs-line);
+  background: var(--rfs-surface);
+}
+
+/* ---- Syntax Highlighting Roles ---- */
+.rfs-tok-kw { color: var(--rfs-syn-kw); font-weight: 600; }
+.rfs-tok-fn { color: var(--rfs-syn-fn); }
+.rfs-tok-str { color: var(--rfs-syn-str); }
+.rfs-tok-num { color: var(--rfs-syn-num); }
+.rfs-tok-com { color: var(--rfs-syn-com); }
+.rfs-tok-add { color: var(--rfs-syn-add); }
+.rfs-tok-del { color: var(--rfs-syn-del); }
+
+/* ---- Cyclorama Precision Silkscreen Icons (60-icon set, brand/icons/rfs-icons.svg) ---- */
+.rfs-icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 4;
+}
+
+.rfs-icon-sm { width: 1rem; height: 1rem; }
+.rfs-icon-lg { width: 1.5rem; height: 1.5rem; }
+.rfs-icon-xl { width: 2rem; height: 2rem; }
+
+/* Semantic Icon Color Utilities (inherited via stroke="currentColor") */
+.rfs-icon-text { color: var(--rfs-text); }
+.rfs-icon-mute { color: var(--rfs-mute); }
+.rfs-icon-steel { color: var(--rfs-steel-ink); }
+.rfs-icon-beacon { color: var(--rfs-beacon-ink); }
+.rfs-icon-ok { color: var(--rfs-signal); }
+.rfs-icon-warn { color: var(--rfs-accent); }
+.rfs-icon-fail { color: var(--rfs-fault); }
+.rfs-icon-horizon {
+  color: var(--rfs-beacon-ink);
+  stroke: url(#rfs-icon-grad-horizon);
+}
+.rfs-icon-horizon [fill="currentColor"] {
+  fill: url(#rfs-icon-grad-horizon);
+}
+
+/* ---- Native <progress> Bar (determinate + indeterminate; WCAG & RTL safe) ---- */
+.rfs-progress {
+  appearance: none;
+  border: 0 solid;
+  display: block;
+  width: 100%;
+  height: 8px;
+  overflow: clip;
+  border-radius: 4px;
+  background: var(--rfs-code-bg);
+  box-shadow: inset 0 0 0 1px var(--rfs-line);
+  container-type: inline-size;
+  --progress-bar-fill: var(--rfs-horizon-rule);
+  --progress-bar-indeterminate-size: 32%;
+  --progress-bar-indeterminate-animation-duration: 1.4s;
+}
+
+.rfs-progress:indeterminate {
+  --progress-bar-animation: var(
+    --progress-bar-indeterminate-animation,
+    rfs-progress-slide var(--progress-bar-indeterminate-animation-duration) infinite linear
+  );
+}
+
+.rfs-progress:dir(rtl) {
+  --progress-bar-indeterminate-animation: rfs-progress-slide var(--progress-bar-indeterminate-animation-duration) infinite linear reverse;
+}
+
+.rfs-progress::-webkit-progress-bar {
+  background: transparent;
+}
+
+.rfs-progress::-webkit-progress-value {
+  background: var(--progress-bar-fill);
+  border-radius: 4px;
+  transition: inline-size var(--rfs-dur-base) var(--rfs-ease);
+  animation: var(--progress-bar-animation, revert-rule);
+}
+
+.rfs-progress::-moz-progress-bar {
+  background: var(--progress-bar-fill);
+  border-radius: 4px;
+  transition: inline-size var(--rfs-dur-base) var(--rfs-ease);
+  animation: var(--progress-bar-animation, revert-rule);
+}
+
+@keyframes rfs-progress-slide {
+  from, to {
+    inline-size: var(--progress-bar-indeterminate-size);
+    margin-right: auto;
+  }
+  from { translate: -100%; }
+  to { translate: 100cqi; }
+}
+
+/* ---- Standard UI State Boxes (Empty / Loading / Error) ---- */
+.rfs-state-box {
+  padding: 1rem 1.15rem;
+  border-radius: var(--rfs-radius-md);
+  border: 1px solid var(--rfs-line);
+  background: var(--rfs-surface);
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+}
+
+.rfs-state-box > .rfs-badge {
+  justify-self: start;
+}
+
+.rfs-state-box.is-empty {
+  border-style: dashed;
+  border-color: var(--rfs-line-strong);
+}
+
+.rfs-state-box.is-error {
+  border-color: color-mix(in oklab, var(--rfs-fault) 48%, var(--rfs-line));
+}
+
+/* ---- App-Shell Scroll Layout (scrollbar ALWAYS starts below top header chrome) ---- */
+.rfs-shell {
+  height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+}
+
+.rfs-shell-header {
+  flex: none;
+  position: relative;
+  z-index: var(--rfs-z-nav);
+}
+
+.rfs-scroll-region {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rfs-sb-thumb) var(--rfs-sb-track);
+}
+
+@supports not (scrollbar-color: auto) {
+  .rfs-scroll-region {
+    scrollbar-width: auto;
+  }
+  .rfs-scroll-region::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .rfs-scroll-region::-webkit-scrollbar-thumb {
+    background: var(--rfs-sb-thumb);
+    border-radius: 99px;
+    border: 2px solid var(--rfs-sb-track);
+  }
+  .rfs-scroll-region::-webkit-scrollbar-track {
+    background: var(--rfs-sb-track);
+  }
+}
+
+/* ---- Branded Native <dialog> Modals (never use window.alert / confirm / prompt) ---- */
+dialog.rfs-dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2.5rem);
+  padding: 0;
+  border-radius: var(--rfs-radius-md);
+  border: 1px solid var(--rfs-line-strong);
+  background: var(--rfs-surface);
+  color: var(--rfs-text);
+  box-shadow: 0 24px 64px -20px rgba(0, 0, 0, 0.65);
+  overflow: auto;
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--rfs-dur-base);
+  transition-timing-function: var(--rfs-ease);
+  transition-behavior: allow-discrete;
+}
+
+/* Never set display unconditionally on closed <dialog>; scope strictly to [open] */
+dialog.rfs-dialog[open]:where(:not([data-closing])) {
+  display: grid;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  dialog.rfs-dialog[open]:where(:not([data-closing])) {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+/* Mandatory scroll containment: stops scroll chaining over both dialog and backdrop */
+dialog.rfs-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.rfs-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(5, 5, 7, 0);
+  transition-property: background-color, display, overlay;
+  transition-duration: var(--rfs-dur-base);
+  transition-timing-function: var(--rfs-ease);
+  transition-behavior: allow-discrete;
+}
+
+dialog.rfs-dialog[open]:where(:not([data-closing]))::backdrop {
+  background-color: rgba(5, 5, 7, 0.72);
+}
+
+@starting-style {
+  dialog.rfs-dialog[open]:where(:not([data-closing]))::backdrop {
+    background-color: rgba(5, 5, 7, 0);
+  }
+}
+
+.rfs-dialog-bar {
+  height: 3px;
+  background: var(--rfs-horizon-rule);
+}
+
+dialog.rfs-dialog.is-destructive .rfs-dialog-bar {
+  background: var(--rfs-fault);
+}
+
+.rfs-dialog-body {
+  padding: 1.25rem 1.35rem 1.35rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.rfs-dialog-body > .rfs-badge {
+  justify-self: start;
+}
+
+.rfs-dialog-title {
+  margin: 0;
+  font: 700 1.45rem/1.05 var(--rfs-font-display);
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: var(--rfs-text);
+}
+
+.rfs-dialog-copy {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--rfs-mute);
+}
+
+.rfs-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--rfs-line);
+}
+
+/* ---- Interactive Filter Chips (4px Terminal Token style — zero 99px capsules) ---- */
+.rfs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-block-size: 2.15rem;
+  padding: 0.32rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid var(--rfs-line-strong);
+  background: var(--rfs-code-bg);
+  color: var(--rfs-text);
+  font: 500 0.76rem/1.15 var(--rfs-font-mono);
+  cursor: pointer;
+  transition: border-color var(--rfs-dur-fast) var(--rfs-ease),
+              background-color var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+.rfs-chip .k {
+  font-weight: 700;
+  color: var(--rfs-steel-ink);
+}
+
+.rfs-chip[aria-pressed="true"] {
+  border-color: var(--rfs-beacon-ink);
+  background: var(--rfs-raised);
+}
+
+.rfs-chip[aria-pressed="true"] .k {
+  color: var(--rfs-beacon-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rfs-chip:hover {
+    border-color: var(--rfs-beacon-ink);
+  }
+}
+
+/* ---- Non-Blocking Toast Notifications (popover="manual" top-layer region) ---- */
+.rfs-toast-region {
+  position: fixed;
+  inset: auto 1.25rem 1.25rem auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  z-index: var(--rfs-z-toast);
+  max-width: min(25rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.rfs-toast-region:is(:popover-open, .\:popover-open) {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.rfs-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.72rem 0.85rem;
+  border-radius: var(--rfs-radius-sm);
+  border: 1px solid var(--toast-border, var(--rfs-line-strong));
+  border-inline-start-width: 3.5px;
+  border-inline-start-color: var(--toast-accent, var(--rfs-steel-ink));
+  background: var(--toast-bg, var(--rfs-surface));
+  color: var(--rfs-text);
+  box-shadow: 0 16px 36px -16px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  max-width: 100%;
+  font: 400 0.84rem/1.45 var(--rfs-font-sans);
+  opacity: 1;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--rfs-dur-base);
+  transition-timing-function: var(--rfs-ease);
+  transition-behavior: allow-discrete;
+}
+
+.rfs-toast.is-ok {
+  --toast-accent: var(--rfs-signal);
+  --toast-border: color-mix(in oklab, var(--rfs-signal) 52%, var(--rfs-line));
+  --toast-bg: color-mix(in oklab, var(--rfs-signal) 15%, var(--rfs-surface));
+}
+
+.rfs-toast.is-warn {
+  --toast-accent: var(--rfs-accent);
+  --toast-border: color-mix(in oklab, var(--rfs-accent) 52%, var(--rfs-line));
+  --toast-bg: color-mix(in oklab, var(--rfs-accent) 16%, var(--rfs-surface));
+}
+
+.rfs-toast.is-fail {
+  --toast-accent: var(--rfs-fault);
+  --toast-border: color-mix(in oklab, var(--rfs-fault) 54%, var(--rfs-line));
+  --toast-bg: color-mix(in oklab, var(--rfs-fault-fill) 18%, var(--rfs-surface));
+}
+
+.rfs-toast.is-info {
+  --toast-accent: var(--rfs-steel-ink);
+  --toast-border: color-mix(in oklab, var(--rfs-steel-ink) 50%, var(--rfs-line));
+  --toast-bg: color-mix(in oklab, var(--rfs-steel) 22%, var(--rfs-surface));
+}
+
+@starting-style {
+  .rfs-toast {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.rfs-toast-close {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--rfs-mute);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .rfs-toast-close:hover {
+    color: var(--rfs-text);
+    border-color: var(--rfs-line);
+    background: var(--rfs-raised);
+  }
+}
+
+/* ---- Viewport-Aware Anchored Action Panel (popover="auto") ---- */
+.rfs-popover-panel {
+  min-width: 13.5rem;
+  padding: 0.35rem;
+  border-radius: var(--rfs-radius-sm);
+  border: 1px solid var(--rfs-line-strong);
+  background: var(--rfs-surface);
+  color: var(--rfs-text);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.62);
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--rfs-dur-fast);
+  transition-timing-function: var(--rfs-ease);
+  transition-behavior: allow-discrete;
+}
+
+@supports (position-area: block-end) {
+  .rfs-popover-panel {
+    inset: auto;
+    margin: 0.35rem 0 0;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
+}
+
+.rfs-popover-panel:is(:popover-open, .\:popover-open) {
+  display: grid;
+  gap: 0.15rem;
+  opacity: 1;
+}
+
+@starting-style {
+  .rfs-popover-panel:is(:popover-open, .\:popover-open) {
+    opacity: 0;
+  }
+}
+
+.rfs-action-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.48rem 0.65rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--rfs-text);
+  font: 500 0.84rem/1.3 var(--rfs-font-sans);
+  text-align: start;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .rfs-action-item:hover {
+    background: var(--rfs-raised);
+  }
+}
+
+.rfs-action-item.is-fault {
+  color: var(--rfs-fault);
+}
+
+.rfs-action-sep {
+  height: 1px;
+  border: 0;
+  margin: 0.25rem 0;
+  background: var(--rfs-line);
+}
+
+/* ---- Interest-Triggered Tooltips / Toggletips (popover="hint") ---- */
+[interestfor] {
+  --interest-delay-start: 0.2s;
+  interest-delay-start: var(--interest-delay-start);
+  --interest-delay-end: 0.1s;
+  interest-delay-end: var(--interest-delay-end);
+}
+
+.rfs-tooltip {
+  max-width: 18rem;
+  padding: 0.42rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid var(--rfs-line-strong);
+  background: var(--rfs-code-bg);
+  color: var(--rfs-text);
+  font: 400 0.78rem/1.4 var(--rfs-font-mono);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.5);
+}
+
+@supports (position-area: block-start) {
+  .rfs-tooltip {
+    inset: auto;
+    margin: 0 0 0.45rem;
+    position-area: block-start;
+    position-try-fallbacks: flip-block;
+  }
+}
+
+/* ---- Drop-In Accessible Tabs (.rfs-tabs) ---- */
+.rfs-tablist {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--rfs-line);
+}
+
+.rfs-tablist::-webkit-scrollbar { display: none; }
+
+.rfs-tablist [role="tab"] {
+  flex: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-block-size: 2.6rem;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-radius: var(--rfs-radius-sm) var(--rfs-radius-sm) 0 0;
+  background: transparent;
+  color: var(--rfs-mute);
+  font: 600 0.84rem/1.2 var(--rfs-font-sans);
+  cursor: pointer;
+}
+
+.rfs-tablist [role="tab"][aria-selected="true"] {
+  color: var(--rfs-text);
+  background: var(--rfs-surface);
+}
+
+.rfs-tablist [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  border-block-end: 2.5px solid var(--rfs-beacon);
+}
+
+/* ---- Native <details> Accordion (no headings inside <summary>; marker before label) ---- */
+.rfs-accordion {
+  display: grid;
+  border-top: 1px solid var(--rfs-line);
+}
+
+.rfs-accordion > details {
+  border-bottom: 1px solid var(--rfs-line);
+}
+
+.rfs-accordion > details > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 0.25rem;
+  font: 600 0.92rem/1.35 var(--rfs-font-sans);
+  color: var(--rfs-text);
+  cursor: pointer;
+}
+
+.rfs-accordion > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.rfs-accordion > details > summary::before {
+  content: "";
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+  flex-shrink: 0;
+  background-color: var(--rfs-steel-ink);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E") no-repeat center / contain;
+  rotate: -90deg;
+}
+
+.rfs-accordion > details > summary:dir(rtl)::before {
+  rotate: 90deg;
+}
+
+.rfs-accordion > details[open] > summary::before {
+  background-color: var(--rfs-beacon-ink);
+  rotate: 0deg;
+}
+
+.rfs-accordion > details > summary::before {
+  transition: rotate var(--rfs-dur-fast) var(--rfs-ease), background-color var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+.rfs-accordion > details::details-content {
+  interpolate-size: allow-keywords;
+  overflow: clip;
+  contain: layout;
+  transition-property: block-size, content-visibility, display;
+  transition-duration: var(--rfs-dur-base);
+  transition-timing-function: var(--rfs-ease-in-out);
+  transition-behavior: allow-discrete;
+}
+
+.rfs-accordion > details:not([open])::details-content {
+  block-size: 0;
+}
+
+.rfs-accordion-body {
+  padding: 0 0.25rem 0.95rem 1.6rem;
+  font-size: 0.88rem;
+  color: var(--rfs-mute);
+}
+
+/* ---- Branded Customizable <select> (appearance: base-select + native OS fallback) ---- */
+.rfs-select {
+  width: 100%;
+  min-block-size: 2.6rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--rfs-radius-sm);
+  border: 1.5px solid var(--rfs-line-strong);
+  background: var(--rfs-bg);
+  color: var(--rfs-text);
+  font: 500 0.9rem/1.35 var(--rfs-font-sans);
+  cursor: pointer;
+}
+
+@supports (appearance: base-select) {
+  .rfs-select,
+  .rfs-select::picker(select) {
+    appearance: base-select;
+  }
+
+  .rfs-select {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+
+  .rfs-select::picker-icon {
+    color: var(--rfs-steel-ink);
+  }
+
+  .rfs-select::picker(select) {
+    margin-block-start: 0.35rem;
+    padding: 0.3rem;
+    border-radius: var(--rfs-radius-sm);
+    border: 1px solid var(--rfs-line-strong);
+    background: var(--rfs-surface);
+    color: var(--rfs-text);
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+  }
+
+  .rfs-select option {
+    padding: 0.45rem 0.65rem;
+    border-radius: 4px;
+    color: var(--rfs-text);
+    cursor: pointer;
+  }
+
+  .rfs-select option:hover,
+  .rfs-select option:focus-visible {
+    background: var(--rfs-raised);
+  }
+
+  .rfs-select option::checkmark {
+    color: var(--rfs-beacon-ink);
+  }
+}
+
+/* ---- Accessible Switch Control (<input type="checkbox" switch> + fallback styling) ---- */
+.rfs-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--rfs-text);
+  cursor: pointer;
+}
+
+input[type="checkbox"].rfs-switch {
+  accent-color: var(--rfs-beacon);
+  margin: 0;
+  cursor: pointer;
+}
+
+input[type="checkbox"].rfs-switch[data-switch-fallback] {
+  appearance: none;
+  position: relative;
+  width: 2.55rem;
+  height: 1.4rem;
+  flex: none;
+  border-radius: 99px;
+  border: 1.5px solid var(--rfs-line-strong);
+  background: var(--rfs-code-bg);
+  transition: background-color var(--rfs-dur-fast) var(--rfs-ease),
+              border-color var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+input[type="checkbox"].rfs-switch[data-switch-fallback]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.4rem - 7px);
+  height: calc(1.4rem - 7px);
+  border-radius: 50%;
+  background: var(--rfs-mute);
+  transition: transform var(--rfs-dur-fast) var(--rfs-ease), background-color var(--rfs-dur-fast) var(--rfs-ease);
+}
+
+input[type="checkbox"].rfs-switch[data-switch-fallback]:checked {
+  background: var(--rfs-steel-fill);
+  border-color: var(--rfs-steel-ink);
+}
+
+input[type="checkbox"].rfs-switch[data-switch-fallback]:checked::after {
+  transform: translateX(1.12rem);
+  background: #ffffff;
+}
+
+/* ---- Layout Card, Key-Value Metadata & Skeleton Placeholder ---- */
+.rfs-card {
+  min-width: 0;
+  padding: 1.2rem 1.35rem;
+  border-radius: var(--rfs-radius-md);
+  border: 1px solid var(--rfs-line);
+  background: var(--rfs-surface);
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+.rfs-card > .rfs-badge {
+  justify-self: start;
+}
+
+.rfs-kv {
+  margin: 0;
+  display: grid;
+  border-top: 1px solid var(--rfs-line);
+}
+
+.rfs-kv-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.35rem 1rem;
+  padding-block: 0.55rem;
+  border-bottom: 1px solid var(--rfs-line);
+  font-size: 0.85rem;
+}
+
+.rfs-kv-row dt {
+  font: 600 0.74rem/1.2 var(--rfs-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rfs-mute);
+}
+
+.rfs-kv-row dd {
+  margin: 0;
+  font: 500 0.84rem/1.3 var(--rfs-font-mono);
+  color: var(--rfs-text);
+}
+
+.rfs-skeleton {
+  display: block;
+  height: 0.85rem;
+  border-radius: 4px;
+  background: var(--rfs-raised);
+  border: 1px solid var(--rfs-line);
+  animation: rfs-skel-pulse 1.6s var(--rfs-ease-in-out) infinite alternate;
+}
+
+@keyframes rfs-skel-pulse {
+  from { opacity: 0.48; }
+  to { opacity: 0.92; }
+}
+
+@media (forced-colors: active) {
+  .rfs-btn-horizon,
+  .rfs-btn-beacon,
+  .rfs-btn-steel,
+  .rfs-btn-fault,
+  .rfs-chip[aria-pressed="true"] {
+    background: Highlight;
+    color: HighlightText;
+    border: 1px solid ButtonBorder;
+  }
+  .rfs-mark-beacon,
+  .rfs-mark-steel {
+    background: Mark;
+    color: MarkText;
+  }
+  dialog.rfs-dialog,
+  .rfs-toast,
+  .rfs-popover-panel,
+  .rfs-tooltip {
+    border: 2px solid CanvasText;
+  }
+}

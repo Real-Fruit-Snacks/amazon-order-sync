@@ -114,4 +114,4 @@ Every key, including notifications, review checks and the Gemini limits, is in [
 
 ## License
 
-[MIT](LICENSE). Not affiliated with Amazon. IBM Plex, in the dashboard and extension, is under the SIL Open Font License (`server/fonts/OFL.txt`); so are Archivo and Martian Mono, on the project page and in the picture above (`docs/fonts/`). [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+[MIT](LICENSE). Not affiliated with Amazon. Big Shoulders Stencil, Albert Sans, and Azeret Mono (used across the dashboard, browser extension, project page, and picture above) are under the SIL Open Font License (`server/fonts/OFL.txt`, `docs/fonts/OFL.txt`). [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)

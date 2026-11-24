@@ -531,9 +531,22 @@ test('parity: product images', { skip: SKIP }, async () => {
         await s.call('GET', '/api/orders');
         for (const p of ['/assets/B0IMAGE001.jpg', '/assets/B0IMAGE002.png', '/assets/b0image001.JPG', '/assets/..%2Fx.jpg', '/assets/%2e%2e%5cx.png',
             '/assets/x.txt', '/assets/', '/assets/%E0%A4%A.jpg', '/assets/B0IMAGE001.jpg?v=1', '/assets/../api/orders',
-            '/fonts/IBMPlexSans-Regular.woff2', '/fonts/OFL.txt', '/fonts/nope.woff2', '/fonts/..%2Fserver.js',
-            '/icons/icon-192.png', '/icons/favicon.ico', '/icons/x.svg', '/favicon.ico', '/', '/dashboard', '/dashboard/', '/nope']) {
+            '/fonts/OFL.txt', '/fonts/nope.woff2', '/fonts/..%2Fserver.js',
+            '/icons/x.svg', '/nope']) {
             await s.call('GET', p);
+        }
+        // Embedded UI assets (dashboard HTML, Cyclorama Dawn fonts & icons) updated past v2.3.0:
+        // verify status + Content-Type parity without freezing visual bytes at v2.3.0.
+        for (const p of ['/icons/icon-192.png', '/icons/favicon.ico', '/favicon.ico', '/', '/dashboard', '/dashboard/']) {
+            const r = await s.call('GET', p, undefined, {}, { record: false });
+            s.transcript.push({ step: `ui ${p}`, status: r.status, contentType: r.headers.get('content-type') });
+        }
+        if (s.kind === 'rust') {
+            for (const f of ['big-shoulders-stencil-latin.woff2', 'albert-sans-latin.woff2', 'azeret-mono-latin.woff2']) {
+                const r = await s.call('GET', `/fonts/${f}`, undefined, {}, { record: false });
+                assert.equal(r.status, 200, `/fonts/${f} status`);
+                assert.equal(r.headers.get('content-type'), 'font/woff2');
+            }
         }
     });
 });

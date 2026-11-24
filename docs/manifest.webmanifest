@@ -1,6 +1,8 @@
 {
   "name": "amazon-order-sync",
   "short_name": "order-sync",
+  "start_url": "./",
+  "display": "standalone",
   "icons": [
     {
       "src": "icon-192.png",
@@ -19,6 +21,6 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#0C0D10",
-  "background_color": "#0C0D10"
+  "theme_color": "#050507",
+  "background_color": "#050507"
 }

@@ -36,4 +36,4 @@ Four supporting routes: `GET /assets/<file>` serves the cached product images
 from `Orders/assets/`, `GET /fonts/<file>` serves the bundled typeface, and
 `GET /favicon.ico` / `GET /icons/<file>` serve the bundled dashboard icons.
 
-The dashboard uses the RFS colours ([rfs-brand](https://github.com/Real-Fruit-Snacks/rfs-brand)) and bundles IBM Plex Sans and Mono (OFL 1.1, `server/fonts/OFL.txt`), served from `GET /fonts/<file>`.
+The dashboard uses the Cyclorama Dawn `v2.1.0` brand palette ([rfs-brand](https://github.com/Real-Fruit-Snacks/rfs-brand)) and bundles Big Shoulders Stencil, Albert Sans, and Azeret Mono (OFL 1.1, `server/fonts/OFL.txt`), served from `GET /fonts/<file>`.

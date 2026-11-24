@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050507">
 <title>amazon-order-sync: syncs your Amazon orders into local Markdown notes</title>
 <meta name="description" content="amazon-order-sync keeps a copy of your Amazon order history on your own computer: one Markdown note per order, filed by month, with the product images next to them and a spending dashboard on 127.0.0.1. Windows tray app or Linux systemd service.">
 <link rel="canonical" href="https://real-fruit-snacks.github.io/amazon-order-sync/">
@@ -10,34 +12,45 @@
 <meta property="og:description" content="Syncs your Amazon orders into local Markdown notes">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://real-fruit-snacks.github.io/amazon-order-sync/">
-<meta property="og:image" content="https://real-fruit-snacks.github.io/amazon-order-sync/assets/social.png">
+<meta property="og:image" content="https://real-fruit-snacks.github.io/amazon-order-sync/assets/social-dark.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
-<meta property="og:image:alt" content="A packing slip for a made-up Amazon order next to the Markdown note amazon-order-sync wrote for it, filed under Orders/2026/10-October">
+<meta property="og:image:alt" content="amazon-order-sync Cyclorama Dawn cover showing local Amazon order history synced into Markdown notes.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0C0D10">
 <script>
-  // A saved theme wins over the system setting; the key is shared with the other RFS pages.
+  // Matte Dark LX 263 is the explicit default; Light LX 512 is opt-in and shared via rfs-theme.
   // js-run hides the first note until script.js prints it (a CSS failsafe shows it after 6 s).
   (function (d) {
-    try { var t = localStorage.getItem('rfs-theme'); if (t === 'nightshift' || t === 'dayshift') d.dataset.theme = t; } catch (e) {}
+    try {
+      var t = localStorage.getItem('rfs-theme');
+      if (t === 'light' || t === 'dayshift') {
+        d.setAttribute('data-theme', 'light');
+        var cs = document.querySelector('meta[name="color-scheme"]');
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (cs) cs.content = 'light';
+        if (tc) tc.content = '#F5F7F9';
+      }
+    } catch (e) {}
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('js-run');
   })(document.documentElement);
 </script>
-<link rel="preload" href="fonts/archivo-latin-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/martian-mono-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/big-shoulders-stencil-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/albert-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/azeret-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="rfs.css">
+<link rel="stylesheet" href="rfs-components.css">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-<a class="skip" href="#install">Skip to the install commands</a>
+<body class="rfs-shell">
+<a class="rfs-skip" href="#install">Skip to the install commands</a>
 
-<header class="top">
+<header class="rfs-shell-header top">
   <div class="wrap">
-    <a class="name" href="./" aria-label="amazon-order-sync, top of the page">amazon-order-sync</a>
+    <a class="name" href="./" aria-label="amazon-order-sync, top of the page"><img src="icon.svg" width="28" height="28" alt=""><span>AMAZON-ORDER-SYNC</span></a>
     <nav aria-label="Page">
       <a href="#install">Install</a>
       <a href="#notes">The notes</a>
@@ -47,14 +60,18 @@
       <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/docs/guide.md">Guide</a>
       <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">GitHub</a>
     </nav>
-    <button class="theme" type="button" id="theme"><span class="sr-only">Theme: </span><span class="t-night">Nightshift</span><span class="t-day">Dayshift</span></button>
+    <button class="theme-btn" type="button" id="theme" aria-label="Switch to Light mode" aria-pressed="false">
+      <span class="theme-swatch" aria-hidden="true"></span>
+      <span class="theme-label">LX 263 DARK</span>
+    </button>
   </div>
 </header>
 
+<div class="rfs-scroll-region" id="page-scroll">
 <main>
 <section class="hero" aria-labelledby="h1">
   <div class="wrap hero-grid">
-    <h1 id="h1">Syncs your Amazon orders into local Markdown&nbsp;notes</h1>
+    <h1 id="h1">SYNCS YOUR AMAZON ORDERS INTO LOCAL MARKDOWN&nbsp;NOTES</h1>
     <p class="sub">Amazon’s order history is a slow, paged website. This keeps a copy of it on your computer: one Markdown file per order, filed by month, with the product images saved next to&nbsp;them.</p>
 
     <figure class="bench" id="bench" aria-labelledby="bench-cap">
@@ -403,7 +420,9 @@
     <p><a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync">Source</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/SECURITY.md">Security</a> · <a href="https://real-fruit-snacks.github.io/">Real-Fruit-Snacks</a></p>
   </div>
 </footer>
+</div>
 
+<div id="rfs-toast" class="rfs-toast is-ok" role="status" aria-live="polite" popover="manual"></div>
 <script src="script.js"></script>
 </body>
 </html>

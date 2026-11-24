@@ -26,14 +26,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = os.path.join(ROOT, "docs", "fonts")
 OUT = os.path.join(ROOT, "docs", "assets")
 
-# RFS Nightshift and Dayshift. The slip is paper in both: light on the dark desk at night.
+# RFS Cyclorama Dawn v2.1.0 (LX 263 Dark and LX 512 Light). The slip is paper in both.
 THEMES = {
-    "dark": dict(bg="#0C0D10", line="#262A33", file="#070809", tab="#1A1D24", ink="#E8E6E1", mute="#8A8F99",
-                 key="#FFC247", yes="#3DDC97", no="#F06292", ember="#FF6A3D",
-                 paper="#E8E6E1", pink="#0C0D10", pmint="#15794D", beam="#FF6A3D", hl="#FFC247"),
-    "light": dict(bg="#F6F5F2", line="#D6D3CB", file="#FFFFFF", tab="#ECEAE4", ink="#1A1B1E", mute="#666A73",
-                  key="#925F00", yes="#15794D", no="#B0306A", ember="#C03B0A",
-                  paper="#FFFFFF", pink="#1A1B1E", pmint="#15794D", beam="#C03B0A", hl="#FFC247"),
+    "dark": dict(bg="#050507", line="#242834", file="#07080B", tab="#161820", ink="#F2F4F8", mute="#8F95A6",
+                 key="#FFC247", yes="#3DDC97", no="#FF5C6C", ember="#FF9254", steel="#1F547A", beacon="#F06E2B",
+                 paper="#F2F4F8", pink="#050507", pmint="#15794D", beam="#FF9254", hl="#FFC247"),
+    "light": dict(bg="#F5F7F9", line="#CBD3DD", file="#FFFFFF", tab="#E9EEF3", ink="#11141B", mute="#535B69",
+                  key="#885800", yes="#15794D", no="#B91C2E", ember="#AD3D0A", steel="#164669", beacon="#BD4811",
+                  paper="#FFFFFF", pink="#11141B", pmint="#15794D", beam="#AD3D0A", hl="#FFC247"),
 }
 
 W, H = 1000, 580
@@ -59,14 +59,16 @@ def font(file, **axes):
     return key
 
 
-ARCHIVO, MARTIAN = "archivo-latin-var.woff2", "martian-mono-latin-var.woff2"
+STENCIL = "big-shoulders-stencil-latin.woff2"
+SANS = "albert-sans-latin.woff2"
+MONO = "azeret-mono-latin.woff2"
 F = dict(
-    route=font(ARCHIVO, wdth=62, wght=900),
-    big=font(ARCHIVO, wdth=62, wght=800),
-    label=font(ARCHIVO, wdth=75, wght=700),
-    value=font(ARCHIVO, wdth=87.5, wght=650),
-    mono=font(MARTIAN, wdth=75, wght=400),
-    monob=font(MARTIAN, wdth=75, wght=600),
+    route=font(STENCIL, wght=800),
+    big=font(STENCIL, wght=800),
+    label=font(MONO, wght=700),
+    value=font(SANS, wght=650),
+    mono=font(MONO, wght=400),
+    monob=font(MONO, wght=600),
 )
 
 
@@ -183,13 +185,16 @@ def build(theme, orders, notes):
         return rows
 
     # --- the desk, the file window ---
-    o.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="18" fill="{c["bg"]}" stroke="{c["line"]}"/>')
-    o.append(text("AMAZON-ORDER-SYNC", W - 40, 50, 13, F["label"], c["mute"], ls=0.14, anchor="end"))
-    o.append(text("MADE-UP ORDERS, REAL OUTPUT", W - 40, 72, 13, F["label"], c["mute"], ls=0.14, anchor="end"))
-    o.append(f'<defs><clipPath id="win"><rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="9"/></clipPath>'
+    o.append(f'<defs><clipPath id="plate"><rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12"/></clipPath>'
+             f'<linearGradient id="hz" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="{c["steel"]}"/><stop offset="100%" stop-color="{c["beacon"]}"/></linearGradient>'
+             f'<clipPath id="win"><rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="6"/></clipPath>'
              f'<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="{c["file"]}" stop-opacity="0"/><stop offset="1" stop-color="{c["file"]}"/></linearGradient>'
              f'<linearGradient id="fadev" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="{c["file"]}" stop-opacity="0"/><stop offset="1" stop-color="{c["file"]}"/></linearGradient></defs>')
-    o.append(f'<rect x="{fx + .5}" y="{fy + .5}" width="{fw - 1}" height="{fh - 1}" rx="9" fill="{c["file"]}" stroke="{c["line"]}"/>')
+    o.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="{c["bg"]}" stroke="{c["line"]}"/>')
+    o.append(f'<rect x="1" y="1" width="{W - 2}" height="3" fill="url(#hz)" clip-path="url(#plate)"/>')
+    o.append(text("AMAZON-ORDER-SYNC", W - 40, 50, 11, F["label"], c["mute"], ls=0.1, anchor="end"))
+    o.append(text("MADE-UP ORDERS, REAL OUTPUT", W - 40, 70, 11, F["label"], c["mute"], ls=0.1, anchor="end"))
+    o.append(f'<rect x="{fx + .5}" y="{fy + .5}" width="{fw - 1}" height="{fh - 1}" rx="6" fill="{c["file"]}" stroke="{c["line"]}"/>')
     o.append(f'<g clip-path="url(#win)"><rect x="{fx}" y="{fy}" width="{fw}" height="{tab}" fill="{c["tab"]}"/></g>')
     o.append(f'<rect x="{fx}" y="{fy + tab}" width="{fw}" height="1" fill="{c["line"]}"/>')
 
@@ -281,31 +286,31 @@ def build(theme, orders, notes):
                 g.append(f'<rect x="{sx}" y="{sy + top}" width="{sw}" height="2" fill="{c["pink"]}"/>')
         g.append(f'<rect x="{sx + 188}" y="{sy + 98}" width="2" height="58" fill="{c["pink"]}"/>')
         lx = sx + 16
-        g.append(text("ORDER #", lx, sy + 24, 11.5, F["label"], c["pink"], ls=0.12))
-        g.append(f'<rect x="{sx + sw - 128}" y="{sy + 11}" width="112" height="19" rx="2" fill="none" stroke="{c["pink"]}" stroke-width="1.5"/>')
-        g.append(text("MADE-UP ORDER", sx + sw - 72, sy + 25, 10.5, F["label"], c["pink"], ls=0.12, anchor="middle"))
-        g.append(text(order["order_id"], lx, sy + 54, 26, F["big"], c["pink"], ls=0.03))
+        g.append(text("ORDER #", lx, sy + 24, 10, F["label"], c["pink"], ls=0.08))
+        g.append(f'<rect x="{sx + sw - 134}" y="{sy + 11}" width="118" height="19" rx="2" fill="none" stroke="{c["pink"]}" stroke-width="1.5"/>')
+        g.append(text("MADE-UP ORDER", sx + sw - 75, sy + 24.5, 9.5, F["label"], c["pink"], ls=0.06, anchor="middle"))
+        g.append(text(order["order_id"], lx, sy + 55, 29, F["big"], c["pink"], ls=0.03))
         g.append(barcode(order["order_id"], lx, sy + 64, sw - 32, 24, c["pink"]))
-        g.append(text("ORDER PLACED", lx, sy + 98 + 22, 11.5, F["label"], c["pink"], ls=0.12))
-        g.append(text(order["date"], lx, sy + 98 + 44, 17, F["value"], c["pink"]))
-        g.append(text("TOTAL", sx + 204, sy + 98 + 22, 11.5, F["label"], c["pink"], ls=0.12))
-        g.append(text(order["total"], sx + 204, sy + 98 + 44, 17, F["value"], c["pink"]))
-        g.append(text("STATUS", lx, sy + 156 + 22, 11.5, F["label"], c["pink"], ls=0.12))
-        g.append(text(order["status"].upper(), lx, sy + 156 + 47, 25, F["route"], c["pink"], ls=0.01))
-        g.append(text("SHIP TO", lx, sy + 214 + 22, 11.5, F["label"], c["pink"], ls=0.12))
-        g.append(text(order["ship_to"], lx, sy + 214 + 44, 17, F["value"], c["pink"]))
+        g.append(text("ORDER PLACED", lx, sy + 98 + 21, 9.5, F["label"], c["pink"], ls=0.08))
+        g.append(text(order["date"], lx, sy + 98 + 44, 15.5, F["value"], c["pink"]))
+        g.append(text("TOTAL", sx + 204, sy + 98 + 21, 9.5, F["label"], c["pink"], ls=0.08))
+        g.append(text(order["total"], sx + 204, sy + 98 + 44, 15.5, F["value"], c["pink"]))
+        g.append(text("STATUS", lx, sy + 156 + 21, 9.5, F["label"], c["pink"], ls=0.08))
+        g.append(text(order["status"].upper(), lx, sy + 156 + 48, 26, F["route"], c["pink"], ls=0.03))
+        g.append(text("SHIP TO", lx, sy + 214 + 21, 9.5, F["label"], c["pink"], ls=0.08))
+        g.append(text(order["ship_to"], lx, sy + 214 + 44, 15.5, F["value"], c["pink"]))
         n = len(order["items"])
-        g.append(text(f"{n} ITEM" + ("S" if n > 1 else ""), lx, sy + 270 + 22, 11.5, F["label"], c["pink"], ls=0.12))
-        iy = sy + 270 + 46
+        g.append(text(f"{n} ITEM" + ("S" if n > 1 else ""), lx, sy + 270 + 21, 9.5, F["label"], c["pink"], ls=0.08))
+        iy = sy + 270 + 45
         for k, it in enumerate(order["items"]):
             if k:
                 g.append(f'<path d="M{lx} {iy - 15}H{sx + sw - 16}" stroke="{c["pink"]}" stroke-opacity=".55" stroke-dasharray="4 3"/>')
-            g.append(text(f"{k + 1:02d}", lx, iy, 12, F["monob"], c["pink"]))
-            g.append(text(it["name"], lx + 28, iy, 15, F["value"], c["pink"]))
-            g.append(text(f'{it["brand"]} · {it["current_price"]} · {it["asin"]}', lx + 28, iy + 19, 11.5, F["mono"], c["pink"]))
+            g.append(text(f"{k + 1:02d}", lx, iy, 11, F["monob"], c["pink"]))
+            g.append(text(it["name"], lx + 28, iy, 13.5, F["value"], c["pink"]))
+            g.append(text(f'{it["brand"]} · {it["current_price"]} · {it["asin"]}', lx + 28, iy + 18, 10, F["mono"], c["pink"]))
             posted = it.get("is_reviewed") and it.get("review_title")
             g.append(f'<rect x="{lx + 28.75}" y="{iy + 29.75}" width="8.5" height="8.5" rx="1" fill="{c["pmint"] if posted else "none"}" stroke="{c["pmint"] if posted else c["pink"]}" stroke-width="1.5"/>')
-            g.append(text(f'REVIEW POSTED, {it["review_rating"]} OF 5' if posted else "NO REVIEW YET", lx + 43, iy + 38, 10.5, F["label"], c["pink"], ls=0.12))
+            g.append(text(f'REVIEW POSTED, {it["review_rating"]} OF 5' if posted else "NO REVIEW YET", lx + 43, iy + 38, 9, F["label"], c["pink"], ls=0.06))
             iy += 66
         g.append(f'<rect class="{cls}scan" x="{sx - 2}" y="{sy}" width="{sw + 4}" height="3" fill="{c["beam"]}" opacity="0"/>')
         g.append("</g>")
@@ -314,16 +319,16 @@ def build(theme, orders, notes):
         # --- the file tab: path, then Writing or Saved ---
         dirpart = folder + "/"
         tx = fx + 14
-        o.append(f'<g class="{cls}">' + text(dirpart, tx, fy + 24, 12.5, F["mono"], c["mute"])
-                 + text(fname, tx + advance(dirpart, 12.5, F["mono"]), fy + 24, 12.5, F["monob"], c["ink"]) + "</g>")
+        o.append(f'<g class="{cls}">' + text(dirpart, tx, fy + 24, 11, F["mono"], c["mute"])
+                 + text(fname, tx + advance(dirpart, 11, F["mono"]), fy + 24, 11, F["monob"], c["ink"]) + "</g>")
         for state, col, word in (("s", c["yes"], "SAVED"), ("w", c["ember"], "WRITING")):
-            ww = advance(word, 12, F["label"], 0.12)
-            o.append(f'<g class="{cls}{state}"><circle cx="{fx + fw - 22 - ww}" cy="{fy + 19.5}" r="4" fill="{col}"/>'
-                     + text(word, fx + fw - 14, fy + 24, 12, F["label"], col, ls=0.12, anchor="end") + "</g>")
+            ww = advance(word, 10.5, F["label"], 0.08)
+            o.append(f'<g class="{cls}{state}"><rect x="{fx + fw - 26 - ww:.1f}" y="{fy + 16}" width="7" height="7" rx="1.5" fill="{col}"/>'
+                     + text(word, fx + fw - 14, fy + 23.5, 10.5, F["label"], col, ls=0.08, anchor="end") + "</g>")
 
         # --- the note ---
         g = []
-        ly, step, size = fy + tab + 26, 21.4, 14
+        ly, step, size = fy + tab + 26, 21.4, 12.2
         for n, (f_, toks) in enumerate(lines):
             x = fx + 16
             parts = []
@@ -337,7 +342,7 @@ def build(theme, orders, notes):
     # fades over the right edge (long url lines) and the bottom (the note goes on)
     o.append(f'<g clip-path="url(#win)"><rect x="{fx + fw - 56}" y="{fy + tab + 1}" width="56" height="{fh - tab - 1}" fill="url(#fade)"/>'
              f'<rect x="{fx}" y="{fy + fh - 46}" width="{fw}" height="46" fill="url(#fadev)"/></g>')
-    o.append(text("THE NOTE GOES ON: THE ITEMS, THEIR FEATURES, A REVIEW SECTION EACH", fx + 16, fy + fh - 14, 11, F["label"], c["mute"], ls=0.12))
+    o.append(text("THE NOTE GOES ON: THE ITEMS, THEIR FEATURES, A REVIEW SECTION EACH", fx + 16, fy + fh - 14, 9.2, F["label"], c["mute"], ls=0.06))
 
     rules = "".join(f".{k}{{animation:{k} {CYCLE}s step-end infinite}}" for k, _ in base)
     for i in SHOW:

@@ -10,28 +10,28 @@ People who buy a lot on Amazon and keep notes in Markdown (often in Obsidian), o
 
 ## Type
 
-- Display, slip and labels: Archivo, variable (width 62 to 125, weight 100 to 900). At 62% width and 800 to 900 it's the heavy condensed grotesque of parcel labels and sort codes: the headline, the routing codes, the slip's status and order number. At 75% and 700, uppercase and tracked, it's the slip's field labels. At 100% and 400 to 650 it's the body text, so the page has one voice.
-- Mono: Martian Mono, variable, at 75% width: the notes, commands and file names. Its squared shapes sit well next to a label, and the condensed width fits a frontmatter line in a half-width column.
-- Scale: `scale.mjs`, 16 to 18px, ratio 1.2 to 1.333. The headline is `clamp(2.75rem, 0.9rem + 6.6vw, 7.6rem)`, two lines at 1440.
-- Fonts are self-hosted in `fonts/` (Google Fonts latin subsets) with their OFL licences. The dashboard and extension keep IBM Plex.
+- Display & routing codes: **Big Shoulders Stencil** (variable `wght` 100–900), self-hosted (`docs/fonts/`, `server/fonts/`, `browser-extension/fonts/`). Used for the headline, section headings, routing codes (`ORDERS / 2026 / 10-OCTOBER`), and slip order/status stamps.
+- Body: **Albert Sans** (variable `wght` 100–900), self-hosted. Clean geometric sans for body prose and item labels.
+- Mono: **Azeret Mono** (variable `wght` 100–900), self-hosted. Used for notes, frontmatter, commands, file names, field labels, and dashboard tables (`font-variant-ligatures: none`).
+- All fonts carry their SIL Open Font License (`OFL.txt`) with zero external CDNs.
 
 ## Color
 
-The RFS Nightshift and Dayshift values and nothing else. The OS setting decides the theme, the Nightshift/Dayshift switch overrides it, and the choice is saved as `rfs-theme` like the other RFS pages.
+Canonical **Cyclorama Dawn `v2.1.0`** tokens from `Real-Fruit-Snacks/rfs-brand` (`rfs.css` + `rfs-components.css`). Matte Dark `LX 263` (`#050507`) is the explicit default (`<meta name="color-scheme" content="dark">`); Alabaster Day `LX 512` (`#F5F7F9`) is an opt-in toggle synchronized across tabs via `localStorage['rfs-theme']` with a radial View Transition.
 
-| Role | Night | Day | Use |
+| Role | LX 263 Dark | LX 512 Light | Use |
 |---|---|---|---|
-| bg / surface / raised | `#0C0D10` / `#13151A` / `#1A1D24` | `#F6F5F2` / `#FFFFFF` / `#ECEAE4` | Page; file tabs and inline code (raised) |
-| code | `#070809` | `#FFFFFF` | The note window and command boxes |
-| paper / paper ink | `#E8E6E1` / `#0C0D10` | `#FFFFFF` / `#1A1B1E` | The slip. It's light in both themes: a paper label on a dark desk at night |
-| line / line-strong | `#262A33` / `#636872` | `#D6D3CB` / `#89867F` | Rules, borders |
-| ink / mute | `#E8E6E1` / `#8A8F99` | `#1A1B1E` / `#666A73` | Text |
-| Ember | `#FF6A3D` | `#C03B0A` | The sync: the scan beam, "Writing", the slashes in a routing code, the Copy button, focus |
-| Amber | `#FFC247` | `#925F00` | Read from the order: frontmatter keys, and the highlighter that lights a slip field and the line it became (`#FFC247` as a tint in both themes) |
-| Mint | `#3DDC97` | `#15794D` | "Saved", `true`, "Review posted" (`#15794D` on the paper), "Stays here" |
-| Raspberry | `#F06292` | `#B0306A` | `false` |
+| bg / surface / raised | `#050507` / `#0D0E12` / `#161820` | `#F5F7F9` / `#FFFFFF` / `#E9EEF3` | Page, pinned header, file tabs and inline code |
+| code | `#07080B` | `#FFFFFF` | Note window and command boxes |
+| paper / paper ink | `#F2F4F8` / `#050507` | `#FFFFFF` / `#11141B` | Packing slip (light stock on dark desk at night) |
+| line / line-strong | `#242834` / `#5D6476` | `#CBD3DD` / `#76808F` | Rules, borders |
+| ink / mute | `#F2F4F8` / `#8F95A6` | `#11141B` / `#535B69` | Text |
+| Glacial Steel / Beacon Orange | `#1F547A` / `#74B8E8` · `#F06E2B` / `#FF9254` | `#164669` · `#BD4811` / `#AD3D0A` | Scan beam, "Writing", routing slashes, Cartesian `in oklab` Copy gradient, links |
+| Amber | `#FFC247` | `#885800` | Frontmatter keys and slip-to-note highlight |
+| Mint | `#3DDC97` | `#15794D` | "Saved", `true`, "Review posted", "Stays here" |
+| Signal Crimson | `#FF5C6C` / `#C92438` | `#B91C2E` | `false` tokens, extension Stop Sync destructive button |
 
-Every colour that means a state comes with a word: Writing, Saved, Review posted, No review yet, Stays here, Sent to Gemini, true and false.
+Every colour that means a state comes with a word: Writing, Saved, Review posted, No review yet, Stays here, Sent to Gemini, true and false. The pinned header (`.rfs-shell-header`) sits above `.rfs-scroll-region` so the vertical scrollbar never enters the top bar.
 
 ## Layout
 

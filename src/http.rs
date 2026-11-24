@@ -26,12 +26,9 @@ pub const DASHBOARD_HTML: &str = include_str!("../server/dashboard.html");
 
 pub fn font(name: &str) -> Option<&'static [u8]> {
     Some(match name {
-        "IBMPlexMono-Medium.woff2" => include_bytes!("../server/fonts/IBMPlexMono-Medium.woff2"),
-        "IBMPlexMono-Regular.woff2" => include_bytes!("../server/fonts/IBMPlexMono-Regular.woff2"),
-        "IBMPlexMono-SemiBold.woff2" => include_bytes!("../server/fonts/IBMPlexMono-SemiBold.woff2"),
-        "IBMPlexSans-Bold.woff2" => include_bytes!("../server/fonts/IBMPlexSans-Bold.woff2"),
-        "IBMPlexSans-Regular.woff2" => include_bytes!("../server/fonts/IBMPlexSans-Regular.woff2"),
-        "IBMPlexSans-SemiBold.woff2" => include_bytes!("../server/fonts/IBMPlexSans-SemiBold.woff2"),
+        "big-shoulders-stencil-latin.woff2" => include_bytes!("../server/fonts/big-shoulders-stencil-latin.woff2"),
+        "albert-sans-latin.woff2" => include_bytes!("../server/fonts/albert-sans-latin.woff2"),
+        "azeret-mono-latin.woff2" => include_bytes!("../server/fonts/azeret-mono-latin.woff2"),
         _ => return None,
     })
 }

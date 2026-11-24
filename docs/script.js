@@ -1,29 +1,65 @@
-// amazon-order-sync page: theme switch, install tabs, copy buttons, and the bench, where a scan runs
-// down a packing slip and the note the server wrote for that order prints line by line.
-// Without JS the first slip and its whole note are shown. With reduced motion nothing runs on its
-// own and "Sync the next order" swaps orders without the scan.
+// amazon-order-sync page: Cyclorama Dawn v2.1.0 theme switch, install tabs, copy toast,
+// and the packing-slip bench where a scan runs down a slip and prints the note line by line.
 (function () {
   var root = document.documentElement;
   var still = matchMedia('(prefers-reduced-motion: reduce)');
-  var light = matchMedia('(prefers-color-scheme: light)');
   var $ = function (id) { return document.getElementById(id); };
   var all = function (sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); };
   var wait = function (ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); };
 
-  // ---- theme ----
-  function theme() { return root.dataset.theme || (light.matches ? 'dayshift' : 'nightshift'); }
-  function paint() {
-    var night = theme() === 'nightshift';
-    document.querySelector('meta[name="theme-color"]').content = night ? '#0C0D10' : '#F6F5F2';
-    $('theme').setAttribute('aria-label', 'Theme: ' + (night ? 'Nightshift' : 'Dayshift') + '. Switch to ' + (night ? 'Dayshift' : 'Nightshift'));
+  var scrollRegion = $('page-scroll');
+  var rfsToast = $('rfs-toast');
+  var toastTimer = 0;
+
+  function showToast(msg, kind) {
+    if (!rfsToast) return;
+    rfsToast.className = 'rfs-toast ' + (kind || 'is-ok');
+    rfsToast.textContent = msg;
+    try { rfsToast.showPopover(); } catch (e) {}
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { try { rfsToast.hidePopover(); } catch (e) {} }, 2600);
   }
-  $('theme').addEventListener('click', function () {
-    root.dataset.theme = theme() === 'nightshift' ? 'dayshift' : 'nightshift';
-    try { localStorage.setItem('rfs-theme', root.dataset.theme); } catch (e) {}
-    paint();
+
+  // ---- theme (Matte Dark LX 263 explicit default / Alabaster Day LX 512 opt-in) ----
+  var themeBtn = $('theme');
+  function applyTheme(next) {
+    var isLight = next === 'light' || next === 'dayshift';
+    if (isLight) root.setAttribute('data-theme', 'light');
+    else root.removeAttribute('data-theme');
+    var cs = document.querySelector('meta[name="color-scheme"]');
+    var tc = document.querySelector('meta[name="theme-color"]');
+    if (cs) cs.content = isLight ? 'light' : 'dark';
+    if (tc) tc.content = isLight ? '#F5F7F9' : '#050507';
+    if (themeBtn) {
+      themeBtn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+      themeBtn.setAttribute('aria-label', isLight ? 'Switch to Dark mode' : 'Switch to Light mode');
+      var lbl = themeBtn.querySelector('.theme-label');
+      if (lbl) lbl.textContent = isLight ? 'LX 512 LIGHT' : 'LX 263 DARK';
+    }
+  }
+  applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function (e) {
+      var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      try { localStorage.setItem('rfs-theme', next); } catch (err) {}
+      var r = themeBtn.getBoundingClientRect();
+      var x = e.clientX || (r.left + r.width / 2);
+      var y = e.clientY || (r.top + r.height / 2);
+      var maxR = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+      root.style.setProperty('--vt-x', x + 'px');
+      root.style.setProperty('--vt-y', y + 'px');
+      root.style.setProperty('--vt-r', maxR + 'px');
+      if (document.startViewTransition && !still.matches) {
+        document.startViewTransition(function () { applyTheme(next); });
+      } else {
+        applyTheme(next);
+      }
+    });
+  }
+  addEventListener('storage', function (e) {
+    if (e.key === 'rfs-theme') applyTheme(e.newValue === 'light' ? 'light' : 'dark');
   });
-  light.addEventListener('change', paint);
-  paint();
 
   // ---- install tabs ----
   var tabs = all('.tabs [role="tab"]');
@@ -48,7 +84,12 @@
   all('[data-copy]').forEach(function (b) {
     var label = b.textContent;
     b.addEventListener('click', function () {
-      var done = function (ok) { b.textContent = ok ? 'Copied' : 'Select it'; clearTimeout(b._t); b._t = setTimeout(function () { b.textContent = label; }, 1600); };
+      var done = function (ok) {
+        b.textContent = ok ? '[ok] Copied' : 'Select it';
+        if (ok) showToast('[ok] Command copied to clipboard.', 'is-ok');
+        clearTimeout(b._t);
+        b._t = setTimeout(function () { b.textContent = label; }, 1800);
+      };
       if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(function () { done(true); }, function () { done(false); });
       else done(false);
     });
@@ -58,9 +99,6 @@
   var orders = all('#bench .order'), btn = $('next'), said = $('said');
   var cur = 0, busy = false;
 
-  // Scan the slip top to bottom; as the beam reaches a field, light it and print the note lines
-  // that came from it. Then the rest of the note, the folder it was filed in, and "Saved".
-  // Before the scan: the slip, an empty file, no folder yet.
   function clear(order) {
     order.classList.add('pending');
     all('.ln', order).forEach(function (l) { l.classList.remove('on', 'lit', 'cur'); });
@@ -117,7 +155,6 @@
     });
   });
 
-  // The first order prints once, when its slip is on screen.
   if (!still.matches && root.classList.contains('js-run')) {
     busy = true; btn.setAttribute('aria-disabled', 'true');
     clear(orders[0]); root.classList.remove('js-run');
@@ -130,7 +167,7 @@
     else {
       var seen = new IntersectionObserver(function (es) {
         if (es.some(function (e) { return e.isIntersecting; })) { seen.disconnect(); go(); }
-      }, { threshold: 0.2 });
+      }, { root: scrollRegion || null, threshold: 0.2 });
       seen.observe(orders[0].querySelector('.slip'));
     }
   }
