@@ -134,6 +134,26 @@ def flash(name, times, peak=1.0, fade=0.6):
     return f"@keyframes {name}{{" + "".join(ks) + "100%{opacity:0}}"
 
 
+def _tokenize_val(val):
+    toks, i = [], 0
+    while i < len(val):
+        c = val[i]
+        if c == '"':
+            j = i + 1
+            while j < len(val) and val[j] != '"':
+                j += 2 if val[j] == "\\" else 1
+            toks.append((val[i:j + 1], "ink")); i = j + 1
+        elif c in "[],":
+            toks.append((c, "mute")); i += 1
+        elif val.startswith("true", i):
+            toks.append(("true", "yes")); i += 4
+        elif val.startswith("false", i):
+            toks.append(("false", "no")); i += 5
+        else:
+            toks.append((c, "ink")); i += 1
+    return toks
+
+
 def note_lines(md):
     """The note's frontmatter and its first heading, as (field, [(token, kind)])."""
     out, fence = [], 0
@@ -145,23 +165,19 @@ def note_lines(md):
                 continue
         elif fence == 1:
             key, _, val = line.partition(": ")
-            toks, i = [(key, "key"), (": ", "ink")], 0
-            while i < len(val):
-                c = val[i]
-                if c == '"':
-                    j = i + 1
-                    while j < len(val) and val[j] != '"':
-                        j += 2 if val[j] == "\\" else 1
-                    toks.append((val[i:j + 1], "ink")); i = j + 1
-                elif c in "[],":
-                    toks.append((c, "mute")); i += 1
-                elif val.startswith("true", i):
-                    toks.append(("true", "yes")); i += 4
-                elif val.startswith("false", i):
-                    toks.append(("false", "no")); i += 5
-                else:
-                    toks.append((c, "ink")); i += 1
-            out.append((FIELD.get(key, "items"), toks))
+            field = FIELD.get(key, "items")
+            if len(line) > 60 and val.startswith("[") and '", "' in val:
+                parts = val.split('", "')
+                indent = " " * (len(key) + 3)
+                for idx, part in enumerate(parts):
+                    if idx == 0:
+                        seg = part + '",'
+                        out.append((field, [(key, "key"), (": ", "ink")] + _tokenize_val(seg)))
+                    else:
+                        seg = '"' + part + ("," if idx < len(parts) - 1 else "")
+                        out.append((field, [(indent, "ink")] + _tokenize_val(seg)))
+            else:
+                out.append((field, [(key, "key"), (": ", "ink")] + _tokenize_val(val)))
         elif fence >= 2 and line.startswith("# "):
             out.append(("body", [(line, "head")]))
             break
@@ -188,7 +204,6 @@ def build(theme, orders, notes):
     o.append(f'<defs><clipPath id="plate"><rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12"/></clipPath>'
              f'<linearGradient id="hz" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="{c["steel"]}"/><stop offset="100%" stop-color="{c["beacon"]}"/></linearGradient>'
              f'<clipPath id="win"><rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="6"/></clipPath>'
-             f'<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="{c["file"]}" stop-opacity="0"/><stop offset="1" stop-color="{c["file"]}"/></linearGradient>'
              f'<linearGradient id="fadev" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="{c["file"]}" stop-opacity="0"/><stop offset="1" stop-color="{c["file"]}"/></linearGradient></defs>')
     o.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="{c["bg"]}" stroke="{c["line"]}"/>')
     o.append(f'<rect x="1" y="1" width="{W - 2}" height="3" fill="url(#hz)" clip-path="url(#plate)"/>')
@@ -328,7 +343,7 @@ def build(theme, orders, notes):
 
         # --- the note ---
         g = []
-        ly, step, size = fy + tab + 26, 21.4, 12.2
+        ly, step, size = fy + tab + 24, 20.6, 12.2
         for n, (f_, toks) in enumerate(lines):
             x = fx + 16
             parts = []
@@ -339,9 +354,8 @@ def build(theme, orders, notes):
             g.append(f'<g class="{cls}l{n}">' + "".join(parts) + "</g>")
         o.append(f'<g clip-path="url(#win)">' + "".join(g) + "</g>")
 
-    # fades over the right edge (long url lines) and the bottom (the note goes on)
-    o.append(f'<g clip-path="url(#win)"><rect x="{fx + fw - 56}" y="{fy + tab + 1}" width="56" height="{fh - tab - 1}" fill="url(#fade)"/>'
-             f'<rect x="{fx}" y="{fy + fh - 46}" width="{fw}" height="46" fill="url(#fadev)"/></g>')
+    # subtle fade over the bottom edge (the note goes on)
+    o.append(f'<g clip-path="url(#win)"><rect x="{fx}" y="{fy + fh - 46}" width="{fw}" height="46" fill="url(#fadev)"/></g>')
     o.append(text("THE NOTE GOES ON: THE ITEMS, THEIR FEATURES, A REVIEW SECTION EACH", fx + 16, fy + fh - 14, 9.2, F["label"], c["mute"], ls=0.06))
 
     rules = "".join(f".{k}{{animation:{k} {CYCLE}s step-end infinite}}" for k, _ in base)
