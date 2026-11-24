@@ -118,7 +118,7 @@
 
 /* ---------- base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html { height: 100%; overflow: hidden; background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
@@ -243,13 +243,11 @@ p { margin: 0 0 var(--space-s); text-wrap: pretty; }
 .hero {
   padding: var(--space-m) 0 var(--space-xl-3xl);
   background:
-    radial-gradient(ellipse 68% 42% at 10% 0%, color-mix(in oklab, var(--rfs-steel) 20%, transparent), transparent 72%),
-    radial-gradient(ellipse 64% 42% at 92% 0%, color-mix(in oklab, var(--rfs-beacon) 14%, transparent), transparent 72%);
+    linear-gradient(125deg in oklab, color-mix(in oklab, var(--rfs-steel) 16%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 12%, transparent) 100%);
 }
 :root[data-theme="light"] .hero {
   background:
-    radial-gradient(ellipse 68% 42% at 10% 0%, color-mix(in oklab, var(--rfs-steel) 10%, transparent), transparent 72%),
-    radial-gradient(ellipse 64% 42% at 92% 0%, color-mix(in oklab, var(--rfs-beacon) 8%, transparent), transparent 72%);
+    linear-gradient(125deg in oklab, color-mix(in oklab, var(--rfs-steel) 8%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 6%, transparent) 100%);
 }
 .hero-grid {
   display: grid;
@@ -418,11 +416,20 @@ p { margin: 0 0 var(--space-s); text-wrap: pretty; }
 .copy {
   flex: none; align-self: flex-start;
   font: 700 .74rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
-  color: #FFFFFF; background: var(--rfs-horizon-gradient);
-  border: 1px solid color-mix(in oklab, var(--ember) 35%, transparent); border-radius: var(--r-s);
+  color: #FFFFFF; background-image: var(--rfs-horizon-gradient);
+  background-origin: border-box; background-clip: border-box;
+  border: 0; border-radius: var(--r-s);
   min-height: 44px; min-width: 5.2rem; padding: 0 1rem; cursor: pointer;
   transition: filter 150ms var(--ease);
 }
+.rfs-code-card .rfs-code-head .copy {
+  min-height: 2.1rem; min-width: 4.5rem; padding: 0 .8rem; align-self: center;
+}
+.rfs-code-card > pre.rfs-code-block {
+  font-size: .74rem; line-height: 1.7; padding: .75rem .9rem;
+}
+.rfs-code-card .cl { display: block; padding-left: 1.4em; text-indent: -1.4em; }
+.rfs-code-card .cl + .cl { margin-top: .3em; }
 @media (hover: hover) { .copy:hover { filter: brightness(1.08); } }
 .copy:active { filter: brightness(0.94); }
 .then { margin: var(--space-s) 0 0; padding: 0; list-style: none; counter-reset: step; font-size: .92rem; line-height: 1.5; color: var(--mute); }
@@ -535,6 +542,6 @@ footer a { display: inline-flex; align-items: center; min-height: 32px; }
 
 @media print {
   .top, .next, .copy, .scan, #rfs-toast { display: none !important; }
-  .rfs-shell, .rfs-scroll-region { display: block; height: auto; overflow: visible; }
+  html, body, .rfs-shell, .rfs-scroll-region { display: block !important; height: auto !important; overflow: visible !important; }
   .hero { background: none; }
 }

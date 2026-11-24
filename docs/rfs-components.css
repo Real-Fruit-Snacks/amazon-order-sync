@@ -840,7 +840,9 @@ dialog.rfs-dialog.is-destructive .rfs-dialog-bar {
   border-bottom: 1px solid var(--rfs-line);
 }
 
-.rfs-tablist::-webkit-scrollbar { display: none; }
+@supports not (scrollbar-width: none) {
+  .rfs-tablist::-webkit-scrollbar { display: none; }
+}
 
 .rfs-tablist [role="tab"] {
   flex: none;
