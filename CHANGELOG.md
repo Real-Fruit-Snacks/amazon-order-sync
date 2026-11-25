@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.3] — 2026-11-24
+
+Upgraded application, tray, local dashboard, and browser extension icons to the canonical Cyclorama Dawn `v2.1.0` monogram tile.
+
+- **Icons (`tools/make-icons.py`, `tray/app.ico`, `server/icons/*`, `browser-extension/icon-*.png`):** Replaced the flat lowercase Azeret Mono tile with the Cyclorama Dawn matte `#050507` tile, rising Glacial Steel → Maritime Beacon Orange wash, Big Shoulders Stencil ExtraBold `AOS` monogram (with crisp single-letter stencil `A` at 16–24px), Glacial Steel → Beacon horizon bar, full-bleed square `apple-touch-icon.png`, and vector `/icons/icon.svg` favicon served by the local dashboard.
+
 ## [3.0.2] — 2026-11-24
 
 Full Cyclorama Dawn `v2.1.0` look-and-feel overhaul of the local web dashboard and browser extension popup. Sync behaviour, notes, API endpoints, and existing configs are unchanged.

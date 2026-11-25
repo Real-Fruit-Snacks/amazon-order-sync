@@ -20,7 +20,7 @@ Source of truth: `Real-Fruit-Snacks/rfs-brand` (`v2.1.0`).
 
 - **Rust Server (`src/`)**: `src/http.rs` embeds `server/dashboard.html`, `server/fonts/*.woff2`, and `server/icons/*`.
 - **Browser Extension (`browser-extension/`)**: Chrome Manifest V3 popup (`popup.html`, `popup.css`, `popup.js`, `fonts/`, `icon-{16,48,128}.png`).
-- **Tray & Icons (`tools/make-icons.py`)**: Regenerates `server/icons/*`, `browser-extension/icon-*.png`, and `tray/app.ico` from `docs/fonts/azeret-mono-latin.woff2`.
+- **Tray & Icons (`tools/make-icons.py`)**: Regenerates `server/icons/*`, `browser-extension/icon-*.png`, and `tray/app.ico` from `server/fonts/big-shoulders-stencil-latin.woff2`.
 - **Generated Samples & Slip SVG (`tools/make-samples.mjs`, `tools/make-slip.py`)**: Keep `<!-- samples:begin -->` / `<!-- samples:end -->`, `<!-- files:begin -->` / `<!-- files:end -->` in `docs/index.html` and `<!-- sample-files:begin -->` / `<!-- sample-item:begin -->` in `README.md` intact. CI runs both scripts and checks `git diff --exit-code`.
 
 ## Verification

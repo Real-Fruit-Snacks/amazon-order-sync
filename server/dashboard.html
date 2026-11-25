@@ -7,6 +7,7 @@
 <meta name="color-scheme" content="dark">
 <title>Amazon Order Sync</title>
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -1074,7 +1075,7 @@
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><img src="/icons/icon-192.png" alt="" width="28" height="28" class="brand-mark"><span class="brand-title">Amazon Order Sync</span><span class="ver" id="ver">v3.0.2</span></div>
+    <div class="brand"><img src="/icons/icon-192.png" alt="" width="28" height="28" class="brand-mark"><span class="brand-title">Amazon Order Sync</span><span class="ver" id="ver">v3.0.3</span></div>
     <nav class="tabs" id="tabs">
       <button type="button" class="tab active" data-tab="overview">Overview</button>
       <button type="button" class="tab" data-tab="orders">Orders</button>
@@ -3092,7 +3093,7 @@ function renderAll() {
   // v1.8.7 (§25.2): every full render (tab/search/data change) resets
   // the Needs Review batch window; LOAD MORE bypasses renderAll entirely.
   state.reviewLimit = REVIEW_BATCH;
-  document.getElementById('ver').textContent = 'v' + (state.data.version || "3.0.2");
+  document.getElementById('ver').textContent = 'v' + (state.data.version || "3.0.3");
   renderSyncFreshness();
 
   // v1.8.0 (§21.1): flagged reviewMissing items count toward the tab badge —

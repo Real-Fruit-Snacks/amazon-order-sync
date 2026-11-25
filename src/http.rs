@@ -39,6 +39,7 @@ pub fn icon(name: &str) -> Option<&'static [u8]> {
         "favicon.ico" => include_bytes!("../server/icons/favicon.ico"),
         "icon-192.png" => include_bytes!("../server/icons/icon-192.png"),
         "icon-512.png" => include_bytes!("../server/icons/icon-512.png"),
+        "icon.svg" => include_bytes!("../server/icons/icon.svg"),
         _ => return None,
     })
 }
@@ -359,10 +360,13 @@ fn route(app: &App, req: &mut Req) -> Resp {
         ("GET", _) if p == "/favicon.ico" || p.starts_with("/icons/") => {
             let prefix = if p == "/favicon.ico" { "" } else { "/icons/" };
             serve_embedded(if p == "/favicon.ico" { "favicon.ico" } else { p }, prefix, |n, ext| {
-                if ext != "png" && ext != "ico" {
-                    return None;
-                }
-                icon(n).map(|b| (if ext == "ico" { "image/x-icon" } else { "image/png" }, b))
+                let mime = match ext {
+                    "ico" => "image/x-icon",
+                    "png" => "image/png",
+                    "svg" => "image/svg+xml",
+                    _ => return None,
+                };
+                icon(n).map(|b| (mime, b))
             })
         }
         ("POST", "/api/mark-posted") => match req.body(MAX_BODY_BYTES) {
