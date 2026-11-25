@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.2] — 2026-11-24
+
+Full Cyclorama Dawn `v2.1.0` look-and-feel overhaul of the local web dashboard and browser extension popup. Sync behaviour, notes, API endpoints, and existing configs are unchanged.
+
+- **Local web dashboard (`server/dashboard.html`):** Added the 2px Steel→Beacon horizon rule, 28×28 brand icon tile + Big Shoulders Stencil display wordmark and stat counters, Albert Sans UI typography with Azeret Mono data/logs, below-header scroll shell (`html, body` locked so the scrollbar starts strictly below the header), linear `in oklab` Cyclorama Dawn wash, border-box Steel→Beacon primary buttons, `@supports (appearance: base-select)` branded tone dropdowns, circular View Transition wipe on the `LX 263 DARK / LX 512 LIGHT` toggle with pre-paint `rfs-theme` boot, and full `prefers-reduced-motion` / `prefers-reduced-transparency` / `forced-colors` / `@media print` contracts.
+- **Browser extension popup (`browser-extension/popup.{html,css}`):** Added the 24×24 Cyclorama brand mark lockup, border-box Steel→Beacon primary CTA (eliminating gradient border bleed), subtle linear `in oklab` wash, and reduced-motion / forced-colors / scrollbar guards.
+
 ## [3.0.1] — 2026-11-24
 
 Visual refresh to the Cyclorama Dawn `v2.1.0` palette. Sync behaviour, notes, sidecar files, API endpoints, and existing configs are unchanged.

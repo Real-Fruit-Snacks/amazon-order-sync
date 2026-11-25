@@ -52,13 +52,19 @@
 }
 
 body {
-    width: 348px;
+    width: 356px;
     background-color: var(--bg-color);
+    background-image: linear-gradient(
+        125deg in oklab,
+        rgba(31, 84, 122, 0.16) 0%,
+        transparent 52%,
+        rgba(240, 110, 43, 0.09) 100%
+    );
     color: var(--text-primary);
     font-family: var(--sans);
     margin: 0;
     padding: 16px;
-    border-top: 3px solid transparent;
+    border-top: 2px solid transparent;
     border-image: var(--horizon-grad) 1;
 }
 
@@ -81,10 +87,25 @@ header {
     margin-bottom: 4px;
 }
 
+.brand-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.brand-mark {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    flex: none;
+}
+
 h1 {
     font-family: var(--display);
-    font-size: 1.4rem;
-    font-weight: 800;
+    font-size: 1.35rem;
+    font-weight: 700;
     letter-spacing: 0.05em;
     line-height: 1;
     text-transform: uppercase;
@@ -140,9 +161,12 @@ h1 {
 }
 
 .btn.primary {
+    border: 0;
     background: var(--horizon-grad);
+    background-origin: border-box;
+    background-clip: border-box;
     color: var(--on-accent);
-    border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+    font-weight: 700;
 }
 
 .btn.primary:hover {
@@ -161,9 +185,9 @@ h1 {
 }
 
 .btn.danger {
+    border: 0;
     background-color: var(--danger);
     color: #FFFFFF;
-    border-color: color-mix(in oklab, var(--danger-ink) 40%, transparent);
 }
 
 .btn.danger:hover {
@@ -184,6 +208,10 @@ h1 {
 }
 
 .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     font-family: var(--mono);
     font-size: 0.72rem;
     font-weight: 600;
@@ -209,6 +237,12 @@ h1 {
     gap: 4px;
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) var(--log-bg);
+}
+
+@supports not (scrollbar-color: auto) {
+    .log-output::-webkit-scrollbar { width: 6px; }
+    .log-output::-webkit-scrollbar-track { background: var(--log-bg); }
+    .log-output::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 }
 
 .log-item {
@@ -242,7 +276,17 @@ button { font: inherit; }
 #copyLogBtn {
     width: auto;
     flex: none;
+    padding: 2px 8px;
+    margin: 0;
     font-family: var(--mono);
     font-size: 10.5px;
     border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+@media (forced-colors: active) {
+    .btn, .status-badge, .log-container { border-color: CanvasText; }
 }
