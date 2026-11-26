@@ -195,7 +195,7 @@ jobs:
           if ($r) { throw 'PSScriptAnalyzer found problems.' }
           node tools/make-samples.mjs
           .venv\Scripts\python.exe tools/make-slip.py
-          git -c core.autocrlf=false -c core.eol=lf diff --exit-code -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html README.md
+          git -c core.autocrlf=false -c core.eol=lf diff --exit-code -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html docs/USAGE.md
           if (git status --porcelain -- docs/samples) { throw 'make-samples.mjs wrote files the kit does not have.' }
           Write-Host 'The dev kit set up, tested, built and linted with no network.'
       - name: "Offline check: the dev kit's scripts parse in Windows PowerShell 5.1"

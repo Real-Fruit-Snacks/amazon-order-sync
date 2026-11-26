@@ -26,7 +26,7 @@ jobs:
             --accept 200,206,429 --exclude-loopback --exclude-private
             --exclude '^https?://([a-z]+\.)?amazon\.'
             --exclude '^https://github\.com/Real-Fruit-Snacks/amazon-order-sync/(issues/new|security/advisories/new)'
-            README.md CONTRIBUTING.md SECURITY.md docs/guide.md docs/api.md docs/index.html
+            README.md CONTRIBUTING.md SECURITY.md docs/USAGE.md docs/guide.md docs/api.md docs/index.html
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

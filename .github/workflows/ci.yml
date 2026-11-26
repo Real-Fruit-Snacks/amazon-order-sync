@@ -144,6 +144,6 @@ jobs:
           python -m pip install --quiet -r tools/requirements-art.txt
           node tools/make-samples.mjs
           python tools/make-slip.py
-          git status --short -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html README.md
-          git diff --exit-code -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html README.md
+          git status --short -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html docs/USAGE.md
+          git diff --exit-code -- docs/samples docs/assets/slip-dark.svg docs/assets/slip-light.svg docs/index.html docs/USAGE.md
           test -z "$(git status --porcelain -- docs/samples)"

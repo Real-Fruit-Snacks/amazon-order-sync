@@ -35,7 +35,7 @@ const PAGE = path.join(ROOT, 'docs', 'index.html');
 // A valid 1x1 JPEG: the server only checks the Content-Type and the size.
 const JPEG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
 
-const README = path.join(ROOT, 'README.md');
+const SAMPLES_DOC = path.join(ROOT, 'docs', 'USAGE.md');
 
 // Replace what sits between <!-- name:begin --> and <!-- name:end --> in a file.
 async function fill(file, parts) {
@@ -118,11 +118,11 @@ try {
     const posted = first.items.find((it) => it.is_reviewed && it.review_title);
     const from = note0.indexOf(`### ${posted.name}`), to = note0.indexOf('\n---\n', from) + 5;
     await fill(PAGE, [['samples', render(orders, md)], ['files', tree(written)]]);
-    await fill(README, [
+    await fill(SAMPLES_DOC, [
         ['sample-files', '```text\n' + written.map((f) => `~/AmazonOrders/${f}`).join('\n') + '\n```\n'],
         ['sample-item', '```markdown\n' + note0.slice(from, to) + '```\n'],
     ]);
-    console.log('wrote the samples into docs/index.html and README.md');
+    console.log('wrote the samples into docs/index.html and docs/USAGE.md');
 } finally {
     if (child.exitCode === null) child.kill();
     images.close();
