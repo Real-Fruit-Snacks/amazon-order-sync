@@ -42,7 +42,10 @@
   if (themeBtn) {
     themeBtn.addEventListener('click', function (e) {
       var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-      try { localStorage.setItem('rfs-theme', next); } catch (err) {}
+      try {
+        localStorage.setItem('rfs-theme', next);
+        localStorage.setItem('color-scheme', next);
+      } catch (err) {}
       var r = themeBtn.getBoundingClientRect();
       var x = e.clientX || (r.left + r.width / 2);
       var y = e.clientY || (r.top + r.height / 2);
@@ -51,14 +54,17 @@
       root.style.setProperty('--vt-y', y + 'px');
       root.style.setProperty('--vt-r', maxR + 'px');
       if (document.startViewTransition && !still.matches) {
-        document.startViewTransition(function () { applyTheme(next); });
+        var vt = document.startViewTransition(function () { applyTheme(next); });
+        Promise.allSettled([vt.ready, vt.updateCallbackDone, vt.finished]);
       } else {
         applyTheme(next);
       }
     });
   }
   addEventListener('storage', function (e) {
-    if (e.key === 'rfs-theme') applyTheme(e.newValue === 'light' ? 'light' : 'dark');
+    if (e.key === 'rfs-theme' || e.key === 'color-scheme') {
+      applyTheme(e.newValue === 'light' || e.newValue === 'dayshift' ? 'light' : 'dark');
+    }
   });
 
   // ---- install tabs ----

@@ -80,6 +80,9 @@
     --twb-hover-line: rgba(116, 184, 232, 0.08);
     --twb-focus: #ff9254;
     --twb-selection: rgba(255, 146, 84, 0.24);
+    --rfs-fault-fill: #c92438;
+    --rfs-fault-fill-hover: #e02e44;
+    --rfs-on-fault: #ffffff;
   }
   :root[data-theme="light"] {
     color-scheme: light;
@@ -89,8 +92,8 @@
     --beacon-fill: #ad3d0a;
     --horizon-rule: linear-gradient(90deg in oklab, #164669 0%, #164669 35%, #ad3d0a 100%);
     --cta-grad: linear-gradient(90deg in oklab, #164669, #ad3d0a);
-    --wash-steel: rgba(22, 70, 105, 0.07);
-    --wash-beacon: rgba(173, 61, 10, 0.05);
+    --wash-steel: rgba(22, 70, 105, 0.26);
+    --wash-beacon: rgba(173, 61, 10, 0.22);
     --sb-thumb: #6a7383;
     --sb-track: #f5f7f9;
     --twb-accent: #ad3d0a;
@@ -127,10 +130,13 @@
     --twb-hover-line: rgba(22, 70, 105, 0.07);
     --twb-focus: #164669;
     --twb-selection: rgba(173, 61, 10, 0.18);
+    --rfs-fault-fill: #b91c2e;
+    --rfs-fault-fill-hover: #991525;
+    --rfs-on-fault: #ffffff;
   }
 
   :root {
-    --twb-display: "Big Shoulders Stencil", system-ui, sans-serif;
+    --twb-display: "Big Shoulders Stencil", "Arial Narrow", system-ui, sans-serif;
     --twb-mono: "Azeret Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
     --twb-sans: "Albert Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
@@ -1055,6 +1061,56 @@
     .act-row .when { width: 70px; }
   }
 
+  /* Branded destructive confirmation modal (<dialog>) */
+  dialog.rfs-dialog {
+    width: min(28rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2.5rem);
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid var(--twb-border-strong);
+    background: var(--twb-bg-1);
+    color: var(--twb-text);
+    overflow: auto;
+    opacity: 0;
+    transition-property: opacity, transform, display, overlay;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    transition-behavior: allow-discrete;
+  }
+  dialog.rfs-dialog:modal { overscroll-behavior: contain; }
+  dialog.rfs-dialog[open] { opacity: 1; }
+  @starting-style { dialog.rfs-dialog[open] { opacity: 0; } }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.rfs-dialog { transform: translateY(8px); }
+    dialog.rfs-dialog[open] { transform: translateY(0); }
+    @starting-style { dialog.rfs-dialog[open] { transform: translateY(8px); } }
+  }
+  dialog.rfs-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background-color: rgba(5, 5, 7, 0);
+    transition-property: background-color, display, overlay;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    transition-behavior: allow-discrete;
+  }
+  dialog.rfs-dialog[open]::backdrop { background-color: rgba(5, 5, 7, 0.72); }
+  @starting-style { dialog.rfs-dialog[open]::backdrop { background-color: rgba(5, 5, 7, 0); } }
+  dialog.rfs-dialog.is-destructive .rfs-dialog-bar { height: 3px; background: var(--rfs-fault-fill); }
+  .rfs-dialog-body { padding: 18px 20px 20px; display: grid; gap: 12px; }
+  .rfs-dialog-title { margin: 0; font-family: var(--twb-display); font-size: 1.45rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.05; color: var(--twb-text); }
+  .rfs-dialog-copy { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--twb-text-muted); }
+  .rfs-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--twb-border); }
+  .rfs-dialog-btn {
+    min-height: 36px; padding: 6px 14px; border-radius: 5px;
+    border: 1px solid var(--twb-border-strong); background: var(--twb-bg-2); color: var(--twb-text);
+    font-family: var(--twb-sans); font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .rfs-dialog-btn:hover { background: var(--twb-bg-3); }
+  .rfs-btn-fault { background: var(--rfs-fault-fill); border-color: var(--rfs-fault-fill); color: var(--rfs-on-fault); }
+  .rfs-btn-fault:hover { background: var(--rfs-fault-fill-hover); border-color: var(--rfs-fault-fill-hover); color: var(--rfs-on-fault); }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
   }
@@ -1062,8 +1118,8 @@
     .topbar { background: var(--twb-bg-1); backdrop-filter: none; }
   }
   @media (forced-colors: active) {
-    .topbar, .stat, .panel, .order-card, .review-card, .btn, .quiet-link, .theme-toggle { border-color: CanvasText; }
-    .tab.active, .chip.active { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+    .topbar, .stat, .panel, .order-card, .review-card, .btn, .quiet-link, .theme-toggle, dialog.rfs-dialog, .rfs-dialog-btn { border-color: CanvasText; }
+    .tab.active, .chip.active, .rfs-btn-fault { forced-color-adjust: none; background: Highlight; color: HighlightText; }
   }
   @media print {
     html, body { height: auto; overflow: visible; background: #fff; color: #000; }
@@ -1098,6 +1154,19 @@
   <section id="panel-review" class="tabpanel" hidden></section>
 </main>
 </div>
+<dialog id="confirmDialog" class="rfs-dialog is-destructive" aria-labelledby="confirmDialogTitle">
+  <form method="dialog">
+    <div class="rfs-dialog-bar" aria-hidden="true"></div>
+    <div class="rfs-dialog-body">
+      <h2 class="rfs-dialog-title" id="confirmDialogTitle">Confirm action</h2>
+      <p class="rfs-dialog-copy" id="confirmDialogCopy"></p>
+      <div class="rfs-dialog-actions">
+        <button type="submit" value="cancel" class="rfs-dialog-btn" id="confirmDialogCancel" autofocus>Cancel</button>
+        <button type="submit" value="ok" class="rfs-dialog-btn rfs-btn-fault" id="confirmDialogOk">Clear</button>
+      </div>
+    </div>
+  </form>
+</dialog>
 <script>
 'use strict';
 // ---------------------------------------------------------------------------
@@ -1146,6 +1215,25 @@ const state = {
 };
 
 // v1.5.0: headless auto-sync meta from /api/orders (absent on older servers).
+function confirmDestructive(title, copy, confirmLabel) {
+  const dlg = document.getElementById('confirmDialog');
+  if (!dlg || typeof dlg.showModal !== 'function') return Promise.resolve(true);
+  document.getElementById('confirmDialogTitle').textContent = title;
+  document.getElementById('confirmDialogCopy').textContent = copy;
+  document.getElementById('confirmDialogOk').textContent = confirmLabel;
+  dlg.returnValue = '';
+  return new Promise((resolve) => {
+    dlg.addEventListener('close', () => {
+      const choice = dlg.returnValue;
+      dlg.returnValue = '';
+      resolve(choice === 'ok');
+    }, { once: true });
+    dlg.showModal();
+    const cancelBtn = document.getElementById('confirmDialogCancel');
+    if (cancelBtn) cancelBtn.focus();
+  });
+}
+
 function headlessMeta() {
   const h = state.data && state.data.headless;
   return (h && typeof h === 'object') ? h : null;
@@ -1788,6 +1876,12 @@ function renderOverview(root) {
     const shClear = el('button', 'quiet-link', 'Clear');
     shClear.title = 'Clear the run history';
     shClear.addEventListener('click', async () => {
+      const ok = await confirmDestructive(
+        'Clear run history?',
+        'This clears the recent headless sync runs from the dashboard history. Your synced orders and any active login notice are kept.',
+        'Clear history'
+      );
+      if (!ok) return;
       shClear.disabled = true;
       try {
         await fetch('/api/sync-history/clear', { method: 'POST' });
@@ -2985,6 +3079,12 @@ function renderSync(root) {
   clearServerBtn.id = 'logClearServerBtn';
   clearServerBtn.title = 'Clear the server log buffer and this view';
   clearServerBtn.addEventListener('click', async () => {
+    const ok = await confirmDestructive(
+      'Clear server logs?',
+      'This empties the server log ring buffer and clears this view. New log lines will continue streaming in.',
+      'Clear logs'
+    );
+    if (!ok) return;
     clearServerBtn.disabled = true;
     try {
       const res = await fetch('/api/logs/clear', { method: 'POST' });
@@ -3210,12 +3310,14 @@ themeBtn.addEventListener('click', (ev) => {
   const x = r.left + r.width / 2;
   const y = r.top + r.height / 2;
   const end = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
-  document.startViewTransition(() => applyTheme(themeMode)).ready.then(() => {
+  const vt = document.startViewTransition(() => applyTheme(themeMode));
+  const animated = vt.ready.then(() => {
     document.documentElement.animate(
       { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
       { duration: 480, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', pseudoElement: '::view-transition-new(root)' }
     );
-  }).catch(() => {});
+  });
+  Promise.allSettled([animated, vt.updateCallbackDone, vt.finished]);
 });
 window.addEventListener('storage', (e) => {
   if (e.key === THEME_KEY) {

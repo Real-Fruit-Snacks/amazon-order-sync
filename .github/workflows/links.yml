@@ -17,16 +17,20 @@ permissions:
 jobs:
   lychee:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: lycheeverse/lychee-action@v2
         with:
           args: >-
             --no-progress --max-retries 4 --retry-wait-time 10 --timeout 30
-            --accept 200,206,429 --exclude-loopback --exclude-private
+            --accept 200,206,429 --exclude-all-private
             --exclude '^https?://([a-z]+\.)?amazon\.'
+            --exclude '^https?://evil\.com'
             --exclude '^https://github\.com/Real-Fruit-Snacks/amazon-order-sync/(issues/new|security/advisories/new)'
-            README.md CONTRIBUTING.md SECURITY.md docs/USAGE.md docs/guide.md docs/api.md docs/index.html
+            --exclude-path '^docs/samples'
+            --remap '^https://github\.com/Real-Fruit-Snacks/amazon-order-sync/blob/main/([^#]+)(#.*)?$ file://${{ github.workspace }}/$1'
+            './**/*.md' 'docs/*.html'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

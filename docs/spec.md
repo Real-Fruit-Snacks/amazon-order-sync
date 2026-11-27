@@ -235,9 +235,9 @@ responsive to ~700px, friendly empty states, and a visible error state
 
 ### Theming (v1.1.1)
 
-The dashboard is re-themed to the Terminal Workbench design system
-(tokens from the suite's `tokens/tokens.css`, inlined as CSS custom
-properties; MIT, https://github.com/Real-Fruit-Snacks/terminal-workbench-suite).
+The dashboard was initially re-themed to the Terminal Workbench design system
+(tokens from `tokens/tokens.css`, inlined as CSS custom properties; superseded
+by Cyclorama Dawn in https://github.com/Real-Fruit-Snacks/rfs-brand).
 Dark is the default; a light token set applies via `prefers-color-scheme` or
 an explicit `data-theme="light"|"dark"` on `<html>`, driven by a quiet topbar
 toggle that cycles dark -> light -> auto and persists to localStorage.

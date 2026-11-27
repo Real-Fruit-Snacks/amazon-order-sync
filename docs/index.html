@@ -26,7 +26,7 @@
   // js-run hides the first note until script.js prints it (a CSS failsafe shows it after 6 s).
   (function (d) {
     try {
-      var t = localStorage.getItem('rfs-theme');
+      var t = localStorage.getItem('rfs-theme') || localStorage.getItem('color-scheme');
       if (t === 'light' || t === 'dayshift') {
         d.setAttribute('data-theme', 'light');
         var cs = document.querySelector('meta[name="color-scheme"]');

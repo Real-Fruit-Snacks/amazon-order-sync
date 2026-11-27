@@ -68,7 +68,7 @@ Plain and exact, as in the README: real commands, real file names, real frontmat
 
 ## Files
 
-- `index.html`, `styles.css`, `script.js`, `fonts/`, the icons and the manifest. The favicon is a paper label with an Ember header and four barcode bars on the Nightshift tile.
+- `index.html`, `styles.css`, `script.js`, `fonts/`, the icons and the manifest. The favicon is the Cyclorama Dawn RFS monogram tile with the Steel-to-Beacon horizon rule.
 - `samples/` is what the server wrote for the sample orders, `files.txt` lists every file it wrote.
 - `assets/cover-*`, `assets/social-dark.png`, `assets/social-light.png` and `assets/cover.toml` are the RFS brand cover from rfs-brand's `make-cover.py`. The page and README don't use them, but the rfs-brand site's cover gallery loads `cover-{dark,light}.svg` from here, so they stay. The dashboard screenshots (`assets/dashboard-*.webp`) are from the earlier page and show made-up orders.
 

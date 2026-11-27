@@ -223,7 +223,7 @@ p { margin: 0 0 var(--space-s); text-wrap: pretty; }
   font: 600 0.74rem/1 var(--mono); letter-spacing: 0.06em;
   color: var(--ink); background: var(--surface);
   border: 1px solid var(--line-strong); border-radius: 4px;
-  padding: 0.48rem 0.7rem; min-height: 2.25rem;
+  padding: 0.48rem 0.7rem; min-height: 44px;
   cursor: pointer; white-space: nowrap; flex: none;
   transition: border-color 150ms var(--ease), background-color 150ms var(--ease);
 }
@@ -243,11 +243,15 @@ p { margin: 0 0 var(--space-s); text-wrap: pretty; }
 .hero {
   padding: var(--space-m) 0 var(--space-xl-3xl);
   background:
-    linear-gradient(125deg in oklab, color-mix(in oklab, var(--rfs-steel) 16%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 12%, transparent) 100%);
+    linear-gradient(125deg var(--rfs-in-oklab), rgba(31, 84, 122, 0.16) 0%, transparent 48%, rgba(240, 110, 43, 0.12) 100%);
+  background:
+    linear-gradient(125deg var(--rfs-in-oklab), color-mix(in oklab, var(--rfs-steel) 16%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 12%, transparent) 100%);
 }
 :root[data-theme="light"] .hero {
   background:
-    linear-gradient(125deg in oklab, color-mix(in oklab, var(--rfs-steel) 8%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 6%, transparent) 100%);
+    linear-gradient(125deg var(--rfs-in-oklab), rgba(31, 84, 122, 0.28) 0%, transparent 48%, rgba(240, 110, 43, 0.24) 100%);
+  background:
+    linear-gradient(125deg var(--rfs-in-oklab), color-mix(in oklab, var(--rfs-steel) 28%, transparent) 0%, transparent 48%, color-mix(in oklab, var(--rfs-beacon) 24%, transparent) 100%);
 }
 .hero-grid {
   display: grid;
@@ -403,7 +407,7 @@ p { margin: 0 0 var(--space-s); text-wrap: pretty; }
 .tabs [role="tab"] {
   font: 700 .74rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
   color: var(--mute); background: none; border: 1px solid transparent; border-bottom: 0;
-  border-radius: var(--r-s) var(--r-s) 0 0; min-height: 40px; padding: 0 .95rem; cursor: pointer;
+  border-radius: var(--r-s) var(--r-s) 0 0; min-height: 44px; padding: 0 .95rem; cursor: pointer;
 }
 .tabs [aria-selected="true"] { color: var(--ink); background: var(--code); border-color: var(--line-strong); }
 @media (hover: hover) { .tabs [role="tab"]:hover { color: var(--ink); } }
@@ -423,7 +427,7 @@ p { margin: 0 0 var(--space-s); text-wrap: pretty; }
   transition: filter 150ms var(--ease);
 }
 .rfs-code-card .rfs-code-head .copy {
-  min-height: 2.1rem; min-width: 4.5rem; padding: 0 .8rem; align-self: center;
+  min-height: 44px; min-width: 4.5rem; padding: 0 .8rem; align-self: center;
 }
 .rfs-code-card > pre.rfs-code-block {
   font-size: .74rem; line-height: 1.7; padding: .75rem .9rem;
@@ -519,7 +523,7 @@ section + section { border-top: 1px solid var(--line); }
 footer { border-top: 1px solid var(--line); padding: var(--space-l) 0 var(--space-xl); font-size: .88rem; color: var(--mute); }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-s); }
 footer p { margin: 0; }
-footer a { display: inline-flex; align-items: center; min-height: 32px; }
+footer a { display: inline-flex; align-items: center; min-height: 44px; }
 
 /* Standalone popover copy toast */
 #rfs-toast {
