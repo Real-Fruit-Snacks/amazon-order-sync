@@ -2,9 +2,9 @@
 
 Repository contract for contributors and coding agents working on `Real-Fruit-Snacks/amazon-order-sync`.
 
-## Brand System — Cyclorama Dawn `v2.1.0`
+## Brand System — Cyclorama Dawn `v2.3.2`
 
-Source of truth: `Real-Fruit-Snacks/rfs-brand` (`v2.1.0`).
+Source of truth: `Real-Fruit-Snacks/rfs-brand` (`v2.3.2`) · Agent Skill: `npx skills add Real-Fruit-Snacks/rfs-brand` (`skills/rfs-brand/SKILL.md`) · `llms.txt`: https://real-fruit-snacks.github.io/rfs-brand/llms.txt · Auditor: `python scripts/verify-brand.py --repo .`.
 
 - **Theme Modes**: Matte Dark `LX 263` (`#050507`) is the explicit default (`<meta name="color-scheme" content="dark">`). Alabaster Day `LX 512` (`#F5F7F9`) is an opt-in toggle synchronized across tabs via `localStorage['rfs-theme']` with a radial View Transition.
 - **Palette Tokens**:

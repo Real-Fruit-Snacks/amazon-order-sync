@@ -101,8 +101,14 @@
   --rfs-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --rfs-ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
   --rfs-ease-linear: linear;
+  --rfs-ease-detent-fallback: cubic-bezier(0.22, 1.18, 0.36, 1);
+  /* Tight mechanical detent (3.5% seat settle, zero jelly bounce) with cubic-bezier fallback */
+  --rfs-ease-detent: cubic-bezier(0.22, 1.18, 0.36, 1);
+  --rfs-ease-detent: linear(0, 0.21 8%, 0.64 19%, 0.94 31%, 1.035 44%, 1.02 58%, 0.996 74%, 1);
   --rfs-dur-fast: 150ms;
   --rfs-dur-base: 250ms;
+  --rfs-dur-detent: 340ms;
+  --rfs-dur-jump: 360ms;
   --rfs-dur-slow: 520ms;
   --rfs-type-rate: 45ms;
 
@@ -138,6 +144,15 @@
   --rfs-syn-com: var(--rfs-mute);
   --rfs-syn-add: var(--rfs-signal);
   --rfs-syn-del: var(--rfs-fault);
+
+  /* Data visualization categorical series (ordered 1..6, WCAG AA >= 5.8:1 in both modes) */
+  --rfs-viz-1: var(--rfs-steel-ink);
+  --rfs-viz-2: var(--rfs-beacon-ink);
+  --rfs-viz-3: var(--rfs-signal);
+  --rfs-viz-4: var(--rfs-accent);
+  --rfs-viz-5: var(--rfs-fault);
+  --rfs-viz-6: var(--rfs-mute);
+  --rfs-viz-grid: var(--rfs-line);
 
   --rfs-horizon-gradient: linear-gradient(125deg var(--rfs-in-oklab), var(--rfs-steel-fill) 0%, var(--rfs-steel) 42%, #8a3e20 74%, #bd4811 100%);
   --rfs-horizon-rule: linear-gradient(90deg var(--rfs-in-oklab), var(--rfs-steel-ink) 0%, var(--rfs-steel) 48%, var(--rfs-beacon) 100%);
@@ -260,10 +275,12 @@
   overflow-x: auto;
 }
 
-/* Lock viewport scroll when using .rfs-shell so scrollbars start strictly below top chrome */
+/* Lock viewport scroll when using .rfs-shell so scrollbars start strictly below top chrome.
+   Use overflow: clip so fragment #anchor navigation cannot programmatically scroll <html> off y=0. */
 html:has(> body.rfs-shell) {
   height: 100%;
   overflow: hidden;
+  overflow: clip;
 }
 
 /* Reduced transparency: remove glass/blur translucency */
@@ -299,6 +316,7 @@ html:has(> body.rfs-shell) {
     display: block !important;
   }
   :where(.rfs-shell, .rfs-scroll-region, .page-scroll) {
+    position: static !important;
     height: auto !important;
     overflow: visible !important;
     display: block !important;
